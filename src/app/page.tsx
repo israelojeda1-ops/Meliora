@@ -209,7 +209,7 @@ export default function HomePage() {
               </h2>
               <div className="space-y-5">
                 {[
-                  "Coordinas un contador externo para IVA, otro software para remuneraciones y nadie arma reportes gerenciales — o los armas tú mismo, tarde.",
+                  "Tienes un contador externo, pero no te informa proactivamente — solo te pasa lo que hay que pagar de impuestos.",
                   "No revisas indicadores clave (margen por línea, estado real de cobranza, DSO) porque nadie te los entrega de forma periódica.",
                   "No haces budgeting ni forecast: administras mirando el retrovisor, sin una proyección de caja que anticipe déficits.",
                   "Cuando buscas ayuda encuentras dos extremos: un contador que solo cumple, o una firma boutique con honorarios de empresa grande.",
