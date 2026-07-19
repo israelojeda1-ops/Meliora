@@ -57,12 +57,14 @@ export default function ContactoPage() {
                     </svg>
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-navy">Teléfono / WhatsApp</p>
+                    <p className="text-sm font-semibold text-navy">WhatsApp</p>
                     <a
-                      href="tel:+56900000000"
+                      href="https://wa.me/56949282946"
+                      target="_blank"
+                      rel="noopener noreferrer"
                       className="text-sm text-slate-500 hover:text-emerald transition-colors"
                     >
-                      +56 9 0000 0000
+                      +56 9 4928 2946
                     </a>
                   </div>
                 </div>

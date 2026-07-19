@@ -1,34 +1,17 @@
-"use client";
-
-import { useState } from "react";
-
-const CONTACT_EMAIL = "contacto@melioraadvisory.cl";
+const FORM_ENDPOINT = "https://formsubmit.co/israelojeda1@gmail.com";
 
 export function ContactForm() {
-  const [status, setStatus] = useState<"idle" | "sent">("idle");
-
-  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    const form = e.currentTarget;
-    const data = new FormData(form);
-    const name = data.get("name")?.toString() ?? "";
-    const company = data.get("company")?.toString() ?? "";
-    const email = data.get("email")?.toString() ?? "";
-    const message = data.get("message")?.toString() ?? "";
-
-    const subject = encodeURIComponent(
-      `Consulta de ${name}${company ? ` (${company})` : ""} — Meliora Advisory`
-    );
-    const body = encodeURIComponent(
-      `Nombre: ${name}\nEmpresa: ${company}\nEmail: ${email}\n\nMensaje:\n${message}`
-    );
-
-    window.location.href = `mailto:${CONTACT_EMAIL}?subject=${subject}&body=${body}`;
-    setStatus("sent");
-  }
-
   return (
-    <form onSubmit={handleSubmit} className="space-y-5">
+    <form
+      action={FORM_ENDPOINT}
+      method="POST"
+      className="space-y-5"
+    >
+      <input type="hidden" name="_subject" value="Nueva consulta desde melioraadvisory.cl" />
+      <input type="hidden" name="_template" value="table" />
+      <input type="hidden" name="_next" value="https://melioraadvisory.cl/contacto/gracias/" />
+      <input type="text" name="_honey" className="hidden" tabIndex={-1} autoComplete="off" />
+
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
         <div>
           <label
@@ -103,12 +86,6 @@ export function ContactForm() {
       >
         Enviar mensaje
       </button>
-
-      {status === "sent" && (
-        <p className="text-sm text-emerald-dark text-center">
-          Se abrió tu cliente de correo con el mensaje listo para enviar.
-        </p>
-      )}
     </form>
   );
 }
