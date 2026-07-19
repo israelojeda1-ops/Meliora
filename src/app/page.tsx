@@ -30,6 +30,10 @@ const pillars = [
     title: "Indicadores que hoy no tienes",
     description:
       "Margen por producto/línea, cobranza y DSO, entregados cada mes de forma simple. Decisiones con datos, no intuición.",
+    items: [
+      "Reporte gerencial continuo: monitoreo mensual de resultados y proyecciones",
+      "Sesión de asesoría personalizada mensual",
+    ],
   },
 ];
 
@@ -164,6 +168,28 @@ export default function HomePage() {
                 <p className="text-sm text-slate-500 leading-relaxed">
                   {pillar.description}
                 </p>
+                {"items" in pillar && pillar.items && (
+                  <ul className="mt-4 space-y-2 pt-4 border-t border-slate-100">
+                    {pillar.items.map((item) => (
+                      <li key={item} className="flex items-start gap-2">
+                        <svg
+                          className="h-4 w-4 text-emerald flex-shrink-0 mt-0.5"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          strokeWidth={2.5}
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M4.5 12.75l6 6 9-13.5"
+                          />
+                        </svg>
+                        <span className="text-sm text-slate-500">{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
             ))}
           </div>
