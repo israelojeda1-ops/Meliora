@@ -42,7 +42,8 @@ export function Logo({ variant = "full", theme = "light", className = "" }: Logo
           className="text-[9px] font-medium tracking-[0.3em] mt-1"
           style={{ color: captionColor }}
         >
-          ADVISORY
+          <span style={{ color: accentColor }}>S</span>TRATEGIC{" "}
+          <span style={{ color: accentColor }}>A</span>DVISORY
         </span>
       </span>
     </span>
