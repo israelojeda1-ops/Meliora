@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Logo } from "@/components/Logo";
 
 export function Footer() {
   return (
@@ -6,9 +7,8 @@ export function Footer() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-16">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-10">
           <div className="md:col-span-2">
-            <div className="flex items-center gap-2 mb-4">
-              <span className="text-xl font-bold text-white">Meliora</span>
-              <span className="text-sm font-medium text-emerald">Advisory</span>
+            <div className="mb-4">
+              <Logo theme="dark" />
             </div>
             <p className="text-sm leading-relaxed max-w-md">
               Todo lo financiero de tu PyME, en un solo lugar — y siempre a la
