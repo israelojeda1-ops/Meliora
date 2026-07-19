@@ -82,24 +82,6 @@ export default function ContactoPage() {
                   </div>
                 </div>
               </div>
-
-              <div className="mt-10 rounded-2xl bg-slate-50 p-6">
-                <h3 className="text-sm font-semibold text-navy mb-2">
-                  ¿Prefieres agendar directamente?
-                </h3>
-                <p className="text-sm text-slate-500 mb-4">
-                  Elige un horario disponible en el calendario y quedamos
-                  conectados de inmediato.
-                </p>
-                <a
-                  href="https://calendly.com/melioraadvisory/diagnostico-gratuito"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center justify-center w-full rounded-lg bg-navy px-6 py-3 text-sm font-semibold text-white hover:bg-navy-light transition-colors"
-                >
-                  Ver disponibilidad en Calendly
-                </a>
-              </div>
             </div>
 
             <div className="lg:col-span-3">
