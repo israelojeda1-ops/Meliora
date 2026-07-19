@@ -4,15 +4,16 @@ import Link from "next/link";
 export const metadata: Metadata = {
   title: "Planes y Precios — Meliora Advisory",
   description:
-    "Planes mensuales de asesoría financiera y contable para PyMEs en Chile. Desde $250.000 CLP. Todos incluyen portal de cliente.",
+    "Planes mensuales de asesoría financiera y contable para PyMEs en Chile. Desde $200.000 CLP. Todos incluyen portal de cliente.",
 };
 
 const planes = [
   {
-    name: "Contable",
-    price: "$250.000–400.000",
+    name: "Contable — Sistema Meliora",
+    price: "Desde $200.000",
     period: "/mes",
-    description: "Contabilidad mensual completa para PyMEs con operación estándar.",
+    description:
+      "Hasta 100 movimientos al mes, en nuestro sistema estandarizado — la opción más eficiente.",
     features: [
       "Contabilidad mensual",
       "Declaración IVA / F29",
@@ -23,11 +24,40 @@ const planes = [
     highlighted: false,
   },
   {
-    name: "Contable + Remuneraciones",
-    price: "$380.000–650.000",
+    name: "Contable — Sistema del cliente",
+    price: "Desde $300.000",
     period: "/mes",
     description:
-      "Todo lo contable más la gestión completa de remuneraciones y cumplimiento laboral.",
+      "Hasta 100 movimientos al mes, trabajando dentro del ERP que ya usas.",
+    features: [
+      "Contabilidad mensual",
+      "Declaración IVA / F29",
+      "Estados Financieros",
+      "Declaración de Renta",
+      "Portal de cliente",
+    ],
+    highlighted: false,
+  },
+  {
+    name: "Contable + Remuneraciones — Sistema Meliora",
+    price: "Desde $350.000",
+    period: "/mes",
+    description: "Hasta 100 movimientos y 15 trabajadores, en nuestro sistema.",
+    features: [
+      "Todo del plan Contable",
+      "Liquidaciones de sueldo",
+      "Cálculo y pago Previred",
+      "Contratos de trabajo",
+      "Finiquitos",
+      "Portal de cliente",
+    ],
+    highlighted: true,
+  },
+  {
+    name: "Contable + Remuneraciones — Sistema del cliente",
+    price: "Desde $500.000",
+    period: "/mes",
+    description: "Hasta 100 movimientos y 15 trabajadores, en tu propio ERP.",
     features: [
       "Todo del plan Contable",
       "Liquidaciones de sueldo",
@@ -40,28 +70,28 @@ const planes = [
   },
   {
     name: "Finanzas",
-    price: "$700.000–1.200.000",
+    price: "Desde $700.000",
     period: "/mes",
     description:
-      "Reportería gerencial y KPIs financieros para PyMEs que necesitan visibilidad de sus números.",
+      "Asesoría gerencial y revisión de los informes que tu empresa ya prepara: KPIs de margen, cobranza y flujo de caja.",
     features: [
-      "Reportes gerenciales mensuales",
+      "Revisión y análisis de informes existentes",
       "KPIs de margen y cobranza",
       "Análisis de DSO",
       "Flujo de caja proyectado",
       "Sesión mensual de análisis",
       "Portal de cliente",
     ],
-    highlighted: true,
+    highlighted: false,
   },
   {
     name: "CFO Externo",
-    price: "$1.200.000–2.800.000",
+    price: "Desde $1.200.000",
     period: "/mes",
     description:
-      "Dirección financiera completa: presupuesto, forecast, estrategia y sesiones de análisis.",
+      "Elaboración y emisión completa de tus informes gerenciales — no los revisamos, los construimos desde cero.",
     features: [
-      "Todo del plan Finanzas",
+      "Elaboración de reportes gerenciales completos",
       "Presupuesto anual",
       "Forecast rolling 8–12 semanas",
       "Análisis de variaciones",
@@ -87,14 +117,14 @@ export default function PlanesPage() {
           <p className="mt-6 text-lg text-slate-300 max-w-2xl">
             Todos los planes incluyen acceso al portal de cliente con tus
             números actualizados en cada cierre mensual. El precio final se
-            ajusta según volumen de transacciones y complejidad.
+            ajusta según el sistema que uses y el volumen de movimientos.
           </p>
         </div>
       </section>
 
       <section className="py-20 sm:py-24 bg-white">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
             {planes.map((plan) => (
               <div
                 key={plan.name}
@@ -151,37 +181,29 @@ export default function PlanesPage() {
                 </Link>
               </div>
             ))}
-          </div>
-        </div>
-      </section>
 
-      <section className="py-16 bg-slate-50">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="rounded-2xl border border-slate-200 bg-white p-8 md:p-12">
+          </div>
+
+          <div className="mt-6 rounded-2xl bg-navy p-8 md:p-12">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
               <div>
-                <span className="inline-block text-xs font-semibold text-emerald uppercase tracking-wider mb-2">
-                  Proyecto cerrado
-                </span>
-                <h3 className="text-xl font-bold text-navy mb-2">
-                  Diagnóstico de Procesos
+                <h3 className="text-xl font-bold text-white mb-2">
+                  Empresas de alto volumen o complejidad
                 </h3>
-                <p className="text-sm text-slate-500 leading-relaxed">
-                  Diagnóstico operacional de 2 a 4 semanas con informe de quick
-                  wins, rediseño de procesos y plan de automatización. Entregable
-                  concreto con plazos, responsables y métricas.
+                <p className="text-sm text-slate-300 leading-relaxed">
+                  100+ movimientos al mes, multimoneda, múltiples centros de
+                  costo, importaciones.
                 </p>
               </div>
-              <div className="text-right">
-                <p className="text-2xl font-bold text-navy">
-                  $600.000–1.500.000
+              <div className="md:text-right">
+                <p className="text-xl font-bold text-white mb-4">
+                  Cotización personalizada
                 </p>
-                <p className="text-sm text-slate-500 mb-4">Proyecto cerrado</p>
                 <Link
                   href="/contacto"
                   className="inline-flex items-center justify-center rounded-lg bg-emerald px-6 py-3 text-sm font-semibold text-white hover:bg-emerald-dark transition-colors"
                 >
-                  Solicitar diagnóstico
+                  Cotización personalizada
                 </Link>
               </div>
             </div>
@@ -189,7 +211,7 @@ export default function PlanesPage() {
         </div>
       </section>
 
-      <section className="py-20 sm:py-24 bg-white">
+      <section className="py-20 sm:py-24 bg-white border-t border-slate-100">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <h2 className="text-2xl font-bold text-navy text-center mb-12">
             Preguntas frecuentes
@@ -197,12 +219,12 @@ export default function PlanesPage() {
           <div className="max-w-3xl mx-auto space-y-8">
             {[
               {
-                q: "¿Por qué los precios son un rango y no un valor fijo?",
-                a: "Porque cada PyME tiene distinto volumen de transacciones, número de empleados y complejidad operacional. Cotizamos después de entender tu operación para darte un precio justo, no uno inflado.",
+                q: "¿Por qué los precios parten con \"desde\" y no son un valor fijo?",
+                a: "Porque el precio final depende de dos factores: si trabajamos en tu propio sistema (ERP) o en el nuestro, y el volumen de movimientos y trabajadores de tu empresa. Los planes en sistema Meliora son más económicos porque estandarizamos el proceso; trabajar en tu ERP tiene un costo mayor de integración. Cotizamos después de entender tu operación para darte un precio justo.",
               },
               {
                 q: "¿Necesito cambiar mi sistema contable o ERP?",
-                a: "No. Trabajamos dentro del sistema que ya usas — Softland, Odoo, Nubox, Defontana u otro. Si no tienes uno, te ayudamos a implementarlo. Nunca obligamos a migrar.",
+                a: "No. Puedes elegir el plan \"Sistema del cliente\" y trabajamos dentro del ERP que ya usas — Softland, Odoo, Nubox, Defontana u otro. Nunca obligamos a migrar.",
               },
               {
                 q: "¿Qué incluye el portal de cliente?",
@@ -214,7 +236,7 @@ export default function PlanesPage() {
               },
               {
                 q: "¿Cuál es el plazo de compromiso?",
-                a: "Los servicios mensuales son renovables mes a mes. No hay contratos de permanencia mínima. El diagnóstico de procesos es un proyecto cerrado con entregables definidos.",
+                a: "Todos los planes son servicios mensuales renovables mes a mes. No hay contratos de permanencia mínima.",
               },
             ].map((faq) => (
               <div key={faq.q}>
