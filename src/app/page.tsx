@@ -239,7 +239,7 @@ export default function HomePage() {
                 {[
                   "Un interlocutor para todo lo financiero",
                   "Indicadores mensuales listos para decidir",
-                  "Presupuesto y forecast rolling",
+                  "Presupuesto y Rolling Forecast",
                   "Precio ajustado al tamaño de tu empresa",
                 ].map((item) => (
                   <div key={item} className="flex items-start gap-3">
