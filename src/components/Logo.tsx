@@ -18,9 +18,9 @@ export function Logo({ variant = "full", theme = "light", className = "" }: Logo
       fill="none"
       aria-hidden="true"
     >
-      <rect x="0" y="30" width="16" height="26" rx="2" fill={barColor} />
-      <rect x="28" y="16" width="16" height="40" rx="2" fill={barColor} />
-      <rect x="56" y="0" width="16" height="56" rx="2" fill={accentColor} />
+      <rect x="0" y="30" width="16" height="26" fill={barColor} />
+      <rect x="28" y="16" width="16" height="40" fill={barColor} />
+      <rect x="56" y="0" width="16" height="56" fill={accentColor} />
     </svg>
   );
 
@@ -33,13 +33,13 @@ export function Logo({ variant = "full", theme = "light", className = "" }: Logo
       {icon}
       <span className="flex flex-col leading-none">
         <span
-          className="text-lg font-bold tracking-tight"
+          className="text-lg font-semibold tracking-[0.01em]"
           style={{ color: textColor }}
         >
-          Mel<span style={{ color: accentColor }}>io</span>ra
+          MEL<span style={{ color: accentColor }}>IO</span>RA
         </span>
         <span
-          className="text-[9px] font-semibold tracking-[0.25em] mt-0.5"
+          className="text-[9px] font-medium tracking-[0.3em] mt-1"
           style={{ color: captionColor }}
         >
           ADVISORY
