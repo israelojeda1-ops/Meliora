@@ -3,7 +3,6 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches:
-      - claude/abadvisory-structure-analysis-pofpag
       - main
   workflow_dispatch:
 
