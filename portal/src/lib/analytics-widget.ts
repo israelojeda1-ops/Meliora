@@ -13,17 +13,30 @@ const EXCEL_FUNCTIONS = [
   "exportAnticExcel",
 ];
 
+const GA_MEASUREMENT_ID = "G-1LW5SSCQ4F";
+
 export function buildAnalyticsScript(clientSlug: string): string {
   return `
 <script>window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };</script>
 <script defer src="/_vercel/insights/script.js"></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}"></script>
+<script>
+(function(){
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){window.dataLayer.push(arguments);}
+  window.gtag = gtag;
+  gtag('js', new Date());
+  gtag('config', ${JSON.stringify(GA_MEASUREMENT_ID)});
+})();
+</script>
 <script>
 (function(){
   var client = ${JSON.stringify(clientSlug)};
 
   function fire(name, data){
-    try { if (window.va) window.va('event', { name: name, data: Object.assign({ client: client }, data || {}) }); }
-    catch(e){}
+    var payload = Object.assign({ client: client }, data || {});
+    try { if (window.va) window.va('event', { name: name, data: payload }); } catch(e){}
+    try { if (window.gtag) window.gtag('event', name, payload); } catch(e){}
   }
 
   function wrap(fnName, eventName, mapArgs){
