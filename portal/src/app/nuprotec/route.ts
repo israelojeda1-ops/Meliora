@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { decrypt, SESSION_COOKIE } from "@/lib/session";
 import { getClient } from "@/lib/clients";
 import { buildRegenerateWidget } from "@/lib/regenerate-widget";
+import { buildAnalyticsScript } from "@/lib/analytics-widget";
 
 export async function GET(req: NextRequest) {
   const client = getClient("nuprotec");
@@ -42,12 +43,13 @@ export async function GET(req: NextRequest) {
 
   let html = await upstream.text();
 
+  let injected = buildAnalyticsScript(client.slug);
   if (client.repo.workflowFile) {
-    const widget = buildRegenerateWidget(`/${client.slug}`);
-    html = html.includes("</body>")
-      ? html.replace("</body>", `${widget}</body>`)
-      : `${html}${widget}`;
+    injected += buildRegenerateWidget(`/${client.slug}`);
   }
+  html = html.includes("</body>")
+    ? html.replace("</body>", `${injected}</body>`)
+    : `${html}${injected}`;
 
   return new Response(html, {
     status: 200,
