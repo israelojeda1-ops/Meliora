@@ -6,6 +6,7 @@ export type ClientConfig = {
     owner: string;
     name: string;
     path: string;
+    workflowFile?: string;
   };
 };
 
@@ -18,6 +19,7 @@ export const CLIENTS: Record<string, ClientConfig> = {
       owner: "israelojeda1-ops",
       name: "nuprotec-informes",
       path: "Dashboard_NUPROTEC_2026.html",
+      workflowFile: "generar-dashboard.yml",
     },
   },
 };

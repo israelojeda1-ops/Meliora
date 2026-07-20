@@ -72,13 +72,6 @@ const services = [
   },
 ];
 
-const stats = [
-  { value: "12+", label: "Años en finanzas" },
-  { value: "7+", label: "Años en liderazgo" },
-  { value: "5", label: "Sectores con experiencia" },
-  { value: "IFRS", label: "Reporting internacional" },
-];
-
 const results = [
   {
     value: "40%",
@@ -337,16 +330,6 @@ export default function HomePage() {
                   {r.label}
                 </p>
                 <p className="mt-1 text-xs text-slate-400">{r.detail}</p>
-              </div>
-            ))}
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
-            {stats.map((s) => (
-              <div key={s.label} className="text-center">
-                <p className="text-2xl font-bold text-navy">{s.value}</p>
-                <p className="mt-1 text-xs text-slate-500 uppercase tracking-wider">
-                  {s.label}
-                </p>
               </div>
             ))}
           </div>

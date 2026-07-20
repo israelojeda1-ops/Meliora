@@ -15,13 +15,6 @@ const sectores = [
   "Minería",
 ];
 
-const stats = [
-  { value: "12+", label: "Años en finanzas corporativas" },
-  { value: "7+", label: "Años en cargos de liderazgo" },
-  { value: "5", label: "Sectores con experiencia directa" },
-  { value: "IFRS", label: "Reporting internacional" },
-];
-
 const logros = [
   {
     value: "40%",
@@ -167,21 +160,6 @@ export default function NosotrosPage() {
                 </div>
               </div>
             </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="py-16 bg-slate-50">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-8">
-            {stats.map((s) => (
-              <div key={s.label} className="text-center">
-                <p className="text-3xl font-bold text-navy">{s.value}</p>
-                <p className="mt-1 text-xs text-slate-500 uppercase tracking-wider">
-                  {s.label}
-                </p>
-              </div>
-            ))}
           </div>
         </div>
       </section>

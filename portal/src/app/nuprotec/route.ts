@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { decrypt, SESSION_COOKIE } from "@/lib/session";
 import { getClient } from "@/lib/clients";
+import { buildRegenerateWidget } from "@/lib/regenerate-widget";
 
 export async function GET(req: NextRequest) {
   const client = getClient("nuprotec");
@@ -39,7 +40,16 @@ export async function GET(req: NextRequest) {
     });
   }
 
-  return new Response(upstream.body, {
+  let html = await upstream.text();
+
+  if (client.repo.workflowFile) {
+    const widget = buildRegenerateWidget(`/${client.slug}`);
+    html = html.includes("</body>")
+      ? html.replace("</body>", `${widget}</body>`)
+      : `${html}${widget}`;
+  }
+
+  return new Response(html, {
     status: 200,
     headers: {
       "Content-Type": "text/html; charset=utf-8",
