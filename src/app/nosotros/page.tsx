@@ -167,16 +167,9 @@ export default function NosotrosPage() {
       <section className="py-20 sm:py-24 bg-white">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-2xl mx-auto mb-16">
-            <p className="text-emerald font-semibold text-sm tracking-wide uppercase mb-4">
-              Resultados
-            </p>
             <h2 className="text-2xl sm:text-3xl font-bold text-navy">
-              Logros como líder de finanzas
+              Resultados
             </h2>
-            <p className="mt-4 text-sm text-slate-500">
-              Resultados obtenidos en posiciones de liderazgo en la industria,
-              antes de fundar Meliora.
-            </p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
             {logros.map((l) => (
