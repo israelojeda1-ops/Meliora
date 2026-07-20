@@ -105,6 +105,52 @@ ingresosCaja.reduce((acc, ing, i) => {
   return s;
 }, 18);
 
+/* Márgenes por producto (acumulado 12m, MM CLP) */
+const productos = [
+  { nombre: "Línea Premium A", categoria: "Retail", ventas: 96.4, costo: 52.1 },
+  { nombre: "Kit Instalación Pro", categoria: "Proyectos", ventas: 84.2, costo: 55.6 },
+  { nombre: "Línea Estándar B", categoria: "Retail", ventas: 71.8, costo: 46.7 },
+  { nombre: "Servicio Mantención", categoria: "Servicios", ventas: 58.3, costo: 21.4 },
+  { nombre: "Accesorios varios", categoria: "Retail", ventas: 41.6, costo: 30.9 },
+  { nombre: "Kit Obra Menor", categoria: "Proyectos", ventas: 38.9, costo: 27.3 },
+  { nombre: "Línea Económica C", categoria: "Retail", ventas: 33.5, costo: 27.8 },
+  { nombre: "Servicio Post-Venta", categoria: "Servicios", ventas: 22.1, costo: 10.2 },
+].map((p) => ({
+  ...p,
+  margen: p.ventas - p.costo,
+  margenPct: ((p.ventas - p.costo) / p.ventas) * 100,
+}));
+
+/* Estado de Resultados por Función · estilo IFRS (IAS 1), comparativo interanual */
+const pnlIfrs: { label: string; actual: number | null; anterior: number | null; kind: "line" | "subtotal" | "total" }[] = [
+  { label: "Ingresos de actividades ordinarias", actual: 595.0, anterior: 512.4, kind: "line" },
+  { label: "Costo de ventas", actual: -368.1, anterior: -322.8, kind: "line" },
+  { label: "Ganancia bruta", actual: 226.9, anterior: 189.6, kind: "subtotal" },
+  { label: "Otros ingresos, por función", actual: 6.2, anterior: 4.8, kind: "line" },
+  { label: "Costos de distribución", actual: -41.3, anterior: -35.1, kind: "line" },
+  { label: "Gastos de administración", actual: -98.7, anterior: -91.2, kind: "line" },
+  { label: "Otros gastos, por función", actual: -12.4, anterior: -9.6, kind: "line" },
+  { label: "Otras ganancias (pérdidas)", actual: 1.8, anterior: -0.9, kind: "line" },
+  { label: "Ganancias de actividades operacionales", actual: 82.5, anterior: 57.6, kind: "subtotal" },
+  { label: "Ingresos financieros", actual: 3.1, anterior: 2.4, kind: "line" },
+  { label: "Costos financieros", actual: -14.6, anterior: -13.8, kind: "line" },
+  { label: "Ganancia antes de impuestos", actual: 71.0, anterior: 46.2, kind: "subtotal" },
+  { label: "Gasto por impuestos a las ganancias", actual: -19.2, anterior: -12.5, kind: "line" },
+  { label: "Ganancia del período", actual: 51.8, anterior: 33.7, kind: "total" },
+];
+
+/* Hoja de stock */
+const stock = [
+  { sku: "OSM-3111", nombre: "Wood Wax Finish Transparente 2,5L", categoria: "Línea Premium A", unidades: 340, costoUnit: 0.0838, dias: 46, estado: "good" as const },
+  { sku: "KEI-2205", nombre: "Sellante Elastomérico 600ml", categoria: "Kit Instalación Pro", unidades: 128, costoUnit: 0.0412, dias: 18, estado: "warning" as const },
+  { sku: "AKE-1090", nombre: "Adhesivo Estructural 5kg", categoria: "Línea Estándar B", unidades: 0, costoUnit: 0.1560, dias: 0, estado: "critical" as const },
+  { sku: "ESC-4471", nombre: "Membrana Impermeabilizante", categoria: "Kit Obra Menor", unidades: 612, costoUnit: 0.0290, dias: 88, estado: "good" as const },
+  { sku: "OSM-3118", nombre: "Barniz Marino Transparente 1L", categoria: "Línea Premium A", unidades: 54, costoUnit: 0.0650, dias: 12, estado: "warning" as const },
+  { sku: "KEI-2210", nombre: "Espuma de Poliuretano 750ml", categoria: "Accesorios varios", unidades: 289, costoUnit: 0.0185, dias: 61, estado: "good" as const },
+  { sku: "AKE-1095", nombre: "Mortero Autonivelante 25kg", categoria: "Línea Económica C", unidades: 22, costoUnit: 0.0210, dias: 8, estado: "critical" as const },
+].map((s) => ({ ...s, valor: s.unidades * s.costoUnit }));
+
+
 /* ────────────────────────────────────────────────────────────────────────
    Primitivos de UI
    ──────────────────────────────────────────────────────────────────────── */
@@ -496,7 +542,17 @@ function Waterfall() {
 /* ────────────────────────────────────────────────────────────────────────
    Pestañas
    ──────────────────────────────────────────────────────────────────────── */
-const TABS = ["Resumen", "Ventas", "Compras", "Flujo de Caja", "Cobranza", "Estado de Resultados"] as const;
+const TABS = [
+  "Resumen",
+  "Ventas",
+  "Compras",
+  "Flujo de Caja",
+  "Cobranza",
+  "Estado de Resultados",
+  "Márgenes por Producto",
+  "P&L IFRS",
+  "Stock",
+] as const;
 type Tab = (typeof TABS)[number];
 
 export default function DemoDashboard() {
@@ -508,6 +564,15 @@ export default function DemoDashboard() {
   const ventaPrev = ventas[ventas.length - 2];
   const flujoNetoMes = ingresosCaja[ingresosCaja.length - 1] - egresosCaja[egresosCaja.length - 1];
   const saldoActual = saldoCaja[saldoCaja.length - 1];
+
+  const margenPromedio = productos.reduce((a, p) => a + p.margenPct, 0) / productos.length;
+  const mejorProducto = [...productos].sort((a, b) => b.margenPct - a.margenPct)[0];
+  const peorProducto = [...productos].sort((a, b) => a.margenPct - b.margenPct)[0];
+
+  const valorInventario = stock.reduce((a, s) => a + s.valor, 0);
+  const skuConCobertura = stock.filter((s) => s.estado !== "critical");
+  const coberturaPromedio = skuConCobertura.reduce((a, s) => a + s.dias, 0) / skuConCobertura.length;
+  const skuMayorValor = [...stock].sort((a, b) => b.valor - a.valor)[0];
 
   return (
     <div>
@@ -747,6 +812,123 @@ export default function DemoDashboard() {
                   </tbody>
                 </table>
               </div>
+            </Card>
+          </div>
+        )}
+
+        {tab === "Márgenes por Producto" && (
+          <div className="space-y-6">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+              <StatTile label="Margen promedio" value={pct(margenPromedio)} />
+              <StatTile label="Producto más rentable" value={mejorProducto.nombre} delta={pct(mejorProducto.margenPct)} deltaGood />
+              <StatTile label="Producto menos rentable" value={peorProducto.nombre} delta={pct(peorProducto.margenPct)} deltaGood={false} />
+              <StatTile label="SKUs con margen bajo 25%" value={String(productos.filter((p) => p.margenPct < 25).length)} />
+            </div>
+            <Card title="Margen por producto" subtitle="Acumulado 12 meses · ordenado por margen %">
+              <HBarChart
+                items={[...productos].sort((a, b) => b.margenPct - a.margenPct).map((p) => ({ name: p.nombre, monto: p.margenPct }))}
+                color={C.green}
+                fmt={(n) => pct(n)}
+              />
+            </Card>
+            <Card title="Detalle por producto" subtitle="Acumulado 12 meses (MM CLP)">
+              <Table
+                cols={["Producto", "Categoría", "Ventas", "Costo", "Margen", "Margen %"]}
+                align={["left", "left", "right", "right", "right", "right"]}
+                rows={[...productos]
+                  .sort((a, b) => b.margen - a.margen)
+                  .map((p) => [
+                    p.nombre,
+                    p.categoria,
+                    mm(p.ventas, 1),
+                    mm(p.costo, 1),
+                    mm(p.margen, 1),
+                    <span key={p.nombre} style={{ color: p.margenPct >= 30 ? C.goodText : p.margenPct >= 20 ? C.ink2 : C.critical }} className="font-semibold">
+                      {pct(p.margenPct)}
+                    </span>,
+                  ])}
+              />
+            </Card>
+          </div>
+        )}
+
+        {tab === "P&L IFRS" && (
+          <div className="space-y-6">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+              <StatTile label="Ingresos ordinarios" value={mm(595.0)} delta="+16.1% vs año anterior" deltaGood />
+              <StatTile label="Ganancia bruta" value={mm(226.9)} delta={pct((226.9 / 595.0) * 100) + " margen"} deltaGood />
+              <StatTile label="Resultado operacional" value={mm(82.5)} delta="+43.2% vs año anterior" deltaGood />
+              <StatTile label="Ganancia del período" value={mm(51.8)} delta="+53.7% vs año anterior" deltaGood />
+            </div>
+            <Card
+              title="Estado de Resultados por Función"
+              subtitle="Presentación IFRS (NIC 1) · Ejercicio terminado el 31 de julio de 2026, comparativo (cifras en MM CLP)"
+            >
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="text-left text-[11px] uppercase tracking-wide text-slate-400 border-b border-slate-200">
+                      <th className="py-2 pr-4 font-semibold">Concepto</th>
+                      <th className="py-2 px-4 font-semibold text-right">Jul 2026</th>
+                      <th className="py-2 pl-4 font-semibold text-right">Jul 2025</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {pnlIfrs.map((r, i) => {
+                      const emphasize = r.kind === "subtotal" || r.kind === "total";
+                      return (
+                        <tr
+                          key={i}
+                          className={`border-b border-slate-100 last:border-0 ${
+                            r.kind === "total" ? "bg-navy/5" : emphasize ? "bg-slate-50" : ""
+                          }`}
+                        >
+                          <td className={`py-2.5 pr-4 ${emphasize ? "font-bold text-navy" : "text-slate-600"}`}>{r.label}</td>
+                          <td className={`py-2.5 px-4 text-right tabular-nums ${emphasize ? "font-bold text-navy" : "text-slate-700"}`}>
+                            {r.actual!.toLocaleString("es-CL", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}
+                          </td>
+                          <td className="py-2.5 pl-4 text-right tabular-nums text-slate-400">
+                            {r.anterior!.toLocaleString("es-CL", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              <p className="text-[11px] text-slate-400 mt-4 leading-relaxed">
+                Formato ilustrativo bajo Normas Internacionales de Información Financiera (NIIF/IFRS), método de función de gasto (NIC 1.99).
+                Meliora Advisory elabora los Estados Financieros bajo esta u otra normativa según lo que aplique a tu empresa.
+              </p>
+            </Card>
+          </div>
+        )}
+
+        {tab === "Stock" && (
+          <div className="space-y-6">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+              <StatTile label="Valor total inventario" value={mm(valorInventario, 1)} />
+              <StatTile label="SKUs en quiebre" value={String(stock.filter((s) => s.estado === "critical").length)} delta="Requieren reposición" deltaGood={false} />
+              <StatTile label="Cobertura promedio" value={days(coberturaPromedio)} />
+              <StatTile label="SKU de mayor valor" value={skuMayorValor.sku} delta={mm(skuMayorValor.valor, 1)} deltaGood />
+            </div>
+            <Card title="Stock por SKU" subtitle="Unidades, valorización y cobertura estimada">
+              <Table
+                cols={["SKU", "Producto", "Categoría", "Unidades", "Valor", "Cobertura", "Estado"]}
+                align={["left", "left", "left", "right", "right", "right", "left"]}
+                rows={stock.map((s) => [
+                  s.sku,
+                  s.nombre,
+                  s.categoria,
+                  s.unidades.toLocaleString("es-CL"),
+                  mm(s.valor, 1),
+                  s.estado === "critical" ? "—" : days(s.dias),
+                  <StatusBadge key={s.sku} status={s.estado} />,
+                ])}
+              />
+            </Card>
+            <Card title="Valor de inventario por producto" subtitle="MM CLP">
+              <HBarChart items={[...stock].sort((a, b) => b.valor - a.valor).map((s) => ({ name: s.nombre, monto: s.valor }))} color={C.blue} fmt={(n) => mm(n, 1)} />
             </Card>
           </div>
         )}
