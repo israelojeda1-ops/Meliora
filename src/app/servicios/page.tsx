@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { ContabilidadFlowDiagram } from "@/components/ContabilidadFlowDiagram";
 
 export const metadata: Metadata = {
   title: "Servicios — Meliora Advisory",
@@ -146,6 +147,33 @@ export default function ServiciosPage() {
                 </div>
               </div>
             </div>
+
+            {s.id === "contabilidad" && (
+              <div className="mt-16 sm:mt-20">
+                <div className="text-center mb-8">
+                  <span className="inline-block text-xs font-semibold text-emerald uppercase tracking-wider mb-2">
+                    Meliora Advisory
+                  </span>
+                  <h3 className="text-xl sm:text-2xl font-bold text-navy">
+                    ¿Qué incluye tu contabilidad?
+                  </h3>
+                  <p className="mt-2 text-sm text-slate-500 max-w-xl mx-auto">
+                    Del Libro de Compras y Ventas del SII al informe ejecutivo
+                    — un solo flujo, siempre al día.
+                  </p>
+                </div>
+
+                <div className="relative -mx-4 sm:mx-0 py-8 sm:py-10">
+                  <div className="overflow-x-auto sm:overflow-visible px-4 sm:px-0">
+                    <ContabilidadFlowDiagram className="h-auto w-[950px] sm:w-full" />
+                  </div>
+                  <div
+                    aria-hidden="true"
+                    className="pointer-events-none absolute top-0 right-0 h-full w-14 bg-gradient-to-l from-white to-transparent sm:hidden"
+                  />
+                </div>
+              </div>
+            )}
           </div>
         </section>
       ))}
