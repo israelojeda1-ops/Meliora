@@ -119,6 +119,17 @@ export default function PlanesPage() {
             números actualizados en cada cierre mensual. El precio final se
             ajusta según el sistema que uses y el volumen de movimientos.
           </p>
+          <a
+            href="https://portal.melioraadvisory.cl/demo"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-emerald hover:text-emerald-light transition-colors"
+          >
+            Ver demo del portal de cliente
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+            </svg>
+          </a>
         </div>
       </section>
 
@@ -261,12 +272,22 @@ export default function PlanesPage() {
             Agenda una reunión gratuita. Revisamos tu operación y te proponemos
             el plan que mejor se ajusta a tu empresa.
           </p>
-          <Link
-            href="/contacto"
-            className="inline-flex items-center justify-center rounded-lg bg-emerald px-8 py-3.5 text-base font-semibold text-white hover:bg-emerald-dark transition-colors"
-          >
-            Agendar reunión gratuita
-          </Link>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <Link
+              href="/contacto"
+              className="inline-flex items-center justify-center rounded-lg bg-emerald px-8 py-3.5 text-base font-semibold text-white hover:bg-emerald-dark transition-colors"
+            >
+              Agendar reunión gratuita
+            </Link>
+            <a
+              href="https://portal.melioraadvisory.cl/demo"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center rounded-lg border border-white/30 px-8 py-3.5 text-base font-semibold text-white hover:bg-white/10 transition-colors"
+            >
+              Ver demo del portal
+            </a>
+          </div>
         </div>
       </section>
     </>
