@@ -13,17 +13,17 @@ const NAVY = "#1B2A4A";
 const EMERALD = "#0E7C66";
 
 const boxes: Box[] = [
-  { x: 10, y: 78, w: 160, h: 68, num: "01 · SII", title: "Libro Compras", caption: "" },
-  { x: 10, y: 186, w: 160, h: 68, num: "02 · SII", title: "Libro Ventas", caption: "" },
-  { x: 236, y: 132, w: 160, h: 68, num: "03", title: "Libro Diario", caption: "Conciliado y validado" },
-  { x: 462, y: 132, w: 160, h: 68, num: "04", title: "Libro Mayor", caption: "Saldos por cuenta" },
-  { x: 688, y: 132, w: 160, h: 68, num: "05", title: "Balance 8 Columnas", caption: "Ajustes de cierre" },
+  { x: 10, y: 8, w: 160, h: 68, num: "00", title: "Plan de Cuentas", caption: "Estructura contable base" },
+  { x: 10, y: 112, w: 160, h: 68, num: "01 · SII", title: "Libro Compras", caption: "" },
+  { x: 10, y: 216, w: 160, h: 68, num: "02 · SII", title: "Libro Ventas", caption: "" },
+  { x: 236, y: 112, w: 160, h: 68, num: "03", title: "Libro Diario", caption: "Conciliado y validado" },
+  { x: 462, y: 112, w: 160, h: 68, num: "04", title: "Libro Mayor", caption: "Saldos por cuenta" },
+  { x: 688, y: 112, w: 160, h: 68, num: "05", title: "Balance 8 Columnas", caption: "Ajustes de cierre" },
   { x: 950, y: 8, w: 190, h: 68, num: "06", title: "Balance General", caption: "Activos · Pasivos · Patrimonio", variant: "output" },
-  { x: 950, y: 108, w: 190, h: 68, num: "07", title: "Estado de Resultados", caption: "Ingresos · Costos · EBITDA", variant: "output" },
-  { x: 950, y: 208, w: 190, h: 68, num: "08", title: "Flujo de Caja", caption: "Operativo · Inversión · Financ.", variant: "output" },
-  { x: 688, y: 330, w: 160, h: 68, num: "09", title: "12+ Ratios", caption: "Liquidez · Margen · EBITDA" },
-  { x: 900, y: 330, w: 190, h: 68, num: "10 · PORTAL", title: "Dashboard Web", caption: "Actualizado cada cierre", variant: "portal" },
-  { x: 1142, y: 330, w: 160, h: 68, num: "11", title: "Informe PDF", caption: "Portal de cliente" },
+  { x: 950, y: 112, w: 190, h: 68, num: "07", title: "Estado de Resultados", caption: "Ingresos · Costos · EBITDA", variant: "output" },
+  { x: 950, y: 216, w: 190, h: 68, num: "08", title: "Flujo de Caja", caption: "Operativo · Inversión · Financ.", variant: "output" },
+  { x: 1242, y: 112, w: 190, h: 68, num: "09 · PORTAL", title: "Dashboard Web", caption: "Actualizado cada cierre", variant: "portal" },
+  { x: 1498, y: 112, w: 160, h: 68, num: "10", title: "Informe PDF", caption: "Portal de cliente" },
 ];
 
 function center(b: Box) {
@@ -60,6 +60,7 @@ function elbowPath(x1: number, y1: number, x2: number, y2: number, trunkX: numbe
 const b = Object.fromEntries(boxes.map((box) => [box.num.replace(/\D/g, "").padStart(2, "0").slice(0, 2), box])) as Record<string, Box>;
 
 const connections: [Box, Box][] = [
+  [b["00"], b["03"]],
   [b["01"], b["03"]],
   [b["02"], b["03"]],
   [b["03"], b["04"]],
@@ -71,16 +72,15 @@ const connections: [Box, Box][] = [
   [b["07"], b["09"]],
   [b["08"], b["09"]],
   [b["09"], b["10"]],
-  [b["10"], b["11"]],
 ];
 
 export function ContabilidadFlowDiagram({ className = "" }: { className?: string }) {
   return (
     <svg
-      viewBox="0 0 1330 420"
+      viewBox="0 0 1670 300"
       className={className}
       role="img"
-      aria-label="Flujo del proceso contable Meliora: del Libro de Compras y Ventas del SII al informe ejecutivo en el portal de cliente."
+      aria-label="Flujo del proceso contable Meliora: desde el Plan de Cuentas y los Libros de Compras y Ventas del SII hasta el dashboard e informe ejecutivo del portal de cliente."
     >
       <defs>
         <marker
