@@ -38,6 +38,14 @@ export default async function LoginPage({
             </div>
           )}
         </div>
+        <div className="text-center mt-6">
+          <Link
+            href="/demo"
+            className="text-sm font-semibold text-emerald hover:text-emerald-dark transition-colors"
+          >
+            ¿Aún no eres cliente? Ver demo del portal →
+          </Link>
+        </div>
       </div>
     </div>
   );

@@ -36,6 +36,27 @@ function leftMid(b: Box) {
   return { x: b.x, y: b.y + b.h / 2 };
 }
 
+const CORNER = 16;
+
+/** Smooth orthogonal connector: horizontal out, rounded corner, vertical, rounded corner, horizontal in. */
+function elbowPath(x1: number, y1: number, x2: number, y2: number, trunkX: number) {
+  const dirY = y2 > y1 ? 1 : y2 < y1 ? -1 : 0;
+  if (dirY === 0) {
+    return `M ${x1} ${y1} L ${x2} ${y2}`;
+  }
+  const dirX1 = trunkX >= x1 ? 1 : -1;
+  const dirX2 = x2 >= trunkX ? 1 : -1;
+  const r = Math.min(CORNER, Math.abs(y2 - y1) / 2, Math.abs(trunkX - x1), Math.abs(x2 - trunkX));
+  return [
+    `M ${x1} ${y1}`,
+    `H ${trunkX - r * dirX1}`,
+    `Q ${trunkX} ${y1} ${trunkX} ${y1 + r * dirY}`,
+    `V ${y2 - r * dirY}`,
+    `Q ${trunkX} ${y2} ${trunkX + r * dirX2} ${y2}`,
+    `H ${x2}`,
+  ].join(" ");
+}
+
 const b = Object.fromEntries(boxes.map((box) => [box.num.replace(/\D/g, "").padStart(2, "0").slice(0, 2), box])) as Record<string, Box>;
 
 const connections: [Box, Box][] = [
@@ -62,8 +83,15 @@ export function ContabilidadFlowDiagram({ className = "" }: { className?: string
       aria-label="Flujo del proceso contable Meliora: del Libro de Compras y Ventas del SII al informe ejecutivo en el portal de cliente."
     >
       <defs>
-        <marker id="arrowhead" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
-          <path d="M0,0 L8,4 L0,8 Z" fill="#94A3B8" />
+        <marker
+          id="arrowhead"
+          markerWidth="10"
+          markerHeight="10"
+          refX="8.5"
+          refY="5"
+          orient="auto-start-reverse"
+        >
+          <path d="M0.5,1 L9,5 L0.5,9 L2.8,5 Z" fill="#7C8AA0" />
         </marker>
       </defs>
 
@@ -72,14 +100,14 @@ export function ContabilidadFlowDiagram({ className = "" }: { className?: string
         const p1 = forward ? rightMid(from) : leftMid(from);
         const p2 = forward ? leftMid(to) : rightMid(to);
         const midX = (p1.x + p2.x) / 2;
-        const endX = forward ? p2.x - 6 : p2.x + 6;
         return (
           <path
             key={i}
-            d={`M ${p1.x} ${p1.y} C ${midX} ${p1.y}, ${midX} ${p2.y}, ${endX} ${p2.y}`}
+            d={elbowPath(p1.x, p1.y, p2.x, p2.y, midX)}
             fill="none"
-            stroke="#CBD5E1"
-            strokeWidth={1.5}
+            stroke="#B7C0CE"
+            strokeWidth={2}
+            strokeLinecap="round"
             markerEnd="url(#arrowhead)"
           />
         );
