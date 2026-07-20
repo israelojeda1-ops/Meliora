@@ -4,13 +4,13 @@ import Link from "next/link";
 export const metadata: Metadata = {
   title: "Planes y Precios — Meliora Advisory",
   description:
-    "Planes mensuales de asesoría financiera y contable para PyMEs en Chile. Desde 5 UF. Todos incluyen portal de cliente.",
+    "Planes mensuales de asesoría financiera y contable para PyMEs en Chile. Desde 6 UF. Todos incluyen portal de cliente.",
 };
 
 const planes = [
   {
     name: "Contable — Sistema Meliora",
-    price: "Desde 5 UF",
+    price: "Desde 6 UF",
     period: "/mes",
     description:
       "Hasta 100 movimientos al mes, en nuestro sistema estandarizado — la opción más eficiente.",
@@ -25,7 +25,7 @@ const planes = [
   },
   {
     name: "Contable — Sistema del cliente",
-    price: "Desde 8 UF",
+    price: "Desde 9 UF",
     period: "/mes",
     description:
       "Hasta 100 movimientos al mes, trabajando dentro del ERP que ya usas.",
@@ -40,7 +40,7 @@ const planes = [
   },
   {
     name: "Contable + Remuneraciones — Sistema Meliora",
-    price: "Desde 9 UF",
+    price: "Desde 10 UF",
     period: "/mes",
     description: "Hasta 100 movimientos y 15 trabajadores, en nuestro sistema.",
     features: [
@@ -55,7 +55,7 @@ const planes = [
   },
   {
     name: "Contable + Remuneraciones — Sistema del cliente",
-    price: "Desde 13 UF",
+    price: "Desde 14 UF",
     period: "/mes",
     description: "Hasta 100 movimientos y 15 trabajadores, en tu propio ERP.",
     features: [
@@ -70,7 +70,7 @@ const planes = [
   },
   {
     name: "Finanzas",
-    price: "Desde 18 UF",
+    price: "Desde 19 UF",
     period: "/mes",
     description:
       "Asesoría gerencial y revisión de los informes que tu empresa ya prepara: KPIs de margen, cobranza y flujo de caja.",
@@ -86,7 +86,7 @@ const planes = [
   },
   {
     name: "CFO Externo",
-    price: "Desde 30 UF",
+    price: "Desde 31 UF",
     period: "/mes",
     description:
       "Elaboración y emisión completa de tus informes gerenciales — no los revisamos, los construimos desde cero.",
