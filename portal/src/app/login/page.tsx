@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Logo } from "@/components/Logo";
 import { LoginForm } from "@/components/LoginForm";
 import { getClient } from "@/lib/clients";
@@ -24,9 +25,17 @@ export default async function LoginPage({
           {client ? (
             <LoginForm clientSlug={client.slug} clientName={client.name} />
           ) : (
-            <p className="text-sm text-red-600">
-              Cliente no encontrado. Verifica el link de acceso.
-            </p>
+            <div>
+              <p className="text-sm text-red-600 mb-4">
+                Cliente no encontrado. Verifica el link de acceso.
+              </p>
+              <Link
+                href="/login"
+                className="text-sm font-semibold text-emerald hover:text-emerald-dark transition-colors"
+              >
+                ← Volver al inicio de sesión
+              </Link>
+            </div>
           )}
         </div>
       </div>
