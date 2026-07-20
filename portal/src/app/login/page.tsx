@@ -9,8 +9,9 @@ export default async function LoginPage({
   searchParams: Promise<{ client?: string }>;
 }) {
   const { client: clientParam } = await searchParams;
-  const clientSlug = clientParam ?? "nuprotec";
-  const client = getClient(clientSlug);
+  // Sin parámetro de cliente no revelamos ningún nombre de cliente:
+  // solo se muestra el formulario cuando el link de acceso trae un slug válido.
+  const client = clientParam ? getClient(clientParam) : undefined;
 
   return (
     <div className="flex-1 flex items-center justify-center px-4 py-16">
@@ -24,17 +25,23 @@ export default async function LoginPage({
           </h1>
           {client ? (
             <LoginForm clientSlug={client.slug} clientName={client.name} />
-          ) : (
+          ) : clientParam ? (
             <div>
               <p className="text-sm text-red-600 mb-4">
                 Cliente no encontrado. Verifica el link de acceso.
               </p>
-              <Link
-                href="/login"
-                className="text-sm font-semibold text-emerald hover:text-emerald-dark transition-colors"
-              >
-                ← Volver al inicio de sesión
-              </Link>
+              <p className="text-sm text-slate-500">
+                Usa el enlace privado que te compartió Meliora Advisory para
+                ingresar a tu portal.
+              </p>
+            </div>
+          ) : (
+            <div>
+              <p className="text-sm text-slate-600 leading-relaxed">
+                Ingresa con el enlace de acceso privado que te compartió Meliora
+                Advisory. Cada cliente tiene su propio portal con sus reportes
+                actualizados en cada cierre mensual.
+              </p>
             </div>
           )}
         </div>

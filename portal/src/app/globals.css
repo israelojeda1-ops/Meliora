@@ -24,3 +24,12 @@ body {
   font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
   color: var(--color-slate-800);
 }
+
+/* Ocultar scrollbar horizontal en la barra de pestañas del demo */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
