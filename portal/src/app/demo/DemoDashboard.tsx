@@ -141,13 +141,13 @@ const pnlIfrs: { label: string; actual: number | null; anterior: number | null; 
 
 /* Hoja de stock */
 const stock = [
-  { sku: "OSM-3111", nombre: "Wood Wax Finish Transparente 2,5L", categoria: "Línea Premium A", unidades: 340, costoUnit: 0.0838, dias: 46, estado: "good" as const },
-  { sku: "KEI-2205", nombre: "Sellante Elastomérico 600ml", categoria: "Kit Instalación Pro", unidades: 128, costoUnit: 0.0412, dias: 18, estado: "warning" as const },
-  { sku: "AKE-1090", nombre: "Adhesivo Estructural 5kg", categoria: "Línea Estándar B", unidades: 0, costoUnit: 0.1560, dias: 0, estado: "critical" as const },
-  { sku: "ESC-4471", nombre: "Membrana Impermeabilizante", categoria: "Kit Obra Menor", unidades: 612, costoUnit: 0.0290, dias: 88, estado: "good" as const },
-  { sku: "OSM-3118", nombre: "Barniz Marino Transparente 1L", categoria: "Línea Premium A", unidades: 54, costoUnit: 0.0650, dias: 12, estado: "warning" as const },
-  { sku: "KEI-2210", nombre: "Espuma de Poliuretano 750ml", categoria: "Accesorios varios", unidades: 289, costoUnit: 0.0185, dias: 61, estado: "good" as const },
-  { sku: "AKE-1095", nombre: "Mortero Autonivelante 25kg", categoria: "Línea Económica C", unidades: 22, costoUnit: 0.0210, dias: 8, estado: "critical" as const },
+  { sku: "A-1001", nombre: "Producto A · formato grande", categoria: "Línea Premium A", unidades: 340, costoUnit: 0.0838, dias: 46, estado: "good" as const },
+  { sku: "B-2002", nombre: "Componente B · formato chico", categoria: "Kit Instalación Pro", unidades: 128, costoUnit: 0.0412, dias: 18, estado: "warning" as const },
+  { sku: "C-3003", nombre: "Insumo C · unidad estándar", categoria: "Línea Estándar B", unidades: 0, costoUnit: 0.1560, dias: 0, estado: "critical" as const },
+  { sku: "D-4004", nombre: "Material D · rollo", categoria: "Kit Obra Menor", unidades: 612, costoUnit: 0.0290, dias: 88, estado: "good" as const },
+  { sku: "A-1002", nombre: "Producto A · formato mediano", categoria: "Línea Premium A", unidades: 54, costoUnit: 0.0650, dias: 12, estado: "warning" as const },
+  { sku: "E-5005", nombre: "Accesorio E · unidad", categoria: "Accesorios varios", unidades: 289, costoUnit: 0.0185, dias: 61, estado: "good" as const },
+  { sku: "F-6006", nombre: "Insumo F · saco", categoria: "Línea Económica C", unidades: 22, costoUnit: 0.0210, dias: 8, estado: "critical" as const },
 ].map((s) => ({ ...s, valor: s.unidades * s.costoUnit }));
 
 
