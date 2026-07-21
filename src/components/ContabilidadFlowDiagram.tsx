@@ -18,12 +18,13 @@ const boxes: Box[] = [
   { x: 10, y: 216, w: 160, h: 68, num: "02 · SII", title: "Libro Ventas", caption: "" },
   { x: 236, y: 112, w: 160, h: 68, num: "03", title: "Libro Diario", caption: "Conciliado y validado" },
   { x: 462, y: 112, w: 160, h: 68, num: "04", title: "Libro Mayor", caption: "Saldos por cuenta" },
-  { x: 688, y: 112, w: 160, h: 68, num: "05", title: "Balance 8 Columnas", caption: "Ajustes de cierre" },
-  { x: 950, y: 8, w: 190, h: 68, num: "06", title: "Balance General", caption: "Activos · Pasivos · Patrimonio", variant: "output" },
-  { x: 950, y: 112, w: 190, h: 68, num: "07", title: "Estado de Resultados", caption: "Ingresos · Costos · EBITDA", variant: "output" },
-  { x: 950, y: 216, w: 190, h: 68, num: "08", title: "Flujo de Caja", caption: "Operativo · Inversión · Financ.", variant: "output" },
-  { x: 1242, y: 112, w: 190, h: 68, num: "09 · PORTAL", title: "Dashboard Web", caption: "Actualizado cada cierre", variant: "portal" },
-  { x: 1498, y: 112, w: 160, h: 68, num: "10", title: "Informe PDF", caption: "Portal de cliente" },
+  { x: 462, y: 208, w: 160, h: 68, num: "05 · Banco", title: "Conciliación Bancaria", caption: "Cartola vs. libro mayor" },
+  { x: 688, y: 112, w: 160, h: 68, num: "06", title: "Balance 8 Columnas", caption: "Ajustes de cierre" },
+  { x: 950, y: 8, w: 190, h: 68, num: "07", title: "Balance General", caption: "Activos · Pasivos · Patrimonio", variant: "output" },
+  { x: 950, y: 112, w: 190, h: 68, num: "08", title: "Estado de Resultados", caption: "Ingresos · Costos · EBITDA", variant: "output" },
+  { x: 950, y: 216, w: 190, h: 68, num: "09", title: "Flujo de Caja", caption: "Operativo · Inversión · Financ.", variant: "output" },
+  { x: 1242, y: 112, w: 190, h: 68, num: "10 · PORTAL", title: "Dashboard Web", caption: "Actualizado cada cierre", variant: "portal" },
+  { x: 1498, y: 112, w: 160, h: 68, num: "11", title: "Informe PDF", caption: "Portal de cliente" },
 ];
 
 function center(b: Box) {
@@ -64,14 +65,15 @@ const connections: [Box, Box][] = [
   [b["01"], b["03"]],
   [b["02"], b["03"]],
   [b["03"], b["04"]],
-  [b["04"], b["05"]],
+  [b["04"], b["06"]],
   [b["05"], b["06"]],
-  [b["05"], b["07"]],
-  [b["05"], b["08"]],
+  [b["06"], b["07"]],
+  [b["06"], b["08"]],
   [b["06"], b["09"]],
-  [b["07"], b["09"]],
-  [b["08"], b["09"]],
+  [b["07"], b["10"]],
+  [b["08"], b["10"]],
   [b["09"], b["10"]],
+  [b["10"], b["11"]],
 ];
 
 export function ContabilidadFlowDiagram({ className = "" }: { className?: string }) {
@@ -80,7 +82,7 @@ export function ContabilidadFlowDiagram({ className = "" }: { className?: string
       viewBox="0 0 1670 300"
       className={className}
       role="img"
-      aria-label="Flujo del proceso contable Meliora: desde el Plan de Cuentas y los Libros de Compras y Ventas del SII hasta el dashboard e informe ejecutivo del portal de cliente."
+      aria-label="Flujo del proceso contable Meliora: desde el Plan de Cuentas, los Libros de Compras y Ventas del SII y la conciliación bancaria hasta el dashboard e informe ejecutivo del portal de cliente."
     >
       <defs>
         <marker
