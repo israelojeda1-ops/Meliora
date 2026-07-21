@@ -119,6 +119,7 @@ export function ContabilidadFlowDiagram({ className = "" }: { className?: string
         const isPortal = box.variant === "portal";
         const isOutput = box.variant === "output";
         const c = center(box);
+        const tag = box.num.replace(/^[\d\s·]+/, "").trim();
         return (
           <g key={box.num}>
             <rect
@@ -131,16 +132,18 @@ export function ContabilidadFlowDiagram({ className = "" }: { className?: string
               stroke={isOutput ? EMERALD : isPortal ? NAVY : "#E2E8F0"}
               strokeWidth={isOutput ? 1.75 : 1}
             />
-            <text
-              x={box.x + 14}
-              y={box.y + 20}
-              fontSize={10}
-              fontWeight={700}
-              letterSpacing={0.5}
-              fill={isPortal ? EMERALD : "#94A3B8"}
-            >
-              {box.num}
-            </text>
+            {tag && (
+              <text
+                x={box.x + 14}
+                y={box.y + 20}
+                fontSize={10}
+                fontWeight={700}
+                letterSpacing={0.5}
+                fill={isPortal ? EMERALD : "#94A3B8"}
+              >
+                {tag}
+              </text>
+            )}
             <text
               x={c.x}
               y={box.caption ? c.y + 4 : c.y + 10}
