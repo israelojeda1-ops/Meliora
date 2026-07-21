@@ -139,6 +139,119 @@ const pnlIfrs: { label: string; actual: number | null; anterior: number | null; 
   { label: "Ganancia del período", actual: 51.8, anterior: 33.7, kind: "total" },
 ];
 
+/* Top variaciones de presupuesto (complementa la tabla de eerr) */
+const topVariaciones = [
+  { item: "Ventas — Línea Retail", varMonto: 12.4, tipo: "F" as const, explicacion: "Nuevo contrato con cliente ancla (Constructora Andes)", accion: "Mantener capacidad de despacho", responsable: "Gerente Comercial", estado: "Cerrado" },
+  { item: "Materia prima", varMonto: -8.6, tipo: "U" as const, explicacion: "Alza de precio de insumos +8% interanual", accion: "Negociar contrato de cobertura", responsable: "Abastecimiento", estado: "En curso" },
+  { item: "Ventas — Proyectos", varMonto: 6.1, tipo: "F" as const, explicacion: "Mayor demanda en obras menores", accion: "Reforzar dotación de instalación", responsable: "Jefe de Proyectos", estado: "Cerrado" },
+  { item: "Gastos de venta", varMonto: -4.3, tipo: "U" as const, explicacion: "Feria comercial no presupuestada", accion: "Evaluar retorno de la inversión", responsable: "Marketing", estado: "Revisión" },
+  { item: "Costo de mano de obra directa", varMonto: -3.1, tipo: "U" as const, explicacion: "Horas extra por peak de producción", accion: "Evaluar contratación adicional", responsable: "RR.HH.", estado: "En curso" },
+  { item: "Gastos de administración", varMonto: 2.8, tipo: "F" as const, explicacion: "Ahorro en servicios básicos", accion: "Documentar buenas prácticas", responsable: "Administración", estado: "Cerrado" },
+  { item: "Gastos financieros", varMonto: 1.2, tipo: "F" as const, explicacion: "Refinanciamiento de deuda a mejor tasa", accion: "-", responsable: "Finanzas", estado: "Cerrado" },
+];
+
+/* Balance General (cifras balanceadas, MM CLP) */
+const activos = [
+  { label: "Efectivo y equivalentes", monto: 113.0, kind: "line" as const },
+  { label: "Cuentas por cobrar", monto: 50.6, kind: "line" as const },
+  { label: "Existencias", monto: 60.8, kind: "line" as const },
+  { label: "Otros activos corrientes", monto: 8.0, kind: "line" as const },
+  { label: "Total activos corrientes", monto: 232.4, kind: "subtotal" as const },
+  { label: "Propiedad, planta y equipo", monto: 180.0, kind: "line" as const },
+  { label: "Intangibles", monto: 25.0, kind: "line" as const },
+  { label: "Otros activos no corrientes", monto: 12.6, kind: "line" as const },
+  { label: "Total activos no corrientes", monto: 217.6, kind: "subtotal" as const },
+  { label: "TOTAL ACTIVOS", monto: 450.0, kind: "total" as const },
+];
+const pasivosPatrimonio = [
+  { label: "Cuentas por pagar", monto: 68.0, kind: "line" as const },
+  { label: "Deuda de corto plazo", monto: 20.0, kind: "line" as const },
+  { label: "Impuestos por pagar", monto: 9.5, kind: "line" as const },
+  { label: "Provisiones y otros pasivos corrientes", monto: 15.0, kind: "line" as const },
+  { label: "Total pasivos corrientes", monto: 112.5, kind: "subtotal" as const },
+  { label: "Deuda de largo plazo", monto: 85.0, kind: "line" as const },
+  { label: "Otros pasivos no corrientes", monto: 12.5, kind: "line" as const },
+  { label: "Total pasivos no corrientes", monto: 97.5, kind: "subtotal" as const },
+  { label: "Total pasivos", monto: 210.0, kind: "subtotal" as const },
+  { label: "Capital social", monto: 150.0, kind: "line" as const },
+  { label: "Reservas y otros resultados acumulados", monto: 38.2, kind: "line" as const },
+  { label: "Resultado del ejercicio", monto: 51.8, kind: "line" as const },
+  { label: "Total patrimonio", monto: 240.0, kind: "subtotal" as const },
+  { label: "TOTAL PASIVOS Y PATRIMONIO", monto: 450.0, kind: "total" as const },
+];
+
+/* Flujo de caja — método indirecto */
+const flujoIndirecto = [
+  { label: "Utilidad neta del ejercicio", monto: 51.8, kind: "line" as const },
+  { label: "(+) Depreciación y amortización", monto: 12.4, kind: "line" as const },
+  { label: "(−) Variación en cuentas por cobrar", monto: -8.2, kind: "line" as const },
+  { label: "(−) Variación en existencias", monto: -4.1, kind: "line" as const },
+  { label: "(+) Variación en cuentas por pagar", monto: 6.5, kind: "line" as const },
+  { label: "Flujo operacional (OCF)", monto: 58.4, kind: "subtotal" as const },
+  { label: "(−) CAPEX — adquisición de activos fijos", monto: -22.0, kind: "line" as const },
+  { label: "Flujo de inversión (ICF)", monto: -22.0, kind: "subtotal" as const },
+  { label: "(−) Pago de deuda", monto: -6.0, kind: "line" as const },
+  { label: "(−) Pago de dividendos", monto: -15.0, kind: "line" as const },
+  { label: "Flujo de financiamiento (FCF)", monto: -21.0, kind: "subtotal" as const },
+  { label: "Variación neta de caja", monto: 15.4, kind: "subtotal" as const },
+  { label: "Caja al inicio del período", monto: 97.6, kind: "line" as const },
+  { label: "CAJA AL CIERRE DEL PERÍODO", monto: 113.0, kind: "total" as const },
+];
+
+/* Cuentas por pagar (AP aging) — espejo de Cobranza */
+const carteraPagar = [
+  { rango: "Por vencer (0–30 días)", monto: 32.6, status: "good" as const },
+  { rango: "31 – 60 días", monto: 18.4, status: "warning" as const },
+  { rango: "61 – 90 días", monto: 11.8, status: "serious" as const },
+  { rango: "Más de 90 días", monto: 5.2, status: "critical" as const },
+];
+const dpo = [48, 50, 47, 49, 51, 50, 49, 48, 50, 52, 51, 52];
+const proveedoresPago = [
+  { prov: "Importadora Química SA", monto: 18.2, prioridad: "P1" as const, motivo: "Insumo crítico — pagar primero" },
+  { prov: "Energía y Gas SpA", monto: 5.1, prioridad: "P1" as const, motivo: "Suministro — no se puede atrasar" },
+  { prov: "Insumos Industriales", monto: 14.5, prioridad: "P2" as const, motivo: "2% descuento por pronto pago" },
+  { prov: "Transportes Rápidos Ltda", monto: 6.4, prioridad: "P2" as const, motivo: "Proveedor estratégico" },
+  { prov: "Servicios TI Cloud", monto: 3.2, prioridad: "P3" as const, motivo: "Condiciones flexibles" },
+];
+const PRIORIDAD_COLOR = { P1: C.critical, P2: C.warning, P3: C.good };
+
+/* CAPEX */
+const capex = [
+  { proyecto: "Ampliación línea productiva", categoria: "Equipamiento", presupuesto: 45.0, ejecutado: 38.5, estado: "En curso" as const },
+  { proyecto: "Actualización ERP", categoria: "TI", presupuesto: 12.0, ejecutado: 12.0, estado: "Completo" as const },
+  { proyecto: "Paneles solares — planta", categoria: "Infraestructura", presupuesto: 18.0, ejecutado: 16.8, estado: "Completo" as const },
+  { proyecto: "Renovación flota de reparto", categoria: "Equipamiento", presupuesto: 9.0, ejecutado: 4.2, estado: "Retrasado" as const },
+  { proyecto: "Laboratorio I+D", categoria: "I+D", presupuesto: 6.0, ejecutado: 3.6, estado: "En curso" as const },
+];
+const CAPEX_ESTADO_COLOR = { Completo: C.good, "En curso": C.warning, Retrasado: C.critical };
+
+/* Remuneraciones */
+const dotacion = [
+  { area: "Producción / Operaciones", hc: 48, variacion: 2 },
+  { area: "Comercial", hc: 12, variacion: 0 },
+  { area: "Logística", hc: 9, variacion: 1 },
+  { area: "Administración y Finanzas", hc: 8, variacion: 0 },
+  { area: "TI", hc: 4, variacion: 0 },
+  { area: "Gerencia", hc: 3, variacion: 0 },
+];
+const costoNomina = [
+  { name: "Sueldos brutos", monto: 42.8 },
+  { name: "Leyes sociales / cotizaciones", monto: 8.6 },
+  { name: "Bonos y gratificaciones", monto: 5.2 },
+  { name: "Otros beneficios", monto: 2.1 },
+];
+
+/* Calendario tributario (Chile) */
+const calendarioTributario = [
+  { obligacion: "IVA (F29) — Julio 2026", vencimiento: "12 ago 2026", monto: 14.8, estado: "Pendiente" as const },
+  { obligacion: "PPM (Pago Provisional Mensual)", vencimiento: "12 ago 2026", monto: 3.2, estado: "Pendiente" as const },
+  { obligacion: "Cotizaciones previsionales", vencimiento: "13 ago 2026", monto: 8.6, estado: "Pendiente" as const },
+  { obligacion: "IVA (F29) — Junio 2026", vencimiento: "12 jul 2026", monto: 13.1, estado: "Pagado" as const },
+  { obligacion: "Cotizaciones previsionales — Junio", vencimiento: "13 jul 2026", monto: 8.3, estado: "Pagado" as const },
+  { obligacion: "Declaración de Renta (F22) — AT 2026", vencimiento: "30 abr 2026", monto: 0, estado: "Programado" as const },
+];
+const TAX_ESTADO_COLOR = { Pendiente: C.warning, Pagado: C.good, Programado: C.blue };
+
 /* Hoja de stock */
 const stock = [
   { sku: "A-1001", nombre: "Producto A · formato grande", categoria: "Línea Premium A", unidades: 340, costoUnit: 0.0838, dias: 46, estado: "good" as const },
@@ -539,6 +652,30 @@ function Waterfall() {
   );
 }
 
+/* Tabla de estado financiero (Balance, Flujo Indirecto): filas línea / subtotal / total */
+type StatementRow = { label: string; monto: number; kind: "line" | "subtotal" | "total" };
+function StatementTable({ rows }: { rows: StatementRow[] }) {
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full text-sm">
+        <tbody>
+          {rows.map((r, i) => {
+            const emphasize = r.kind === "subtotal" || r.kind === "total";
+            return (
+              <tr key={i} className={`border-b border-slate-100 last:border-0 ${r.kind === "total" ? "bg-navy/5" : emphasize ? "bg-slate-50" : ""}`}>
+                <td className={`py-2.5 pr-4 ${emphasize ? "font-bold text-navy" : "text-slate-600"}`}>{r.label}</td>
+                <td className={`py-2.5 pl-4 text-right tabular-nums ${emphasize ? "font-bold text-navy" : "text-slate-700"}`}>
+                  {r.monto.toLocaleString("es-CL", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 /* ────────────────────────────────────────────────────────────────────────
    Pestañas
    ──────────────────────────────────────────────────────────────────────── */
@@ -548,10 +685,16 @@ const TABS = [
   "Compras",
   "Flujo de Caja",
   "Cobranza",
+  "Cuentas por Pagar",
+  "Presupuesto",
   "Estado de Resultados",
-  "Márgenes por Producto",
   "P&L IFRS",
+  "Balance General",
+  "Márgenes por Producto",
   "Stock",
+  "CAPEX",
+  "Remuneraciones",
+  "Calendario Tributario",
 ] as const;
 type Tab = (typeof TABS)[number];
 
@@ -573,6 +716,20 @@ export default function DemoDashboard() {
   const skuConCobertura = stock.filter((s) => s.estado !== "critical");
   const coberturaPromedio = skuConCobertura.reduce((a, s) => a + s.dias, 0) / skuConCobertura.length;
   const skuMayorValor = [...stock].sort((a, b) => b.valor - a.valor)[0];
+
+  const totalPagar = carteraPagar.reduce((a, r) => a + r.monto, 0);
+  const pagarVencido = carteraPagar.slice(1).reduce((a, r) => a + r.monto, 0);
+  const proveedoresCriticos = proveedoresPago.filter((p) => p.prioridad === "P1").length;
+
+  const capexPresupuesto = capex.reduce((a, c) => a + c.presupuesto, 0);
+  const capexEjecutado = capex.reduce((a, c) => a + c.ejecutado, 0);
+  const capexRetrasados = capex.filter((c) => c.estado === "Retrasado").length;
+
+  const totalHC = dotacion.reduce((a, d) => a + d.hc, 0);
+  const totalNomina = costoNomina.reduce((a, c) => a + c.monto, 0);
+
+  const proximoVencimiento = calendarioTributario.find((t) => t.estado === "Pendiente");
+  const totalPendienteTax = calendarioTributario.filter((t) => t.estado === "Pendiente").reduce((a, t) => a + t.monto, 0);
 
   return (
     <div>
@@ -733,6 +890,9 @@ export default function DemoDashboard() {
             <Card title="Saldo de caja acumulado" subtitle="MM CLP">
               <LineChart labels={MESES} values={saldoCaja} color={C.blue} name="Saldo de caja" fmt={(n) => mm(n)} />
             </Card>
+            <Card title="Estado de flujo de efectivo — método indirecto" subtitle="FY 2026 (MM CLP)">
+              <StatementTable rows={flujoIndirecto} />
+            </Card>
           </div>
         )}
 
@@ -767,17 +927,53 @@ export default function DemoDashboard() {
           </div>
         )}
 
-        {tab === "Estado de Resultados" && (
+        {tab === "Cuentas por Pagar" && (
           <div className="space-y-6">
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-              <StatTile label="Ingresos" value={mm(61)} delta="+10.9% vs presup." deltaGood />
-              <StatTile label="Margen bruto" value={pct(41.3)} delta={mm(25.2, 1)} deltaGood />
-              <StatTile label="EBITDA" value={mm(9.6, 1)} delta="+37% vs presup." deltaGood />
-              <StatTile label="Margen EBITDA" value={pct(15.8)} delta="+2.9 pp vs presup." deltaGood />
+              <StatTile label="Total por pagar" value={mm(totalPagar, 1)} />
+              <StatTile
+                label="Por pagar vencido"
+                value={mm(pagarVencido, 1)}
+                delta={`${((pagarVencido / totalPagar) * 100).toFixed(0)}% del total`}
+                deltaGood={false}
+              />
+              <StatTile label="DPO actual" value={days(dpo[dpo.length - 1])} delta={`${dpo[dpo.length - 1] - dpo[dpo.length - 2]} días vs mes ant.`} deltaGood />
+              <StatTile label="Proveedores críticos (P1)" value={String(proveedoresCriticos)} delta="No se pueden atrasar" deltaGood={false} />
             </div>
-            <Card title="Cascada del resultado" subtitle="De ingresos a EBITDA · mes de Julio (MM CLP)">
-              <Waterfall />
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Card title="Cuentas por pagar por antigüedad" subtitle="MM CLP">
+                <AgingBars rows={carteraPagar} />
+              </Card>
+              <Card title="Días de pago a proveedores (DPO)" subtitle="Evolución en días">
+                <LineChart labels={MESES} values={dpo} color={C.orange} name="DPO" fmt={(n) => days(n)} />
+              </Card>
+            </div>
+            <Card title="Prioridad de pago a proveedores" subtitle="Saldo pendiente">
+              <Table
+                cols={["Proveedor", "Saldo", "Prioridad", "Motivo"]}
+                align={["left", "right", "left", "left"]}
+                rows={proveedoresPago.map((p) => [
+                  p.prov,
+                  mm(p.monto, 1),
+                  <span key={p.prov} className="inline-flex items-center gap-1.5 text-xs font-semibold" style={{ color: PRIORIDAD_COLOR[p.prioridad] }}>
+                    <span className="inline-block w-2 h-2 rounded-full" style={{ background: PRIORIDAD_COLOR[p.prioridad] }} />
+                    {p.prioridad}
+                  </span>,
+                  p.motivo,
+                ])}
+              />
             </Card>
+          </div>
+        )}
+
+        {tab === "Presupuesto" && (
+          <div className="space-y-6">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+              <StatTile label="Ingresos vs. presupuesto" value={mm(61)} delta="+10.9% vs presup." deltaGood />
+              <StatTile label="EBITDA vs. presupuesto" value={mm(9.6, 1)} delta="+37.1% vs presup." deltaGood />
+              <StatTile label="Variaciones favorables" value={String(topVariaciones.filter((v) => v.tipo === "F").length)} deltaGood />
+              <StatTile label="Variaciones desfavorables" value={String(topVariaciones.filter((v) => v.tipo === "U").length)} deltaGood={false} />
+            </div>
             <Card title="Estado de resultados · presupuesto vs. real" subtitle="Julio 2026 (MM CLP)">
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
@@ -813,6 +1009,47 @@ export default function DemoDashboard() {
                 </table>
               </div>
             </Card>
+            <Card title="Top variaciones vs. presupuesto" subtitle="Explicación, acción y responsable">
+              <Table
+                cols={["Ítem", "Var.", "F/U", "Explicación", "Acción", "Responsable", "Estado"]}
+                align={["left", "right", "left", "left", "left", "left", "left"]}
+                rows={topVariaciones.map((v) => [
+                  v.item,
+                  <span key={v.item} style={{ color: v.tipo === "F" ? C.goodText : C.critical }} className="font-semibold">
+                    {v.varMonto > 0 ? "+" : ""}
+                    {mm(v.varMonto, 1)}
+                  </span>,
+                  <span
+                    key={v.item + "-tag"}
+                    className="text-xs font-bold px-1.5 py-0.5 rounded"
+                    style={{ color: v.tipo === "F" ? C.goodText : C.critical, background: v.tipo === "F" ? "#e6f4ea" : "#fce8e6" }}
+                  >
+                    {v.tipo}
+                  </span>,
+                  v.explicacion,
+                  v.accion,
+                  v.responsable,
+                  v.estado,
+                ])}
+              />
+            </Card>
+          </div>
+        )}
+
+        {tab === "Estado de Resultados" && (
+          <div className="space-y-6">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+              <StatTile label="Ingresos" value={mm(61)} delta="+10.9% vs presup." deltaGood />
+              <StatTile label="Margen bruto" value={pct(41.3)} delta={mm(25.2, 1)} deltaGood />
+              <StatTile label="EBITDA" value={mm(9.6, 1)} delta="+37% vs presup." deltaGood />
+              <StatTile label="Margen EBITDA" value={pct(15.8)} delta="+2.9 pp vs presup." deltaGood />
+            </div>
+            <Card title="Cascada del resultado" subtitle="De ingresos a EBITDA · mes de Julio (MM CLP)">
+              <Waterfall />
+            </Card>
+            <p className="text-xs text-slate-400 text-center">
+              ¿Buscas el detalle de presupuesto vs. real? Revisa la pestaña <span className="font-semibold">Presupuesto</span>.
+            </p>
           </div>
         )}
 
@@ -904,6 +1141,28 @@ export default function DemoDashboard() {
           </div>
         )}
 
+        {tab === "Balance General" && (
+          <div className="space-y-6">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+              <StatTile label="Total activos" value={mm(450.0)} />
+              <StatTile label="Total pasivos" value={mm(210.0)} />
+              <StatTile label="Total patrimonio" value={mm(240.0)} />
+              <StatTile label="Razón corriente" value={(232.4 / 112.5).toFixed(2) + "x"} delta="Activos ctes. / Pasivos ctes." deltaGood />
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Card title="Activos" subtitle="Al cierre de julio 2026 (MM CLP)">
+                <StatementTable rows={activos} />
+              </Card>
+              <Card title="Pasivos y patrimonio" subtitle="Al cierre de julio 2026 (MM CLP)">
+                <StatementTable rows={pasivosPatrimonio} />
+              </Card>
+            </div>
+            <p className="text-xs text-slate-400 text-center">
+              ✓ Balanceado: Total activos ($450,0 MM) = Total pasivos y patrimonio ($450,0 MM)
+            </p>
+          </div>
+        )}
+
         {tab === "Stock" && (
           <div className="space-y-6">
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
@@ -930,6 +1189,104 @@ export default function DemoDashboard() {
             <Card title="Valor de inventario por producto" subtitle="MM CLP">
               <HBarChart items={[...stock].sort((a, b) => b.valor - a.valor).map((s) => ({ name: s.nombre, monto: s.valor }))} color={C.blue} fmt={(n) => mm(n, 1)} />
             </Card>
+          </div>
+        )}
+
+        {tab === "CAPEX" && (
+          <div className="space-y-6">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+              <StatTile label="Presupuesto CAPEX anual" value={mm(capexPresupuesto)} />
+              <StatTile label="Ejecutado YTD" value={mm(capexEjecutado)} delta={pct((capexEjecutado / capexPresupuesto) * 100, 0) + " del presupuesto"} deltaGood />
+              <StatTile label="Por ejecutar" value={mm(capexPresupuesto - capexEjecutado)} />
+              <StatTile label="Proyectos retrasados" value={String(capexRetrasados)} delta="Requieren seguimiento" deltaGood={capexRetrasados === 0} />
+            </div>
+            <Card title="Registro CAPEX" subtitle="Presupuesto vs. ejecutado por proyecto (MM CLP)">
+              <Table
+                cols={["Proyecto", "Categoría", "Presupuesto", "Ejecutado", "% Avance", "Estado"]}
+                align={["left", "left", "right", "right", "right", "left"]}
+                rows={capex.map((c) => [
+                  c.proyecto,
+                  c.categoria,
+                  mm(c.presupuesto, 1),
+                  mm(c.ejecutado, 1),
+                  pct((c.ejecutado / c.presupuesto) * 100, 0),
+                  <span key={c.proyecto} className="inline-flex items-center gap-1.5 text-xs font-semibold" style={{ color: CAPEX_ESTADO_COLOR[c.estado] }}>
+                    <span className="inline-block w-2 h-2 rounded-full" style={{ background: CAPEX_ESTADO_COLOR[c.estado] }} />
+                    {c.estado}
+                  </span>,
+                ])}
+              />
+            </Card>
+            <Card title="Ejecución por categoría" subtitle="MM CLP">
+              <HBarChart
+                items={Object.values(
+                  capex.reduce((acc: Record<string, { name: string; monto: number }>, c) => {
+                    acc[c.categoria] = acc[c.categoria] || { name: c.categoria, monto: 0 };
+                    acc[c.categoria].monto += c.ejecutado;
+                    return acc;
+                  }, {})
+                )}
+                color={C.violet}
+                fmt={(n) => mm(n, 1)}
+              />
+            </Card>
+          </div>
+        )}
+
+        {tab === "Remuneraciones" && (
+          <div className="space-y-6">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+              <StatTile label="Dotación total" value={`${totalHC} personas`} delta={`+${dotacion.reduce((a, d) => a + d.variacion, 0)} vs mes anterior`} deltaGood />
+              <StatTile label="Costo nómina del mes" value={mm(totalNomina, 1)} />
+              <StatTile label="Costo promedio / persona" value={money((totalNomina / totalHC) * 1000, 0) + " mil"} />
+              <StatTile label="Rotación anual" value={pct(7.8)} delta="Bajo el promedio de la industria" deltaGood />
+            </div>
+            <Card title="Dotación por área" subtitle="Headcount de julio 2026">
+              <Table
+                cols={["Área", "Dotación", "Variación mensual"]}
+                align={["left", "right", "right"]}
+                rows={dotacion.map((d) => [
+                  d.area,
+                  String(d.hc),
+                  <span key={d.area} style={{ color: d.variacion > 0 ? C.goodText : C.ink2 }} className="font-semibold">
+                    {d.variacion > 0 ? "+" : ""}
+                    {d.variacion}
+                  </span>,
+                ])}
+              />
+            </Card>
+            <Card title="Costo de nómina por ítem" subtitle="MM CLP">
+              <HBarChart items={costoNomina} color={C.magenta} />
+            </Card>
+          </div>
+        )}
+
+        {tab === "Calendario Tributario" && (
+          <div className="space-y-6">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+              <StatTile label="Próximo vencimiento" value={proximoVencimiento?.vencimiento ?? "—"} delta={proximoVencimiento?.obligacion} deltaGood={false} />
+              <StatTile label="Total pendiente de pago" value={mm(totalPendienteTax, 1)} />
+              <StatTile label="IVA del mes (F29)" value={mm(14.8, 1)} />
+              <StatTile label="Cotizaciones del mes" value={mm(8.6, 1)} />
+            </div>
+            <Card title="Calendario de obligaciones tributarias" subtitle="IVA, PPM, cotizaciones y Renta">
+              <Table
+                cols={["Obligación", "Vencimiento", "Monto", "Estado"]}
+                align={["left", "left", "right", "left"]}
+                rows={calendarioTributario.map((t) => [
+                  t.obligacion,
+                  t.vencimiento,
+                  t.monto > 0 ? mm(t.monto, 1) : "—",
+                  <span key={t.obligacion} className="inline-flex items-center gap-1.5 text-xs font-semibold" style={{ color: TAX_ESTADO_COLOR[t.estado] }}>
+                    <span className="inline-block w-2 h-2 rounded-full" style={{ background: TAX_ESTADO_COLOR[t.estado] }} />
+                    {t.estado}
+                  </span>,
+                ])}
+              />
+            </Card>
+            <p className="text-[11px] text-slate-400 text-center">
+              Calendario ilustrativo con obligaciones tributarias chilenas (IVA/F29, PPM, cotizaciones previsionales y Declaración de Renta/F22).
+            </p>
           </div>
         )}
 
