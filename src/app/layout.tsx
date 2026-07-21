@@ -16,7 +16,7 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "Meliora Advisory — Asesoría financiera, contable y de gestión para PyMEs",
   description:
-    "El orden financiero que tu PyME necesita, sin cambiar de sistema ni contratar tres proveedores. Contabilidad, remuneraciones, dashboards y reportería gerencial sobre Softland, Softland Cloud u otro ERP.",
+    "El orden financiero que tu PyME necesita, sin cambiar de sistema ni contratar tres proveedores. Contabilidad, remuneraciones, dashboards y reportes ad hoc sobre Softland, Softland Cloud o cualquier otro sistema.",
   keywords: [
     "asesoría financiera PyME",
     "contabilidad Chile",
@@ -27,6 +27,7 @@ export const metadata: Metadata = {
     "reportes Softland",
     "dashboard Softland Cloud",
     "Power BI Softland",
+    "reportes ad hoc",
     "business intelligence PyME",
     "reportería gerencial automatizada",
   ],
@@ -54,7 +55,7 @@ const jsonLd = {
   "@type": "ProfessionalService",
   name: "Meliora Advisory",
   description:
-    "Asesoría financiera, contable y de gestión para PyMEs: contabilidad, remuneraciones, CFO externo y dashboards de reportería gerencial sobre Softland, Softland Cloud u otro ERP.",
+    "Asesoría financiera, contable y de gestión para PyMEs: contabilidad, remuneraciones, CFO externo y dashboards de reportería gerencial (incluyendo reportes ad hoc) sobre Softland, Softland Cloud o cualquier otro sistema.",
   url: "https://melioraadvisory.cl",
   image: "https://melioraadvisory.cl/og-image.png",
   areaServed: "CL",
@@ -69,6 +70,7 @@ const jsonLd = {
     "CFO externo",
     "Reportería gerencial",
     "Dashboards financieros",
+    "Reportes ad hoc",
     "Remuneraciones",
   ],
 };

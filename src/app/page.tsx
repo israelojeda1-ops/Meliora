@@ -22,6 +22,7 @@ const pillars = [
       "Trabajamos dentro del ERP que ya usas — Softland (incluido Softland Cloud), Odoo, Nubox, Defontana — o te lo implementamos. Nunca se obliga a migrar.",
     items: [
       "Dashboards y reportes automatizados conectados directo a tu Softland",
+      "Reportes ad hoc para cualquier sistema o ERP, no solo Softland",
       "Portal web con tus indicadores actualizados en cada cierre",
     ],
   },
