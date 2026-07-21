@@ -16,14 +16,13 @@ const servicios = [
     subtitle:
       "La dirección financiera que tu PyME necesita, sin el costo de un CFO de planta.",
     description:
-      "Asumimos la función de dirección financiera de tu empresa. Entregamos reportería gerencial mensual, KPIs de margen y cobranza, flujo de caja, presupuesto anual y forecast rolling de 8 a 12 semanas. Incluye una sesión mensual de análisis con el fundador o gerente general para revisar resultados, proyecciones y decisiones clave. Si tu empresa usa Softland (incluido Softland Cloud), construimos dashboards y reportes automatizados conectados directo a tu base de datos — sin depender de que el ERP tenga el informe que necesitas. También hacemos reportes ad hoc para cualquier otro sistema o ERP, no solo Softland.",
+      "Asumimos la función de dirección financiera de tu empresa. Entregamos reportería gerencial mensual, KPIs de margen y cobranza, flujo de caja, presupuesto anual y forecast rolling de 8 a 12 semanas. Incluye una sesión mensual de análisis con el fundador o gerente general para revisar resultados, proyecciones y decisiones clave. Construimos dashboards y reportes ad hoc conectados directo a tu base de datos — Softland (incluido Softland Cloud), Odoo, Nubox, Defontana u otro ERP —, sujeto a la factibilidad técnica del sistema.",
     items: [
       "Reportes gerenciales mensuales con análisis de variaciones",
       "KPIs: margen por producto/línea, DSO, estado de cobranza",
       "Flujo de caja proyectado y forecast rolling 8–12 semanas",
       "Presupuesto anual y seguimiento mensual de ejecución",
-      "Dashboards automatizados sobre Softland / Softland Cloud, SQL Server y Power BI",
-      "Reportes ad hoc para cualquier otro sistema o ERP",
+      "Dashboards y reportes ad hoc para cualquier ERP (Softland, Softland Cloud, Odoo, Nubox, Defontana u otro), sujeto a factibilidad técnica",
       "Sesión mensual de análisis estratégico",
       "Reporting en inglés a casa matriz (si aplica)",
     ],

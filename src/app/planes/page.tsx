@@ -18,11 +18,11 @@ const faqs = [
   },
   {
     q: "¿Hacen reportes y dashboards para empresas que usan Softland o Softland Cloud?",
-    a: "Sí. Conectamos directo a la base de datos de Softland (on-premise o Softland Cloud) para automatizar reportes gerenciales, dashboards y KPIs que el ERP no entrega de forma nativa — sin necesidad de cambiar de sistema.",
+    a: "Sí. Conectamos directo a la base de datos de Softland (on-premise o Softland Cloud) para automatizar reportes gerenciales, dashboards y KPIs que el ERP no entrega de forma nativa — sin necesidad de cambiar de sistema, sujeto a la factibilidad técnica del ERP.",
   },
   {
     q: "¿Trabajan con cualquier sistema?",
-    a: "Sí. Softland es uno de los sistemas donde tenemos más experiencia, pero hacemos reportes y dashboards ad hoc para cualquier sistema o ERP — Odoo, Nubox, Defontana u otro —, conectándonos a la fuente de datos que tengas disponible.",
+    a: "Sí. Softland es uno de los sistemas donde tenemos más experiencia, pero hacemos reportes y dashboards ad hoc para cualquier sistema o ERP — Odoo, Nubox, Defontana u otro —, conectándonos a la fuente de datos que tengas disponible, sujeto a la factibilidad técnica de cada sistema.",
   },
   {
     q: "¿Qué incluye el portal de cliente?",
