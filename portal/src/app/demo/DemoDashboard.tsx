@@ -723,6 +723,7 @@ export default function DemoDashboard() {
   const crecimientoProyectado = ((promedioForecast - promedioUltimoTrimestre) / promedioUltimoTrimestre) * 100;
   const flujoNetoMes = ingresosCaja[ingresosCaja.length - 1] - egresosCaja[egresosCaja.length - 1];
   const saldoActual = saldoCaja[saldoCaja.length - 1];
+  const ebitdaAnual = ventas.reduce((sum, v, i) => sum + (v * ebitdaMargen[i]) / 100, 0);
 
   const margenPromedio = productos.reduce((a, p) => a + p.margenPct, 0) / productos.length;
   const mejorProducto = [...productos].sort((a, b) => b.margenPct - a.margenPct)[0];
@@ -811,22 +812,26 @@ export default function DemoDashboard() {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card title="Ventas reales vs. presupuesto" subtitle="Últimos 12 meses (MM CLP)">
-                <BarChart labels={MESES} a={ventas} b={presupuestoVentas} colorA={C.green} colorB={C.blue} nameA="Real" nameB="Presupuesto" />
-              </Card>
               <Card title="Evolución del margen EBITDA" subtitle="% sobre ventas">
                 <LineChart labels={MESES} values={ebitdaMargen} color={C.green} name="Margen EBITDA" />
               </Card>
+              <Card title="Resumen financiero" subtitle="Mes actual vs. acumulado FY 2026 (MM CLP)">
+                <Table
+                  cols={["Indicador", "Mes", "FY 2026"]}
+                  align={["left", "right", "right"]}
+                  rows={[
+                    ["Ingresos", mm(ventaMes), mm(ventasYTD)],
+                    ["EBITDA", mm(9.6, 1), mm(ebitdaAnual, 1)],
+                    ["Utilidad neta", "—", mm(51.8, 1)],
+                    ["Flujo operacional (OCF)", "—", mm(58.4, 1)],
+                  ]}
+                />
+              </Card>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card title="Cartera por cobrar" subtitle="Por antigüedad (MM CLP)">
-                <AgingBars rows={cartera} />
-              </Card>
-              <Card title="Indicadores que requieren atención">
-                <Alertas />
-              </Card>
-            </div>
+            <Card title="Indicadores que requieren atención">
+              <Alertas />
+            </Card>
           </div>
         )}
 
