@@ -111,7 +111,7 @@ const planes = [
   },
   {
     name: "Finanzas",
-    price: "Desde 19 UF",
+    price: "Desde 20 UF",
     period: "/mes",
     description:
       "Asesoría gerencial y revisión de los informes que tu empresa ya prepara: KPIs de margen, cobranza y flujo de caja.",
@@ -127,7 +127,7 @@ const planes = [
   },
   {
     name: "CFO Externo",
-    price: "Desde 31 UF",
+    price: "Desde 30 UF",
     period: "/mes",
     description:
       "Elaboración y emisión completa de tus informes gerenciales — no los revisamos, los construimos desde cero.",
