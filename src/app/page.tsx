@@ -19,7 +19,11 @@ const pillars = [
     ),
     title: "Cero fricción de sistema",
     description:
-      "Trabajamos dentro del ERP que ya usas — Softland, Odoo, Nubox, Defontana — o te lo implementamos. Nunca se obliga a migrar.",
+      "Trabajamos dentro del ERP que ya usas — Softland (incluido Softland Cloud), Odoo, Nubox, Defontana — o te lo implementamos. Nunca se obliga a migrar.",
+    items: [
+      "Dashboards y reportes automatizados conectados directo a tu Softland",
+      "Portal web con tus indicadores actualizados en cada cierre",
+    ],
   },
   {
     icon: (

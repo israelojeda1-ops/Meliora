@@ -4,7 +4,44 @@ import Link from "next/link";
 export const metadata: Metadata = {
   title: "Planes y Precios — Meliora Advisory",
   description:
-    "Planes mensuales de asesoría financiera y contable para PyMEs en Chile. Desde 6 UF. Todos incluyen portal de cliente.",
+    "Planes mensuales de asesoría financiera y contable para PyMEs en Chile. Desde 6 UF. Todos incluyen portal de cliente con dashboards de reportería, compatibles con Softland, Softland Cloud u otro ERP.",
+};
+
+const faqs = [
+  {
+    q: "¿Por qué los precios parten con \"desde\" y no son un valor fijo?",
+    a: "Porque el precio final depende de dos factores: si trabajamos en tu propio sistema (ERP) o en el nuestro, y el volumen de movimientos y trabajadores de tu empresa. Los planes en sistema Meliora son más económicos porque estandarizamos el proceso; trabajar en tu ERP tiene un costo mayor de integración. Cotizamos después de entender tu operación para darte un precio justo.",
+  },
+  {
+    q: "¿Necesito cambiar mi sistema contable o ERP?",
+    a: "No. Puedes elegir el plan \"Sistema del cliente\" y trabajamos dentro del ERP que ya usas — Softland, Odoo, Nubox, Defontana u otro. Nunca obligamos a migrar.",
+  },
+  {
+    q: "¿Hacen reportes y dashboards para empresas que usan Softland o Softland Cloud?",
+    a: "Sí. Conectamos directo a la base de datos de Softland (on-premise o Softland Cloud) para automatizar reportes gerenciales, dashboards y KPIs que el ERP no entrega de forma nativa — sin necesidad de cambiar de sistema.",
+  },
+  {
+    q: "¿Qué incluye el portal de cliente?",
+    a: "Un espacio donde puedes ver tus números actualizados en cada cierre mensual: estados financieros, KPIs, flujo de caja y reportería gerencial. Acceso 24/7.",
+  },
+  {
+    q: "¿Puedo combinar servicios?",
+    a: "Sí. De hecho, el mayor valor de Meliora es la integración. Puedes partir con contabilidad y remuneraciones, y sumar reportería gerencial o CFO externo cuando lo necesites.",
+  },
+  {
+    q: "¿Cuál es el plazo de compromiso?",
+    a: "Todos los planes son servicios mensuales renovables mes a mes. No hay contratos de permanencia mínima.",
+  },
+];
+
+const faqJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: faqs.map((faq) => ({
+    "@type": "Question",
+    name: faq.q,
+    acceptedAnswer: { "@type": "Answer", text: faq.a },
+  })),
 };
 
 const planes = [
@@ -223,33 +260,16 @@ export default function PlanesPage() {
       </section>
 
       <section className="py-20 sm:py-24 bg-white border-t border-slate-100">
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
+        />
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <h2 className="text-2xl font-bold text-navy text-center mb-12">
             Preguntas frecuentes
           </h2>
           <div className="max-w-3xl mx-auto space-y-8">
-            {[
-              {
-                q: "¿Por qué los precios parten con \"desde\" y no son un valor fijo?",
-                a: "Porque el precio final depende de dos factores: si trabajamos en tu propio sistema (ERP) o en el nuestro, y el volumen de movimientos y trabajadores de tu empresa. Los planes en sistema Meliora son más económicos porque estandarizamos el proceso; trabajar en tu ERP tiene un costo mayor de integración. Cotizamos después de entender tu operación para darte un precio justo.",
-              },
-              {
-                q: "¿Necesito cambiar mi sistema contable o ERP?",
-                a: "No. Puedes elegir el plan \"Sistema del cliente\" y trabajamos dentro del ERP que ya usas — Softland, Odoo, Nubox, Defontana u otro. Nunca obligamos a migrar.",
-              },
-              {
-                q: "¿Qué incluye el portal de cliente?",
-                a: "Un espacio donde puedes ver tus números actualizados en cada cierre mensual: estados financieros, KPIs, flujo de caja y reportería gerencial. Acceso 24/7.",
-              },
-              {
-                q: "¿Puedo combinar servicios?",
-                a: "Sí. De hecho, el mayor valor de Meliora es la integración. Puedes partir con contabilidad y remuneraciones, y sumar reportería gerencial o CFO externo cuando lo necesites.",
-              },
-              {
-                q: "¿Cuál es el plazo de compromiso?",
-                a: "Todos los planes son servicios mensuales renovables mes a mes. No hay contratos de permanencia mínima.",
-              },
-            ].map((faq) => (
+            {faqs.map((faq) => (
               <div key={faq.q}>
                 <h3 className="text-base font-semibold text-navy mb-2">
                   {faq.q}

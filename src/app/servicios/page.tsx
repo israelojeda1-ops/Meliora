@@ -3,9 +3,9 @@ import Link from "next/link";
 import { ContabilidadFlowDiagram } from "@/components/ContabilidadFlowDiagram";
 
 export const metadata: Metadata = {
-  title: "Servicios — Meliora Advisory",
+  title: "Servicios — CFO Externo, Contabilidad y Dashboards Softland | Meliora Advisory",
   description:
-    "CFO as a Service, Contabilidad y Remuneraciones, Consultoría de Gestión. Tres líneas de servicio financiero para PyMEs en Chile.",
+    "CFO as a Service, Contabilidad y Remuneraciones, Consultoría de Gestión, y dashboards de reportería gerencial automatizados sobre Softland, Softland Cloud u otro ERP. Tres líneas de servicio financiero para PyMEs en Chile.",
 };
 
 const servicios = [
@@ -16,12 +16,13 @@ const servicios = [
     subtitle:
       "La dirección financiera que tu PyME necesita, sin el costo de un CFO de planta.",
     description:
-      "Asumimos la función de dirección financiera de tu empresa. Entregamos reportería gerencial mensual, KPIs de margen y cobranza, flujo de caja, presupuesto anual y forecast rolling de 8 a 12 semanas. Incluye una sesión mensual de análisis con el fundador o gerente general para revisar resultados, proyecciones y decisiones clave.",
+      "Asumimos la función de dirección financiera de tu empresa. Entregamos reportería gerencial mensual, KPIs de margen y cobranza, flujo de caja, presupuesto anual y forecast rolling de 8 a 12 semanas. Incluye una sesión mensual de análisis con el fundador o gerente general para revisar resultados, proyecciones y decisiones clave. Si tu empresa usa Softland (incluido Softland Cloud), construimos dashboards y reportes automatizados conectados directo a tu base de datos — sin depender de que el ERP tenga el informe que necesitas.",
     items: [
       "Reportes gerenciales mensuales con análisis de variaciones",
       "KPIs: margen por producto/línea, DSO, estado de cobranza",
       "Flujo de caja proyectado y forecast rolling 8–12 semanas",
       "Presupuesto anual y seguimiento mensual de ejecución",
+      "Dashboards automatizados sobre Softland / Softland Cloud, SQL Server y Power BI",
       "Sesión mensual de análisis estratégico",
       "Reporting en inglés a casa matriz (si aplica)",
     ],
@@ -159,7 +160,8 @@ export default function ServiciosPage() {
                   </h3>
                   <p className="mt-2 text-sm text-slate-500 max-w-xl mx-auto">
                     Del Libro de Compras y Ventas del SII al informe ejecutivo
-                    — un solo flujo, siempre al día.
+                    — un solo flujo, siempre al día. Compatible con Softland,
+                    Softland Cloud y otros ERP.
                   </p>
                 </div>
 
