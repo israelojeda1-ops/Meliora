@@ -1066,30 +1066,6 @@ export default function DemoDashboard() {
                 </table>
               </div>
             </Card>
-            <Card title="Top variaciones vs. presupuesto" subtitle="Explicación, acción y responsable">
-              <Table
-                cols={["Ítem", "Var.", "F/U", "Explicación", "Acción", "Responsable", "Estado"]}
-                align={["left", "right", "left", "left", "left", "left", "left"]}
-                rows={topVariaciones.map((v) => [
-                  v.item,
-                  <span key={v.item} style={{ color: v.tipo === "F" ? C.goodText : C.critical }} className="font-semibold">
-                    {v.varMonto > 0 ? "+" : ""}
-                    {mm(v.varMonto, 1)}
-                  </span>,
-                  <span
-                    key={v.item + "-tag"}
-                    className="text-xs font-bold px-1.5 py-0.5 rounded"
-                    style={{ color: v.tipo === "F" ? C.goodText : C.critical, background: v.tipo === "F" ? "#e6f4ea" : "#fce8e6" }}
-                  >
-                    {v.tipo}
-                  </span>,
-                  v.explicacion,
-                  v.accion,
-                  v.responsable,
-                  v.estado,
-                ])}
-              />
-            </Card>
           </div>
         )}
 
