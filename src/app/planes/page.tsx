@@ -66,7 +66,7 @@ const planes = [
   },
   {
     name: "Contable — Sistema del cliente",
-    price: "Desde 9 UF",
+    price: "Desde 8 UF",
     period: "/mes",
     description:
       "Hasta 100 movimientos al mes, trabajando dentro del ERP que ya usas.",
@@ -81,7 +81,7 @@ const planes = [
   },
   {
     name: "Contable + Remuneraciones — Sistema Meliora",
-    price: "Desde 10 UF",
+    price: "Desde 8 UF",
     period: "/mes",
     description: "Hasta 100 movimientos y 15 trabajadores, en nuestro sistema.",
     features: [
@@ -96,7 +96,7 @@ const planes = [
   },
   {
     name: "Contable + Remuneraciones — Sistema del cliente",
-    price: "Desde 14 UF",
+    price: "Desde 10 UF",
     period: "/mes",
     description: "Hasta 100 movimientos y 15 trabajadores, en tu propio ERP.",
     features: [
@@ -111,7 +111,7 @@ const planes = [
   },
   {
     name: "Finanzas",
-    price: "Desde 20 UF",
+    price: "Desde 18 UF",
     period: "/mes",
     description:
       "Asesoría gerencial y revisión de los informes que tu empresa ya prepara: KPIs de margen, cobranza y flujo de caja.",
@@ -126,7 +126,7 @@ const planes = [
     highlighted: false,
   },
   {
-    name: "CFO Externo",
+    name: "CFO Externo / Dirección de Finanzas",
     price: "Desde 30 UF",
     period: "/mes",
     description:
