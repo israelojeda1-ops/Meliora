@@ -42,6 +42,14 @@ const presupuestoVentas = [40, 42, 43, 45, 48, 48, 46, 47, 49, 51, 53, 55];
 const compras = [26, 28, 25, 29, 32, 29, 27, 30, 31, 33, 34, 36];
 const ebitdaMargen = [11.2, 12.1, 10.4, 12.8, 14.1, 12.9, 11.8, 13.2, 13.9, 14.6, 15.2, 15.8];
 
+/* Forecast de ventas: mezcla YTD real + proyección (6 meses, ficticios) */
+const forecastMeses = ["Ago*", "Sep*", "Oct*", "Nov*", "Dic*", "Ene*"];
+const forecastVentas = [64, 66, 63, 70, 76, 68];
+const mesesForecastChart = [...MESES, ...forecastMeses];
+const ventasRealSerie = [...ventas, 0, 0, 0, 0, 0, 0];
+const ventasProyeccionSerie = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ...forecastVentas];
+const metaAnualForecast = 1000;
+
 const ingresosCaja = [50, 54, 49, 56, 61, 55, 52, 58, 60, 63, 66, 69];
 const egresosCaja = [45, 47, 44, 48, 52, 49, 47, 50, 51, 53, 55, 57];
 const dso = [52, 50, 54, 49, 47, 48, 51, 46, 45, 44, 43, 42];
@@ -682,6 +690,7 @@ function StatementTable({ rows }: { rows: StatementRow[] }) {
 const TABS = [
   "Resumen",
   "Ventas",
+  "Forecast de Ventas",
   "Compras",
   "Flujo de Caja",
   "Cobranza",
@@ -705,6 +714,13 @@ export default function DemoDashboard() {
   const carteraVencida = cartera.slice(1).reduce((a, r) => a + r.monto, 0);
   const ventaMes = ventas[ventas.length - 1];
   const ventaPrev = ventas[ventas.length - 2];
+
+  const ventasYTD = ventas.reduce((a, b) => a + b, 0);
+  const forecastTotal = forecastVentas.reduce((a, b) => a + b, 0);
+  const proyeccionAnual = ventasYTD + forecastTotal;
+  const promedioUltimoTrimestre = (ventas[ventas.length - 3] + ventas[ventas.length - 2] + ventas[ventas.length - 1]) / 3;
+  const promedioForecast = forecastTotal / forecastVentas.length;
+  const crecimientoProyectado = ((promedioForecast - promedioUltimoTrimestre) / promedioUltimoTrimestre) * 100;
   const flujoNetoMes = ingresosCaja[ingresosCaja.length - 1] - egresosCaja[egresosCaja.length - 1];
   const saldoActual = saldoCaja[saldoCaja.length - 1];
 
@@ -842,6 +858,47 @@ export default function DemoDashboard() {
                 />
               </Card>
             </div>
+          </div>
+        )}
+
+        {tab === "Forecast de Ventas" && (
+          <div className="space-y-6">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+              <StatTile label="Ventas YTD (12m)" value={mm(ventasYTD)} />
+              <StatTile label="Proyección próximos 6 meses" value={mm(forecastTotal)} />
+              <StatTile
+                label="Crecimiento proyectado"
+                value={pct(crecimientoProyectado, 1)}
+                delta="vs. promedio último trimestre"
+                deltaGood={crecimientoProyectado >= 0}
+              />
+              <StatTile
+                label="Proyección FY vs. meta"
+                value={mm(proyeccionAnual)}
+                delta={`Meta: ${mm(metaAnualForecast)}`}
+                deltaGood={proyeccionAnual >= metaAnualForecast}
+              />
+            </div>
+            <Card title="Ventas: real (YTD) vs. proyección" subtitle="12 meses reales + 6 meses proyectados (MM CLP)">
+              <BarChart labels={mesesForecastChart} a={ventasRealSerie} b={ventasProyeccionSerie} colorA={C.green} colorB={C.violet} nameA="Real" nameB="Proyección" />
+              <p className="text-[11px] text-slate-400 mt-3">* Meses proyectados — datos ficticios, no observados aún.</p>
+            </Card>
+            <Card title="Detalle mensual" subtitle="Real (YTD) y proyección (MM CLP)">
+              <Table
+                cols={["Mes", "Tipo", "Monto"]}
+                align={["left", "left", "right"]}
+                rows={[
+                  ...MESES.map((m, i) => [m, "Real", mm(ventas[i])]),
+                  ...forecastMeses.map((m, i) => [
+                    m,
+                    <span key={m} className="font-semibold" style={{ color: C.violet }}>
+                      Proyección
+                    </span>,
+                    mm(forecastVentas[i]),
+                  ]),
+                ]}
+              />
+            </Card>
           </div>
         )}
 
