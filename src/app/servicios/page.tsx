@@ -165,15 +165,26 @@ export default function ServiciosPage() {
                   </p>
                 </div>
 
-                <div className="relative -mx-4 sm:mx-0 py-8 sm:py-10">
+                <div className="relative -mx-4 sm:mx-0 pt-8 pb-2 sm:py-10">
                   <div className="overflow-x-auto sm:overflow-visible px-4 sm:px-0">
                     <ContabilidadFlowDiagram className="h-auto w-[950px] sm:w-full" />
                   </div>
                   <div
                     aria-hidden="true"
-                    className="pointer-events-none absolute top-0 right-0 h-full w-14 bg-gradient-to-l from-white to-transparent sm:hidden"
+                    className="pointer-events-none absolute top-8 right-0 bottom-2 w-16 bg-gradient-to-l from-slate-50 to-transparent sm:hidden"
                   />
+                  <div
+                    aria-hidden="true"
+                    className="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 flex items-center justify-center h-8 w-8 rounded-full bg-white shadow-md ring-1 ring-slate-200 sm:hidden"
+                  >
+                    <svg className="h-4 w-4 text-emerald animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                    </svg>
+                  </div>
                 </div>
+                <p className="sm:hidden text-center text-xs font-medium text-slate-400 -mt-1 mb-2">
+                  Desliza el diagrama hacia la derecha para ver todo el proceso →
+                </p>
               </div>
             )}
           </div>
