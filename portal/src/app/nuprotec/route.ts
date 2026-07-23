@@ -4,6 +4,7 @@ import { decrypt, SESSION_COOKIE } from "@/lib/session";
 import { getClient } from "@/lib/clients";
 import { buildRegenerateWidget } from "@/lib/regenerate-widget";
 import { buildAnalyticsScript } from "@/lib/analytics-widget";
+import { buildBancoImportWidget } from "@/lib/banco-import-widget";
 
 export async function GET(req: NextRequest) {
   const client = getClient("nuprotec");
@@ -46,6 +47,9 @@ export async function GET(req: NextRequest) {
   let injected = buildAnalyticsScript(client.slug);
   if (client.repo.workflowFile) {
     injected += buildRegenerateWidget(`/${client.slug}`);
+  }
+  if (client.repo.bancoLogPath) {
+    injected += buildBancoImportWidget(`/${client.slug}`);
   }
   html = html.includes("</body>")
     ? html.replace("</body>", `${injected}</body>`)

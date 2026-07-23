@@ -7,6 +7,7 @@ export type ClientConfig = {
     name: string;
     path: string;
     workflowFile?: string;
+    bancoLogPath?: string;
   };
 };
 
@@ -20,6 +21,7 @@ export const CLIENTS: Record<string, ClientConfig> = {
       name: "nuprotec-informes",
       path: "Dashboard_NUPROTEC_2026.html",
       workflowFile: "generar-dashboard.yml",
+      bancoLogPath: "generador/banco_movimientos_log.csv",
     },
   },
 };
