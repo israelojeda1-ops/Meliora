@@ -44,6 +44,13 @@ export function buildRegenerateWidget(basePath: string): string {
     setTimeout(setIdle, 4000);
   }
 
+  function setDone(){
+    btn.disabled = true;
+    btn.style.background = COLOR_IDLE;
+    btn.style.color = COLOR_IDLE_TEXT;
+    btn.textContent = '✓ Listo';
+  }
+
   function stopPolling(){
     if (polling) { clearInterval(polling); polling = null; }
   }
@@ -78,6 +85,7 @@ export function buildRegenerateWidget(basePath: string): string {
               if (s.status === 'completed') {
                 stopPolling();
                 if (s.conclusion === 'success') {
+                  setDone();
                   setTimeout(function(){ window.location.reload(); }, 1500);
                 } else {
                   setError();
