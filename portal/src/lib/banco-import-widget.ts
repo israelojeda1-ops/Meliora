@@ -2,9 +2,16 @@ export function buildBancoImportWidget(basePath: string): string {
   return `
 <script>
 (function(){
+ try {
   var basePath = ${JSON.stringify(basePath)};
   var host = document.getElementById('banco-content');
-  if (!host) return;
+  if (!host) {
+    var warn = document.createElement('div');
+    warn.style.cssText = 'background:#FEF3C7;color:#92400E;padding:10px 14px;margin:10px 0;border-radius:8px;font-family:monospace;font-size:12px';
+    warn.textContent = '[banco-widget] no se encontró #banco-content en la página';
+    document.body.insertBefore(warn, document.body.firstChild);
+    return;
+  }
 
   var HEADERS = ['Fecha','ID Transferencia','Rut Origen/Destino','Banco Origen/Destino','Cuenta Origen/Destino','Valor','Estado','DESCRIPCION','Factura / Boleta','Observacion'];
 
@@ -161,6 +168,12 @@ export function buildBancoImportWidget(basePath: string): string {
     };
     reader.readAsArrayBuffer(file);
   });
+ } catch (e) {
+  var err = document.createElement('div');
+  err.style.cssText = 'background:#FEE2E2;color:#DC2626;padding:10px 14px;margin:10px 0;border-radius:8px;font-family:monospace;font-size:11px;white-space:pre-wrap;word-break:break-all';
+  err.textContent = '[banco-widget] error: ' + (e && e.message ? e.message : e) + (e && e.stack ? ('\\n' + e.stack) : '');
+  document.body.insertBefore(err, document.body.firstChild);
+ }
 })();
 </script>`;
 }
