@@ -22,8 +22,21 @@ function normFecha(v: unknown): string {
   const s = String(v ?? "").trim();
   let m = /^(\d{4})-(\d{1,2})-(\d{1,2})/.exec(s);
   if (m) return `${m[1]}-${m[2].padStart(2, "0")}-${m[3].padStart(2, "0")}`;
-  m = /^(\d{1,2})[/-](\d{1,2})[/-](\d{4})/.exec(s);
-  if (m) return `${m[3]}-${m[2].padStart(2, "0")}-${m[1].padStart(2, "0")}`;
+  // La plantilla usa dd/mm/yyyy, pero algunos lectores de planilla (ej. apps
+  // de celular guardando en formato de texto en vez de fecha) entregan el
+  // valor en m/d/y o con año de 2 dígitos. Si el primer número no puede ser
+  // un mes válido, se asume que en realidad vino como m/d/y.
+  m = /^(\d{1,2})[/-](\d{1,2})[/-](\d{2,4})$/.exec(s);
+  if (m) {
+    const [, a, b, y] = m;
+    const year = y.length === 2 ? `20${y}` : y;
+    let day = Number(a);
+    let month = Number(b);
+    if (month > 12 && day <= 12) {
+      [day, month] = [month, day];
+    }
+    return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+  }
   return s;
 }
 
