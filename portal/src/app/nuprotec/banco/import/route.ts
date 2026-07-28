@@ -3,47 +3,7 @@ import { cookies } from "next/headers";
 import { decrypt, SESSION_COOKIE } from "@/lib/session";
 import { getClient } from "@/lib/clients";
 import { parseCSV, toCSV } from "@/lib/csv";
-
-const HEADER = [
-  "Fecha",
-  "ID Transferencia",
-  "Rut Origen/Destino",
-  "Banco Origen/Destino",
-  "Cuenta Origen/Destino",
-  "Valor",
-  "Estado",
-  "DESCRIPCION",
-  "Factura / Boleta",
-  "Observacion",
-];
-const REQUIRED = ["Fecha", "Valor"];
-
-function normFecha(v: unknown): string {
-  const s = String(v ?? "").trim();
-  let m = /^(\d{4})-(\d{1,2})-(\d{1,2})/.exec(s);
-  if (m) return `${m[1]}-${m[2].padStart(2, "0")}-${m[3].padStart(2, "0")}`;
-  // La plantilla usa dd/mm/yyyy, pero algunos lectores de planilla (ej. apps
-  // de celular guardando en formato de texto en vez de fecha) entregan el
-  // valor en m/d/y o con año de 2 dígitos. Si el primer número no puede ser
-  // un mes válido, se asume que en realidad vino como m/d/y.
-  m = /^(\d{1,2})[/-](\d{1,2})[/-](\d{2,4})$/.exec(s);
-  if (m) {
-    const [, a, b, y] = m;
-    const year = y.length === 2 ? `20${y}` : y;
-    let day = Number(a);
-    let month = Number(b);
-    if (month > 12 && day <= 12) {
-      [day, month] = [month, day];
-    }
-    return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-  }
-  return s;
-}
-
-function normValor(v: unknown): string {
-  const s = String(v ?? "").replace(/[^0-9-]/g, "");
-  return s || "0";
-}
+import { BANCO_HEADER, buildCleanRow, filaValida } from "@/lib/banco-import";
 
 export async function POST(req: NextRequest) {
   const client = getClient("nuprotec");
@@ -75,20 +35,8 @@ export async function POST(req: NextRequest) {
 
   const cleanRows: string[][] = [];
   for (const r of incoming) {
-    const hasBase = REQUIRED.every((c) => r[c] !== undefined && String(r[c]).trim() !== "");
-    if (!hasBase) continue;
-    cleanRows.push([
-      normFecha(r["Fecha"]),
-      String(r["ID Transferencia"] ?? "").trim(),
-      String(r["Rut Origen/Destino"] ?? "").trim(),
-      String(r["Banco Origen/Destino"] ?? "").trim(),
-      String(r["Cuenta Origen/Destino"] ?? "").trim(),
-      normValor(r["Valor"]),
-      String(r["Estado"] ?? "").trim(),
-      String(r["DESCRIPCION"] ?? "").trim(),
-      String(r["Factura / Boleta"] ?? "").trim(),
-      String(r["Observacion"] ?? "").trim(),
-    ]);
+    if (!filaValida(r)) continue;
+    cleanRows.push(buildCleanRow(r));
   }
   if (!cleanRows.length) {
     return NextResponse.json(
@@ -113,20 +61,20 @@ export async function POST(req: NextRequest) {
   const sha = getJson.sha;
 
   const existingAll = parseCSV(currentText);
-  const existingHeader = existingAll.shift() ?? HEADER;
+  const existingHeader = existingAll.shift() ?? BANCO_HEADER;
   const idxOf = (col: string) =>
     existingHeader.findIndex((h) => h.trim().toLowerCase() === col.toLowerCase());
   const reordered = existingAll.map((row) =>
-    HEADER.map((col) => {
+    BANCO_HEADER.map((col) => {
       const idx = idxOf(col);
       return idx >= 0 ? row[idx] ?? "" : "";
     })
   );
 
-  const seen = new Set(reordered.map((r) => r.join("")));
+  const seen = new Set(reordered.map((r) => r.join("")));
   let added = 0;
   for (const r of cleanRows) {
-    const key = r.join("");
+    const key = r.join("");
     if (seen.has(key)) continue;
     seen.add(key);
     reordered.push(r);
@@ -135,7 +83,7 @@ export async function POST(req: NextRequest) {
 
   reordered.sort((a, b) => (a[0] < b[0] ? 1 : a[0] > b[0] ? -1 : 0));
 
-  const newCsv = toCSV(HEADER, reordered);
+  const newCsv = toCSV(BANCO_HEADER, reordered);
   const putResp = await fetch(apiUrl, {
     method: "PUT",
     headers: {
