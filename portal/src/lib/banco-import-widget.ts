@@ -168,6 +168,63 @@ export function buildBancoImportWidget(basePath: string): string {
     };
     reader.readAsArrayBuffer(file);
   });
+
+  // Editar/confirmar la Factura/Boleta asociada directamente en la tabla ya
+  // renderizada (no solo al importar). Se engancha via MutationObserver
+  // porque renderBanco() reconstruye el tbody entero en cada filtro/orden.
+  function setupBancoEdit(){
+    var tbody = document.getElementById('banco-tbody');
+    if (!tbody || typeof window.bancoFiltrar !== 'function' || typeof window.BANCO === 'undefined') return;
+    var iId = window.BANCO.columnas.indexOf('ID Transferencia');
+    var iFactura = window.BANCO_IDX_DOC;
+
+    function enrich(){
+      var filtered = window.bancoFiltrar();
+      var trs = tbody.querySelectorAll('tr');
+      filtered.forEach(function(row, idx){
+        var tr = trs[idx];
+        if (!tr || tr.getAttribute('data-banco-edit-ready') === '1') return;
+        tr.setAttribute('data-banco-edit-ready', '1');
+        var tds = tr.querySelectorAll('td');
+        var facturaTd = tds[iFactura];
+        if (!facturaTd) return;
+        var btn = document.createElement('button');
+        btn.textContent = '✎';
+        btn.title = 'Editar/confirmar la factura o boleta asociada';
+        btn.style.cssText = 'margin-left:6px;border:none;background:none;cursor:pointer;font-size:11px;color:#6B7280;padding:0 2px';
+        btn.addEventListener('click', function(ev){
+          ev.stopPropagation();
+          var actual = (row[iFactura] || '').toString();
+          var sugerida = (row[row.length - 1] || '').toString();
+          var nuevo = window.prompt('Factura/Boleta asociada a este movimiento:', actual || sugerida);
+          if (nuevo === null) return;
+          nuevo = nuevo.trim();
+          if (nuevo === actual) return;
+          btn.disabled = true;
+          fetch(basePath + '/banco/edit', {
+            method: 'POST',
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({
+              fecha: row[window.BANCO_IDX_FECHA],
+              idTransferencia: iId > -1 ? row[iId] : '',
+              valor: row[window.BANCO_IDX_MONTO],
+              facturaActual: actual,
+              facturaNueva: nuevo,
+            }),
+          }).then(function(r){ return r.json(); }).then(function(data){
+            if (!data.ok) { alert('Error: ' + data.error); btn.disabled = false; return; }
+            row[iFactura] = nuevo;
+            window.renderBanco();
+          }).catch(function(){ alert('Error de red al guardar.'); btn.disabled = false; });
+        });
+        facturaTd.appendChild(btn);
+      });
+    }
+
+    new MutationObserver(enrich).observe(tbody, { childList: true });
+    enrich();
+  }
+  setupBancoEdit();
  } catch (e) {
   var err = document.createElement('div');
   err.style.cssText = 'background:#FEE2E2;color:#DC2626;padding:10px 14px;margin:10px 0;border-radius:8px;font-family:monospace;font-size:11px;white-space:pre-wrap;word-break:break-all';
