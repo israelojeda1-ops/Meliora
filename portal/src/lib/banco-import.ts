@@ -323,13 +323,26 @@ export async function patchBancoInHtml(params: {
   const ghHeaders = { Authorization: `Bearer ${token}`, Accept: "application/vnd.github+json" };
   const dashUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${dashboardPath}`;
 
-  const getResp = await fetch(`${dashUrl}?ref=main`, { headers: ghHeaders, cache: "no-store" });
-  if (!getResp.ok) {
-    return { ok: false, error: `No se pudo leer el dashboard (${getResp.status})` };
+  // El dashboard pesa ~10MB: la API de Contents omite el campo "content" en
+  // modo JSON para archivos de más de ~1MB (aunque "sha" sigue viniendo), así
+  // que el contenido real hay que pedirlo aparte con el media type "raw"
+  // (mismo truco que ya usa /nuprotec/route.ts para servir este mismo archivo).
+  const [metaResp, rawResp] = await Promise.all([
+    fetch(`${dashUrl}?ref=main`, { headers: ghHeaders, cache: "no-store" }),
+    fetch(`${dashUrl}?ref=main`, {
+      headers: { Authorization: `Bearer ${token}`, Accept: "application/vnd.github.raw" },
+      cache: "no-store",
+    }),
+  ]);
+  if (!metaResp.ok) {
+    return { ok: false, error: `No se pudo leer el dashboard (${metaResp.status})` };
   }
-  const getJson = (await getResp.json()) as { content: string; sha: string };
-  const html = Buffer.from(getJson.content, "base64").toString("utf-8");
-  const sha = getJson.sha;
+  if (!rawResp.ok) {
+    return { ok: false, error: `No se pudo leer el contenido del dashboard (${rawResp.status})` };
+  }
+  const metaJson = (await metaResp.json()) as { sha: string };
+  const html = await rawResp.text();
+  const sha = metaJson.sha;
 
   const arqueo = extractJsonLiteral(html, "ARQUEO");
   if (!arqueo || typeof arqueo !== "object") {

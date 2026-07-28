@@ -107,15 +107,22 @@ export async function POST(req: NextRequest) {
   }
 
   // Actualiza solo el bloque de Banco en el dashboard ya publicado, para que
-  // quede al dia de inmediato sin esperar la regeneracion completa.
-  const patch = await patchBancoInHtml({
-    token,
-    owner: client.repo.owner,
-    repo: client.repo.name,
-    dashboardPath: client.repo.path,
-    csvRows: all,
-    csvHeader: BANCO_HEADER,
-  });
+  // quede al dia de inmediato sin esperar la regeneracion completa. Nunca debe
+  // tumbar la respuesta: el CSV ya se guardó, así que un error acá solo se
+  // informa, no hace fallar todo el request.
+  let patch: { ok: true } | { ok: false; error: string };
+  try {
+    patch = await patchBancoInHtml({
+      token,
+      owner: client.repo.owner,
+      repo: client.repo.name,
+      dashboardPath: client.repo.path,
+      csvRows: all,
+      csvHeader: BANCO_HEADER,
+    });
+  } catch (err) {
+    patch = { ok: false, error: err instanceof Error ? err.message : String(err) };
+  }
 
   let triggeredAt: string | null = null;
   if (client.repo.workflowFile) {
