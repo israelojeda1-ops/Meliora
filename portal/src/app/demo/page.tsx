@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import DemoDashboard from "./DemoDashboard";
+import DemoGate from "./DemoGate";
 
 export const metadata: Metadata = {
   title: "Demo — Reporte Gerencial | Meliora Advisory",
@@ -22,7 +22,7 @@ export default function DemoPage() {
         </div>
       </div>
 
-      <DemoDashboard />
+      <DemoGate />
     </div>
   );
 }
