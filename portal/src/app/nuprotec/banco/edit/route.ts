@@ -3,7 +3,7 @@ import { cookies } from "next/headers";
 import { decrypt, SESSION_COOKIE } from "@/lib/session";
 import { getClient } from "@/lib/clients";
 import { parseCSV, toCSV } from "@/lib/csv";
-import { BANCO_HEADER } from "@/lib/banco-import";
+import { BANCO_HEADER, patchBancoInHtml } from "@/lib/banco-import";
 
 export async function POST(req: NextRequest) {
   const client = getClient("nuprotec");
@@ -106,6 +106,17 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: `No se pudo guardar (${putResp.status}): ${text}` }, { status: 502 });
   }
 
+  // Actualiza solo el bloque de Banco en el dashboard ya publicado, para que
+  // quede al dia de inmediato sin esperar la regeneracion completa.
+  const patch = await patchBancoInHtml({
+    token,
+    owner: client.repo.owner,
+    repo: client.repo.name,
+    dashboardPath: client.repo.path,
+    csvRows: all,
+    csvHeader: BANCO_HEADER,
+  });
+
   let triggeredAt: string | null = null;
   if (client.repo.workflowFile) {
     triggeredAt = new Date().toISOString();
@@ -121,5 +132,10 @@ export async function POST(req: NextRequest) {
     }).catch(() => null);
   }
 
-  return NextResponse.json({ ok: true, triggeredAt });
+  return NextResponse.json({
+    ok: true,
+    triggeredAt,
+    bancoPatched: patch.ok,
+    bancoPatchError: patch.ok ? null : patch.error,
+  });
 }
