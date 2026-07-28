@@ -233,7 +233,7 @@ function fechaDisplay(v: string): string {
   return s;
 }
 
-export const BANCO_DISPLAY_COLUMNAS = ["Fecha", "ID Transferencia", "Banco", "RUT", "Valor", "Estado", "Descripción", "Factura/Boleta"];
+export const BANCO_DISPLAY_COLUMNAS = ["Fecha", "ID Transferencia", "Banco", "RUT", "Valor", "Descripción", "Factura/Boleta"];
 
 export type BancoData = { disponible: boolean; columnas: string[]; filas: (string | number)[][] };
 
@@ -252,7 +252,6 @@ export function buildBancoData(
   const iBanco = idxOf("Banco Origen/Destino");
   const iRut = idxOf("Rut Origen/Destino");
   const iValor = idxOf("Valor");
-  const iEstado = idxOf("Estado");
   const iDesc = idxOf("DESCRIPCION");
   const iFactura = idxOf("Factura / Boleta");
 
@@ -295,7 +294,6 @@ export function buildBancoData(
       banco,
       rut,
       valor,
-      (row[iEstado] ?? "").trim(),
       (row[iDesc] ?? "").trim(),
       factura,
       rutFlag,
