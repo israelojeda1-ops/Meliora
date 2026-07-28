@@ -16,7 +16,7 @@ const HEADER = [
   "Factura / Boleta",
   "Observacion",
 ];
-const REQUIRED = ["Fecha", "Valor", "Factura / Boleta"];
+const REQUIRED = ["Fecha", "Valor"];
 
 function normFecha(v: unknown): string {
   const s = String(v ?? "").trim();
@@ -79,7 +79,7 @@ export async function POST(req: NextRequest) {
   }
   if (!cleanRows.length) {
     return NextResponse.json(
-      { ok: false, error: "Ninguna fila tiene las columnas mínimas (Fecha, Valor, Factura / Boleta)" },
+      { ok: false, error: "Ninguna fila tiene las columnas mínimas (Fecha, Valor)" },
       { status: 400 }
     );
   }
