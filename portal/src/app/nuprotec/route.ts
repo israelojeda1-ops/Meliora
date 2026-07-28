@@ -51,8 +51,12 @@ export async function GET(req: NextRequest) {
   if (client.repo.bancoLogPath) {
     injected += buildBancoImportWidget(`/${client.slug}`);
   }
+  // OJO: se usa una función de reemplazo (no un string) porque `injected`
+  // puede contener secuencias como `$'` (ej. dentro de código que arma un
+  // string con '$' + algo) que String.replace() interpretaría como patrones
+  // especiales ($&, $', $`, $1, etc.) y corrompería el HTML/JS resultante.
   html = html.includes("</body>")
-    ? html.replace("</body>", `${injected}</body>`)
+    ? html.replace("</body>", () => `${injected}</body>`)
     : `${html}${injected}`;
 
   return new Response(html, {
