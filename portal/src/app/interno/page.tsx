@@ -24,24 +24,9 @@ const CUENTAS = [
   { codigo: "40-20-900-0002", nombre: "Ajuste Inventarios" },
 ];
 
-const TOTALES_ANIO = [
-  { anio: "2025", altas: 1_057_830_854, costeo: 1_083_384_467 },
-  { anio: "2026", altas: 618_968_253, costeo: 519_555_220 },
-];
+const TOTALES_ANIO = [{ anio: "2026", altas: 618_968_253, costeo: 519_555_220 }];
 
 const MENSUAL = [
-  { mes: "2025-01", altasClp: 15_024_606, altasDoc: 9, entradasUnid: 661, entradasMov: 11 },
-  { mes: "2025-02", altasClp: 52_391_150, altasDoc: 31, entradasUnid: 20, entradasMov: 3 },
-  { mes: "2025-03", altasClp: 172_820_734, altasDoc: 32, entradasUnid: 6977, entradasMov: 151 },
-  { mes: "2025-04", altasClp: 46_161_526, altasDoc: 26, entradasUnid: 34, entradasMov: 2 },
-  { mes: "2025-05", altasClp: 69_028_584, altasDoc: 36, entradasUnid: 142, entradasMov: 5 },
-  { mes: "2025-06", altasClp: 49_792_288, altasDoc: 27, entradasUnid: 320, entradasMov: 2 },
-  { mes: "2025-07", altasClp: 64_143_532, altasDoc: 34, entradasUnid: 253_761, entradasMov: 99 },
-  { mes: "2025-08", altasClp: 189_607_476, altasDoc: 25, entradasUnid: 238_194, entradasMov: 788 },
-  { mes: "2025-09", altasClp: 132_447_839, altasDoc: 29, entradasUnid: 1_049_269, entradasMov: 191 },
-  { mes: "2025-10", altasClp: 72_172_248, altasDoc: 26, entradasUnid: 46_797, entradasMov: 197 },
-  { mes: "2025-11", altasClp: 48_623_558, altasDoc: 19, entradasUnid: 19_099, entradasMov: 138 },
-  { mes: "2025-12", altasClp: 145_617_313, altasDoc: 23, entradasUnid: 32_188, entradasMov: 259 },
   { mes: "2026-01", altasClp: 61_697_894, altasDoc: 28, entradasUnid: 1_563_665, entradasMov: 368 },
   { mes: "2026-02", altasClp: 157_062_485, altasDoc: 18, entradasUnid: 154_577, entradasMov: 332 },
   { mes: "2026-03", altasClp: 32_739_425, altasDoc: 19, entradasUnid: 467_468, entradasMov: 198 },
@@ -50,9 +35,6 @@ const MENSUAL = [
   { mes: "2026-06", altasClp: 220_073_581, altasDoc: 43, entradasUnid: 14_874, entradasMov: 195 },
   { mes: "2026-07", altasClp: 15_498_845, altasDoc: 2, entradasUnid: 2_494_202, entradasMov: 204 },
 ];
-
-const totalAltas = TOTALES_ANIO.reduce((s, t) => s + t.altas, 0);
-const totalCosteo = TOTALES_ANIO.reduce((s, t) => s + t.costeo, 0);
 
 export default async function InternoPage() {
   const client = getClient("interno");
@@ -76,35 +58,26 @@ export default async function InternoPage() {
             Nüprotec — Cuentas de Existencias (Libro Mayor)
           </h1>
           <p className="text-slate-300 text-sm mt-0.5">
-            Movimientos contables 2025–2026 · Altas (Debe) vs Costeo (Haber) · vs. entradas físicas de bodega
+            Movimientos contables 2026 · Altas (Debe) vs Costeo (Haber) · vs. entradas físicas de bodega
           </p>
         </div>
       </div>
 
       <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 py-8 space-y-8">
         <section className="bg-white rounded-2xl border border-slate-200 p-6">
-          <h2 className="text-sm font-bold text-navy uppercase tracking-wide mb-4">Totales por año</h2>
+          <h2 className="text-sm font-bold text-navy uppercase tracking-wide mb-4">Totales 2026</h2>
           <div className="grid sm:grid-cols-3 gap-4">
             {TOTALES_ANIO.map((t) => (
-              <div key={t.anio} className="rounded-xl bg-slate-50 border border-slate-200 p-4">
-                <p className="text-xs text-slate-500 font-medium">{t.anio}</p>
-                <p className="text-sm text-slate-600 mt-2">
-                  Altas (Debe) <span className="font-bold text-navy float-right">{money(t.altas)}</span>
+              <div key={t.anio} className="rounded-xl bg-navy p-4">
+                <p className="text-xs text-slate-300 font-medium">{t.anio}</p>
+                <p className="text-sm text-slate-200 mt-2">
+                  Altas (Debe) <span className="font-bold text-white float-right">{money(t.altas)}</span>
                 </p>
-                <p className="text-sm text-slate-600 mt-1">
-                  Costeo (Haber) <span className="font-bold text-navy float-right">{money(t.costeo)}</span>
+                <p className="text-sm text-slate-200 mt-1">
+                  Costeo (Haber) <span className="font-bold text-white float-right">{money(t.costeo)}</span>
                 </p>
               </div>
             ))}
-            <div className="rounded-xl bg-navy p-4">
-              <p className="text-xs text-slate-300 font-medium">Total 2025-2026</p>
-              <p className="text-sm text-slate-200 mt-2">
-                Altas (Debe) <span className="font-bold text-white float-right">{money(totalAltas)}</span>
-              </p>
-              <p className="text-sm text-slate-200 mt-1">
-                Costeo (Haber) <span className="font-bold text-white float-right">{money(totalCosteo)}</span>
-              </p>
-            </div>
           </div>
           <p className="text-xs text-slate-500 mt-4 leading-relaxed">
             <b>Altas</b>: movimientos Debe en cuentas de Existencias — dominado por facturas de compra (glosa &ldquo;FT&rdquo;),
