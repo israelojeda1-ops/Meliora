@@ -16,7 +16,7 @@ import {
 
 export async function POST(req: NextRequest) {
   const client = getClient("nuprotec");
-  if (!client || !client.repo.bancoLogPath) {
+  if (!client || !client.repo || !client.repo.bancoLogPath) {
     return NextResponse.json({ ok: false, error: "Cliente no configurado" }, { status: 404 });
   }
 

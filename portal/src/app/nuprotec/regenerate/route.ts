@@ -6,7 +6,7 @@ import { getClient } from "@/lib/clients";
 export async function POST(req: NextRequest) {
   void req;
   const client = getClient("nuprotec");
-  if (!client || !client.repo.workflowFile) {
+  if (!client || !client.repo || !client.repo.workflowFile) {
     return NextResponse.json(
       { ok: false, error: "Cliente no configurado para regenerar" },
       { status: 404 }

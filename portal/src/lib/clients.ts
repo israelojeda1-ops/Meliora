@@ -2,7 +2,7 @@ export type ClientConfig = {
   slug: string;
   name: string;
   passwordEnv: string;
-  repo: {
+  repo?: {
     owner: string;
     name: string;
     path: string;
@@ -23,6 +23,13 @@ export const CLIENTS: Record<string, ClientConfig> = {
       workflowFile: "generar-dashboard.yml",
       bancoLogPath: "generador/banco_movimientos_log.csv",
     },
+  },
+  // Acceso privado, solo para Israel — no es un cliente, no se linkea desde
+  // ningún lado del portal. Sin repo: las páginas propias no lo necesitan.
+  interno: {
+    slug: "interno",
+    name: "Uso interno",
+    passwordEnv: "INTERNO_PASSWORD",
   },
 };
 

@@ -23,7 +23,7 @@ type GhWorkflowRun = {
 
 export async function GET(req: NextRequest) {
   const client = getClient("nuprotec");
-  if (!client || !client.repo.workflowFile) {
+  if (!client || !client.repo || !client.repo.workflowFile) {
     return NextResponse.json({ found: false }, { status: 404 });
   }
 

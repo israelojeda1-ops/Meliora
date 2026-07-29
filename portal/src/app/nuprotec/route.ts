@@ -8,7 +8,7 @@ import { buildBancoImportWidget } from "@/lib/banco-import-widget";
 
 export async function GET(req: NextRequest) {
   const client = getClient("nuprotec");
-  if (!client) {
+  if (!client || !client.repo) {
     return new Response("Cliente no configurado", { status: 404 });
   }
 
