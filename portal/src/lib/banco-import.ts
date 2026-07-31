@@ -160,6 +160,41 @@ export function filaValida(r: Record<string, unknown>): boolean {
   return BANCO_REQUIRED.every((c) => r[c] !== undefined && String(r[c]).trim() !== "");
 }
 
+/** Ubica una fila del log de Banco por sus valores originales (Fecha, ID
+ * Transferencia, Valor, Factura/Boleta) — usado tanto para editar como para
+ * eliminar, ya que no hay un ID único por fila en el CSV. */
+export function locateBancoRow(
+  rows: string[][],
+  header: string[],
+  original: { fecha: string; idTransferencia: string; valor: string; factura: string }
+): { index: number; error?: undefined } | { index?: undefined; error: string } {
+  const idxOf = (col: string) => header.findIndex((h) => h.trim().toLowerCase() === col.toLowerCase());
+  const iFecha = idxOf("Fecha");
+  const iId = idxOf("ID Transferencia");
+  const iValor = idxOf("Valor");
+  const iFactura = idxOf("Factura / Boleta");
+
+  const matches: number[] = [];
+  rows.forEach((row, i) => {
+    if (
+      (row[iFecha] ?? "").trim() === original.fecha &&
+      (row[iValor] ?? "").trim() === original.valor &&
+      (iId < 0 || (row[iId] ?? "").trim() === original.idTransferencia) &&
+      (row[iFactura] ?? "").trim() === original.factura
+    ) {
+      matches.push(i);
+    }
+  });
+
+  if (matches.length === 0) {
+    return { error: "No se encontró la fila (puede que ya haya cambiado). Recarga la página e intenta de nuevo." };
+  }
+  if (matches.length > 1) {
+    return { error: `Hay ${matches.length} filas idénticas que calzan, no se puede identificar cuál usar.` };
+  }
+  return { index: matches[0] };
+}
+
 /**
  * Reemplaza `var <varName> = <json>;` dentro de un HTML por un valor nuevo,
  * usando slicing + concatenación (nunca String.replace con un string de

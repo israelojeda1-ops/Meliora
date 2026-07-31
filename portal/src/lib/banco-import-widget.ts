@@ -169,62 +169,168 @@ export function buildBancoImportWidget(basePath: string): string {
     reader.readAsArrayBuffer(file);
   });
 
-  // Editar/confirmar la Factura/Boleta asociada directamente en la tabla ya
-  // renderizada (no solo al importar). Se engancha via MutationObserver
-  // porque renderBanco() reconstruye el tbody entero en cada filtro/orden.
-  function setupBancoEdit(){
+  // Ventana para editar la fila completa (todos los campos visibles) de un
+  // movimiento de banco.
+  function mostrarEdicionFila(row, cols, onGuardado){
+    var overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(17,24,39,.55);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px';
+    var box = document.createElement('div');
+    box.style.cssText = 'background:#fff;border-radius:12px;padding:20px;max-width:460px;width:100%;font-size:13px;color:#111827;box-shadow:0 10px 40px rgba(0,0,0,.25)';
+
+    var campos = [
+      { key: 'fecha', label: 'Fecha', idx: cols.iFecha },
+      { key: 'idTransferencia', label: 'ID Transferencia', idx: cols.iId },
+      { key: 'banco', label: 'Banco', idx: cols.iBanco },
+      { key: 'rut', label: 'RUT', idx: cols.iRut },
+      { key: 'valor', label: 'Valor', idx: cols.iValor },
+      { key: 'descripcion', label: 'Descripción', idx: cols.iDesc },
+      { key: 'factura', label: 'Factura / Boleta', idx: cols.iFactura },
+    ];
+
+    var html = '<h3 style="margin:0 0 14px;font-size:16px">Editar movimiento</h3>';
+    campos.forEach(function(c){
+      if (c.idx < 0) return;
+      var val = (row[c.idx] == null ? '' : row[c.idx]).toString().replace(/"/g, '&quot;');
+      html += '<div style="margin-bottom:10px">' +
+        '<label style="display:block;font-size:11px;color:#6B7280;margin-bottom:3px">' + c.label + '</label>' +
+        '<input type="text" data-campo="' + c.key + '" value="' + val + '" ' +
+          'style="width:100%;box-sizing:border-box;padding:6px 8px;border:1px solid #D1D5DB;border-radius:6px;font-size:13px">' +
+      '</div>';
+    });
+    html += '<div style="display:flex;gap:10px;justify-content:flex-end;margin-top:6px">';
+    html += '<button id="banco-editfila-cancel" class="btn-export" style="cursor:pointer">Cancelar</button>';
+    html += '<button id="banco-editfila-guardar" class="btn-export primary" style="cursor:pointer">Guardar</button>';
+    html += '</div>';
+    box.innerHTML = html;
+    overlay.appendChild(box);
+    document.body.appendChild(overlay);
+
+    function cerrar(){ document.body.removeChild(overlay); }
+    document.getElementById('banco-editfila-cancel').addEventListener('click', cerrar);
+    document.getElementById('banco-editfila-guardar').addEventListener('click', function(){
+      var cambios = {};
+      box.querySelectorAll('input[data-campo]').forEach(function(inp){
+        cambios[inp.getAttribute('data-campo')] = inp.value.trim();
+      });
+      cerrar();
+      onGuardado(cambios);
+    });
+  }
+
+  // Columna de Acciones (editar la fila completa / eliminarla), agregada a la
+  // derecha de la tabla ya renderizada. Se engancha via MutationObserver
+  // porque renderBanco() reconstruye el tbody entero en cada filtro/orden, y
+  // el thead se inyecta una sola vez porque initBanco() lo arma una sola vez.
+  function setupBancoAcciones(){
     var tbody = document.getElementById('banco-tbody');
-    if (!tbody || typeof window.bancoFiltrar !== 'function' || typeof window.BANCO === 'undefined') return;
-    var iId = window.BANCO.columnas.indexOf('ID Transferencia');
-    var iFactura = window.BANCO_IDX_DOC;
+    var thead = document.getElementById('banco-thead');
+    if (!tbody || !thead || typeof window.bancoFiltrar !== 'function' || typeof window.BANCO === 'undefined') return;
+
+    var cols = {
+      iFecha: window.BANCO_IDX_FECHA,
+      iId: window.BANCO.columnas.indexOf('ID Transferencia'),
+      iBanco: window.BANCO.columnas.indexOf('Banco'),
+      iRut: window.BANCO_IDX_RUT,
+      iValor: window.BANCO_IDX_MONTO,
+      iDesc: window.BANCO.columnas.indexOf('Descripción'),
+      iFactura: window.BANCO_IDX_DOC,
+    };
+
+    function agregarHeaderAcciones(){
+      var headerRow = thead.querySelector('tr');
+      if (!headerRow || headerRow.getAttribute('data-banco-acciones-ready') === '1') return;
+      headerRow.setAttribute('data-banco-acciones-ready', '1');
+      var th = document.createElement('th');
+      th.textContent = 'Acciones';
+      th.style.cssText = 'text-align:right;white-space:nowrap;font-size:10.5px;padding:4px 6px';
+      headerRow.appendChild(th);
+    }
+
+    function guardarCambios(row, cambios, td){
+      var original = {
+        fecha: row[cols.iFecha],
+        idTransferencia: cols.iId > -1 ? row[cols.iId] : '',
+        valor: row[cols.iValor],
+        factura: row[cols.iFactura],
+      };
+      td.style.opacity = '.5';
+      fetch(basePath + '/banco/edit', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ original: original, cambios: cambios }),
+      }).then(function(r){ return r.json(); }).then(function(data){
+        if (!data.ok) { alert('Error: ' + data.error); td.style.opacity = ''; return; }
+        if (cols.iFecha > -1 && cambios.fecha !== undefined) row[cols.iFecha] = cambios.fecha;
+        if (cols.iId > -1 && cambios.idTransferencia !== undefined) row[cols.iId] = cambios.idTransferencia;
+        if (cols.iBanco > -1 && cambios.banco !== undefined) row[cols.iBanco] = cambios.banco;
+        if (cols.iRut > -1 && cambios.rut !== undefined) row[cols.iRut] = cambios.rut;
+        if (cols.iValor > -1 && cambios.valor !== undefined) row[cols.iValor] = cambios.valor;
+        if (cols.iDesc > -1 && cambios.descripcion !== undefined) row[cols.iDesc] = cambios.descripcion;
+        if (cols.iFactura > -1 && cambios.factura !== undefined) row[cols.iFactura] = cambios.factura;
+        window.renderBanco();
+      }).catch(function(){ alert('Error de red al guardar.'); td.style.opacity = ''; });
+    }
+
+    function eliminarFila(row, td){
+      if (!window.confirm('¿Eliminar este movimiento? Esta acción no se puede deshacer.')) return;
+      td.style.opacity = '.5';
+      fetch(basePath + '/banco/delete', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({
+          fecha: row[cols.iFecha],
+          idTransferencia: cols.iId > -1 ? row[cols.iId] : '',
+          valor: row[cols.iValor],
+          factura: row[cols.iFactura],
+        }),
+      }).then(function(r){ return r.json(); }).then(function(data){
+        if (!data.ok) { alert('Error: ' + data.error); td.style.opacity = ''; return; }
+        var masterIdx = window.BANCO.filas.indexOf(row);
+        if (masterIdx > -1) window.BANCO.filas.splice(masterIdx, 1);
+        window.renderBanco();
+      }).catch(function(){ alert('Error de red al eliminar.'); td.style.opacity = ''; });
+    }
 
     function enrich(){
+      agregarHeaderAcciones();
       var filtered = window.bancoFiltrar();
       var trs = tbody.querySelectorAll('tr');
       filtered.forEach(function(row, idx){
         var tr = trs[idx];
-        if (!tr || tr.getAttribute('data-banco-edit-ready') === '1') return;
-        tr.setAttribute('data-banco-edit-ready', '1');
-        var tds = tr.querySelectorAll('td');
-        var facturaTd = tds[iFactura];
-        if (!facturaTd) return;
-        var btn = document.createElement('button');
-        btn.textContent = '✎';
-        btn.title = 'Editar/confirmar la factura o boleta asociada';
-        btn.style.cssText = 'margin-left:6px;border:none;background:none;cursor:pointer;font-size:11px;color:#6B7280;padding:0 2px';
-        btn.addEventListener('click', function(ev){
+        if (!tr || tr.getAttribute('data-banco-acciones-ready') === '1') return;
+        tr.setAttribute('data-banco-acciones-ready', '1');
+
+        var td = document.createElement('td');
+        td.style.cssText = 'text-align:right;white-space:nowrap;padding:4px 6px';
+
+        var editBtn = document.createElement('button');
+        editBtn.textContent = '✎';
+        editBtn.title = 'Editar la fila completa';
+        editBtn.style.cssText = 'border:none;background:none;cursor:pointer;font-size:12px;color:#6B7280;padding:0 4px';
+        editBtn.addEventListener('click', function(ev){
           ev.stopPropagation();
-          var actual = (row[iFactura] || '').toString();
-          var sugerida = (row[row.length - 1] || '').toString();
-          var nuevo = window.prompt('Factura/Boleta asociada a este movimiento:', actual || sugerida);
-          if (nuevo === null) return;
-          nuevo = nuevo.trim();
-          if (nuevo === actual) return;
-          btn.disabled = true;
-          fetch(basePath + '/banco/edit', {
-            method: 'POST',
-            headers: {'Content-Type':'application/json'},
-            body: JSON.stringify({
-              fecha: row[window.BANCO_IDX_FECHA],
-              idTransferencia: iId > -1 ? row[iId] : '',
-              valor: row[window.BANCO_IDX_MONTO],
-              facturaActual: actual,
-              facturaNueva: nuevo,
-            }),
-          }).then(function(r){ return r.json(); }).then(function(data){
-            if (!data.ok) { alert('Error: ' + data.error); btn.disabled = false; return; }
-            row[iFactura] = nuevo;
-            window.renderBanco();
-          }).catch(function(){ alert('Error de red al guardar.'); btn.disabled = false; });
+          mostrarEdicionFila(row, cols, function(cambios){ guardarCambios(row, cambios, td); });
         });
-        facturaTd.appendChild(btn);
+
+        var delBtn = document.createElement('button');
+        delBtn.textContent = '🗑';
+        delBtn.title = 'Eliminar este movimiento';
+        delBtn.style.cssText = 'border:none;background:none;cursor:pointer;font-size:12px;color:#DC2626;padding:0 4px';
+        delBtn.addEventListener('click', function(ev){
+          ev.stopPropagation();
+          eliminarFila(row, td);
+        });
+
+        td.appendChild(editBtn);
+        td.appendChild(delBtn);
+        tr.appendChild(td);
       });
     }
 
     new MutationObserver(enrich).observe(tbody, { childList: true });
     enrich();
   }
-  setupBancoEdit();
+  setupBancoAcciones();
  } catch (e) {
   var err = document.createElement('div');
   err.style.cssText = 'background:#FEE2E2;color:#DC2626;padding:10px 14px;margin:10px 0;border-radius:8px;font-family:monospace;font-size:11px;white-space:pre-wrap;word-break:break-all';

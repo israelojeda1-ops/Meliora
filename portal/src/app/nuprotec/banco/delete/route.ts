@@ -22,18 +22,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: "GITHUB_TOKEN no configurado" }, { status: 500 });
   }
 
-  let body: {
-    original?: { fecha?: string; idTransferencia?: string; valor?: string; factura?: string };
-    cambios?: {
-      fecha?: string;
-      idTransferencia?: string;
-      banco?: string;
-      rut?: string;
-      valor?: string;
-      descripcion?: string;
-      factura?: string;
-    };
-  };
+  let body: { fecha?: string; idTransferencia?: string; valor?: string; factura?: string };
   try {
     body = await req.json();
   } catch {
@@ -41,15 +30,14 @@ export async function POST(req: NextRequest) {
   }
 
   const original = {
-    fecha: String(body.original?.fecha ?? "").trim(),
-    idTransferencia: String(body.original?.idTransferencia ?? "").trim(),
-    valor: String(body.original?.valor ?? "").trim(),
-    factura: String(body.original?.factura ?? "").trim(),
+    fecha: String(body.fecha ?? "").trim(),
+    idTransferencia: String(body.idTransferencia ?? "").trim(),
+    valor: String(body.valor ?? "").trim(),
+    factura: String(body.factura ?? "").trim(),
   };
   if (!original.fecha || !original.valor) {
     return NextResponse.json({ ok: false, error: "Falta fecha o valor para identificar la fila" }, { status: 400 });
   }
-  const cambios = body.cambios ?? {};
 
   const apiUrl = `https://api.github.com/repos/${client.repo.owner}/${client.repo.name}/contents/${client.repo.bancoLogPath}`;
   const getResp = await fetch(`${apiUrl}?ref=main`, {
@@ -65,7 +53,6 @@ export async function POST(req: NextRequest) {
 
   const all = parseCSV(currentText);
   const header = all.shift() ?? BANCO_HEADER;
-  const idxOf = (col: string) => header.findIndex((h) => h.trim().toLowerCase() === col.toLowerCase());
 
   const located = locateBancoRow(all, header, original);
   if (located.index === undefined) {
@@ -73,19 +60,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: located.error }, { status });
   }
 
-  const row = all[located.index];
-  const setField = (col: string, value: string | undefined) => {
-    if (value === undefined) return;
-    const i = idxOf(col);
-    if (i >= 0) row[i] = value;
-  };
-  setField("Fecha", cambios.fecha);
-  setField("ID Transferencia", cambios.idTransferencia);
-  setField("Banco Origen/Destino", cambios.banco);
-  setField("Rut Origen/Destino", cambios.rut);
-  setField("Valor", cambios.valor);
-  setField("DESCRIPCION", cambios.descripcion);
-  setField("Factura / Boleta", cambios.factura);
+  all.splice(located.index, 1);
 
   const newCsv = toCSV(BANCO_HEADER, all);
   const putResp = await fetch(apiUrl, {
@@ -96,7 +71,7 @@ export async function POST(req: NextRequest) {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      message: `Edita un movimiento de banco (manual)`,
+      message: `Elimina un movimiento de banco (manual)`,
       content: Buffer.from(newCsv, "utf-8").toString("base64"),
       sha,
       branch: "main",
