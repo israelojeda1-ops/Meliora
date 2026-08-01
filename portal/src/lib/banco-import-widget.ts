@@ -217,14 +217,15 @@ export function buildBancoImportWidget(basePath: string): string {
     });
   }
 
-  // Columna de Acciones (editar la fila completa / eliminarla), agregada a la
-  // derecha de la tabla ya renderizada. Se engancha via MutationObserver
-  // porque renderBanco() reconstruye el tbody entero en cada filtro/orden, y
-  // el thead se inyecta una sola vez porque initBanco() lo arma una sola vez.
-  function setupBancoAcciones(){
+  // Selección por casilla de verificación a la izquierda + botones de acción
+  // (Editar/Eliminar) arriba de la tabla, sobre la fila seleccionada. Se
+  // engancha via MutationObserver porque renderBanco() reconstruye el tbody
+  // entero en cada filtro/orden, y el thead/toolbar se inyectan una sola vez.
+  function setupBancoSeleccion(){
     var tbody = document.getElementById('banco-tbody');
     var thead = document.getElementById('banco-thead');
-    if (!tbody || !thead || typeof window.bancoFiltrar !== 'function' || typeof window.BANCO === 'undefined') return;
+    var barra = document.querySelector('#banco-content .stock-search-bar');
+    if (!tbody || !thead || !barra || typeof window.bancoFiltrar !== 'function' || typeof window.BANCO === 'undefined') return;
 
     var cols = {
       iFecha: window.BANCO_IDX_FECHA,
@@ -236,30 +237,90 @@ export function buildBancoImportWidget(basePath: string): string {
       iFactura: window.BANCO_IDX_DOC,
     };
 
-    function agregarHeaderAcciones(){
-      var headerRow = thead.querySelector('tr');
-      if (!headerRow || headerRow.getAttribute('data-banco-acciones-ready') === '1') return;
-      headerRow.setAttribute('data-banco-acciones-ready', '1');
-      var th = document.createElement('th');
-      th.textContent = 'Acciones';
-      th.style.cssText = 'text-align:right;white-space:nowrap;font-size:10.5px;padding:4px 6px';
-      headerRow.appendChild(th);
+    var seleccionados = new Set();
+    var editBtn, delBtn, selectAllChk;
+
+    function agregarToolbar(){
+      if (document.getElementById('banco-editar-sel')) return;
+      editBtn = document.createElement('button');
+      editBtn.id = 'banco-editar-sel';
+      editBtn.className = 'btn-export';
+      editBtn.textContent = '✎ Editar';
+      editBtn.disabled = true;
+      editBtn.style.cursor = 'pointer';
+      delBtn = document.createElement('button');
+      delBtn.id = 'banco-eliminar-sel';
+      delBtn.className = 'btn-export';
+      delBtn.textContent = '🗑 Eliminar';
+      delBtn.disabled = true;
+      delBtn.style.cssText = 'cursor:pointer;color:#DC2626';
+      barra.insertBefore(delBtn, barra.firstChild);
+      barra.insertBefore(editBtn, barra.firstChild);
+
+      editBtn.addEventListener('click', function(){
+        if (seleccionados.size !== 1) return;
+        var row = seleccionados.values().next().value;
+        mostrarEdicionFila(row, cols, function(cambios){ guardarCambios(row, cambios); });
+      });
+      delBtn.addEventListener('click', function(){
+        if (!seleccionados.size) return;
+        var filas = Array.from(seleccionados);
+        if (!window.confirm('¿Eliminar ' + filas.length + ' movimiento(s)? Esta acción no se puede deshacer.')) return;
+        eliminarFilas(filas);
+      });
     }
 
-    function guardarCambios(row, cambios, td){
+    function actualizarToolbar(){
+      if (!editBtn) return;
+      editBtn.disabled = seleccionados.size !== 1;
+      delBtn.disabled = seleccionados.size === 0;
+      if (selectAllChk) {
+        var visibles = tbody.querySelectorAll('input[data-banco-chk]');
+        var marcados = 0;
+        visibles.forEach(function(c){ if (c.checked) marcados++; });
+        selectAllChk.checked = visibles.length > 0 && marcados === visibles.length;
+        selectAllChk.indeterminate = marcados > 0 && marcados < visibles.length;
+      }
+    }
+
+    function agregarHeaderCheckbox(){
+      var headerRow = thead.querySelector('tr');
+      if (!headerRow || headerRow.getAttribute('data-banco-sel-ready') === '1') return;
+      headerRow.setAttribute('data-banco-sel-ready', '1');
+      var th = document.createElement('th');
+      th.style.cssText = 'width:26px;padding:4px 6px';
+      selectAllChk = document.createElement('input');
+      selectAllChk.type = 'checkbox';
+      selectAllChk.title = 'Seleccionar todos los visibles';
+      selectAllChk.addEventListener('change', function(){
+        // Captura el valor deseado ANTES del loop: cada fila dispara su propio
+        // 'change' -> actualizarToolbar(), que recalcula y reescribe
+        // selectAllChk.checked a mitad de camino (con solo algunas filas
+        // marcadas todavía) si se sigue leyendo en vivo dentro del loop.
+        var marcarTodos = selectAllChk.checked;
+        var boxes = tbody.querySelectorAll('input[data-banco-chk]');
+        boxes.forEach(function(c){
+          c.checked = marcarTodos;
+          c.dispatchEvent(new Event('change'));
+        });
+      });
+      th.appendChild(selectAllChk);
+      headerRow.insertBefore(th, headerRow.firstChild);
+    }
+
+    function guardarCambios(row, cambios){
       var original = {
         fecha: row[cols.iFecha],
         idTransferencia: cols.iId > -1 ? row[cols.iId] : '',
         valor: row[cols.iValor],
         factura: row[cols.iFactura],
       };
-      td.style.opacity = '.5';
       fetch(basePath + '/banco/edit', {
         method: 'POST',
         headers: {'Content-Type':'application/json'},
         body: JSON.stringify({ original: original, cambios: cambios }),
       }).then(function(r){ return r.json(); }).then(function(data){
-        if (!data.ok) { alert('Error: ' + data.error); td.style.opacity = ''; return; }
+        if (!data.ok) { alert('Error: ' + data.error); return; }
         if (cols.iFecha > -1 && cambios.fecha !== undefined) row[cols.iFecha] = cambios.fecha;
         if (cols.iId > -1 && cambios.idTransferencia !== undefined) row[cols.iId] = cambios.idTransferencia;
         if (cols.iBanco > -1 && cambios.banco !== undefined) row[cols.iBanco] = cambios.banco;
@@ -267,70 +328,73 @@ export function buildBancoImportWidget(basePath: string): string {
         if (cols.iValor > -1 && cambios.valor !== undefined) row[cols.iValor] = cambios.valor;
         if (cols.iDesc > -1 && cambios.descripcion !== undefined) row[cols.iDesc] = cambios.descripcion;
         if (cols.iFactura > -1 && cambios.factura !== undefined) row[cols.iFactura] = cambios.factura;
+        seleccionados.clear();
         window.renderBanco();
-      }).catch(function(){ alert('Error de red al guardar.'); td.style.opacity = ''; });
+      }).catch(function(){ alert('Error de red al guardar.'); });
     }
 
-    function eliminarFila(row, td){
-      if (!window.confirm('¿Eliminar este movimiento? Esta acción no se puede deshacer.')) return;
-      td.style.opacity = '.5';
-      fetch(basePath + '/banco/delete', {
-        method: 'POST',
-        headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({
-          fecha: row[cols.iFecha],
-          idTransferencia: cols.iId > -1 ? row[cols.iId] : '',
-          valor: row[cols.iValor],
-          factura: row[cols.iFactura],
-        }),
-      }).then(function(r){ return r.json(); }).then(function(data){
-        if (!data.ok) { alert('Error: ' + data.error); td.style.opacity = ''; return; }
-        var masterIdx = window.BANCO.filas.indexOf(row);
-        if (masterIdx > -1) window.BANCO.filas.splice(masterIdx, 1);
-        window.renderBanco();
-      }).catch(function(){ alert('Error de red al eliminar.'); td.style.opacity = ''; });
+    function eliminarFilas(filas){
+      delBtn.disabled = true;
+      editBtn.disabled = true;
+      var i = 0;
+      function siguiente(){
+        if (i >= filas.length) {
+          seleccionados.clear();
+          window.renderBanco();
+          return;
+        }
+        var row = filas[i];
+        fetch(basePath + '/banco/delete', {
+          method: 'POST',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({
+            fecha: row[cols.iFecha],
+            idTransferencia: cols.iId > -1 ? row[cols.iId] : '',
+            valor: row[cols.iValor],
+            factura: row[cols.iFactura],
+          }),
+        }).then(function(r){ return r.json(); }).then(function(data){
+          if (!data.ok) { alert('Error eliminando una fila: ' + data.error); return; }
+          var masterIdx = window.BANCO.filas.indexOf(row);
+          if (masterIdx > -1) window.BANCO.filas.splice(masterIdx, 1);
+        }).catch(function(){ alert('Error de red al eliminar.'); }).then(function(){
+          i++; siguiente();
+        });
+      }
+      siguiente();
     }
 
     function enrich(){
-      agregarHeaderAcciones();
+      agregarHeaderCheckbox();
+      agregarToolbar();
       var filtered = window.bancoFiltrar();
       var trs = tbody.querySelectorAll('tr');
       filtered.forEach(function(row, idx){
         var tr = trs[idx];
-        if (!tr || tr.getAttribute('data-banco-acciones-ready') === '1') return;
-        tr.setAttribute('data-banco-acciones-ready', '1');
+        if (!tr || tr.getAttribute('data-banco-sel-ready') === '1') return;
+        tr.setAttribute('data-banco-sel-ready', '1');
 
         var td = document.createElement('td');
-        td.style.cssText = 'text-align:right;white-space:nowrap;padding:4px 6px';
-
-        var editBtn = document.createElement('button');
-        editBtn.textContent = '✎';
-        editBtn.title = 'Editar la fila completa';
-        editBtn.style.cssText = 'border:none;background:none;cursor:pointer;font-size:12px;color:#6B7280;padding:0 4px';
-        editBtn.addEventListener('click', function(ev){
-          ev.stopPropagation();
-          mostrarEdicionFila(row, cols, function(cambios){ guardarCambios(row, cambios, td); });
+        td.style.cssText = 'padding:4px 6px';
+        var chk = document.createElement('input');
+        chk.type = 'checkbox';
+        chk.setAttribute('data-banco-chk', '1');
+        chk.checked = seleccionados.has(row);
+        chk.addEventListener('click', function(ev){ ev.stopPropagation(); });
+        chk.addEventListener('change', function(){
+          if (chk.checked) seleccionados.add(row); else seleccionados.delete(row);
+          actualizarToolbar();
         });
-
-        var delBtn = document.createElement('button');
-        delBtn.textContent = '🗑';
-        delBtn.title = 'Eliminar este movimiento';
-        delBtn.style.cssText = 'border:none;background:none;cursor:pointer;font-size:12px;color:#DC2626;padding:0 4px';
-        delBtn.addEventListener('click', function(ev){
-          ev.stopPropagation();
-          eliminarFila(row, td);
-        });
-
-        td.appendChild(editBtn);
-        td.appendChild(delBtn);
-        tr.appendChild(td);
+        td.appendChild(chk);
+        tr.insertBefore(td, tr.firstChild);
       });
+      actualizarToolbar();
     }
 
     new MutationObserver(enrich).observe(tbody, { childList: true });
     enrich();
   }
-  setupBancoAcciones();
+  setupBancoSeleccion();
  } catch (e) {
   var err = document.createElement('div');
   err.style.cssText = 'background:#FEE2E2;color:#DC2626;padding:10px 14px;margin:10px 0;border-radius:8px;font-family:monospace;font-size:11px;white-space:pre-wrap;word-break:break-all';
