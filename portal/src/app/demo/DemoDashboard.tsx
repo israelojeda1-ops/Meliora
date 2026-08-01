@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Logo } from "@/components/Logo";
 
 /* ────────────────────────────────────────────────────────────────────────
    Paleta (dataviz skill · validada CVD) y helpers de formato
@@ -753,6 +754,10 @@ export default function DemoDashboard() {
       {/* Header estilo dashboard */}
       <div className="bg-navy">
         <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 pt-6 pb-5">
+          <div className="flex items-center justify-between gap-3 mb-4">
+            <Logo variant="icon" theme="dark" />
+            <span className="text-slate-400 text-xs">Portal Meliora Advisory</span>
+          </div>
           <p className="text-emerald font-semibold text-xs tracking-wide uppercase mb-1">
             Reporte gerencial mensual
           </p>
