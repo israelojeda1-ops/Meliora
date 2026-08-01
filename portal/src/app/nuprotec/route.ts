@@ -5,6 +5,7 @@ import { getClient } from "@/lib/clients";
 import { buildRegenerateWidget } from "@/lib/regenerate-widget";
 import { buildAnalyticsScript } from "@/lib/analytics-widget";
 import { buildBancoImportWidget } from "@/lib/banco-import-widget";
+import { buildLogoWidget } from "@/lib/logo-widget";
 
 export async function GET(req: NextRequest) {
   const client = getClient("nuprotec");
@@ -45,6 +46,7 @@ export async function GET(req: NextRequest) {
   let html = await upstream.text();
 
   let injected = buildAnalyticsScript(client.slug);
+  injected += buildLogoWidget();
   if (client.repo.workflowFile) {
     injected += buildRegenerateWidget(`/${client.slug}`);
   }
