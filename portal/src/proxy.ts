@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { decrypt, SESSION_COOKIE } from "@/lib/session";
 
-const PUBLIC_PREFIXES = ["/login", "/logout", "/demo"];
+// Cóndores es una aplicación con login propio: la clave del portal encima de
+// su login era un doble acceso, así que pasa sin la puerta del portal.
+const PUBLIC_PREFIXES = ["/login", "/logout", "/demo", "/condores"];
 
 export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
