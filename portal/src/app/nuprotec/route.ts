@@ -5,7 +5,7 @@ import { getClient } from "@/lib/clients";
 import { buildRegenerateWidget } from "@/lib/regenerate-widget";
 import { buildAnalyticsScript } from "@/lib/analytics-widget";
 import { buildBancoImportWidget } from "@/lib/banco-import-widget";
-import { buildLogoWidget } from "@/lib/logo-widget";
+import { buildBrandWidget } from "@/lib/brand-widget";
 
 export async function GET(req: NextRequest) {
   const client = getClient("nuprotec");
@@ -46,13 +46,13 @@ export async function GET(req: NextRequest) {
   let html = await upstream.text();
 
   let injected = buildAnalyticsScript(client.slug);
-  injected += buildLogoWidget();
   if (client.repo.workflowFile) {
     injected += buildRegenerateWidget(`/${client.slug}`);
   }
   if (client.repo.bancoLogPath) {
     injected += buildBancoImportWidget(`/${client.slug}`);
   }
+  injected += buildBrandWidget();
   // OJO: se usa una función de reemplazo (no un string) porque `injected`
   // puede contener secuencias como `$'` (ej. dentro de código que arma un
   // string con '$' + algo) que String.replace() interpretaría como patrones
