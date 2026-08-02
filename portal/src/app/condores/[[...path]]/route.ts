@@ -1,6 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import { decrypt, SESSION_COOKIE } from "@/lib/session";
+import { NextRequest } from "next/server";
 import { getClient } from "@/lib/clients";
 
 // Cabeceras que no tiene sentido reenviar tal cual: identifican al portal
@@ -24,15 +22,9 @@ async function proxy(req: NextRequest) {
     return new Response("Cliente no configurado", { status: 404 });
   }
 
-  const cookieStore = await cookies();
-  const session = await decrypt(cookieStore.get(SESSION_COOKIE)?.value);
-
-  if (!session || session.client !== client.slug) {
-    const loginUrl = new URL("/login", req.url);
-    loginUrl.searchParams.set("client", client.slug);
-    return NextResponse.redirect(loginUrl);
-  }
-
+  // Sin puerta del portal: Cóndores es una aplicación con login propio
+  // (usuarios y contraseñas en su base), así que pedir además la clave del
+  // portal era un doble login. Se reenvía directo y la app decide el acceso.
   const targetUrl = new URL(
     `${req.nextUrl.pathname}${req.nextUrl.search}`,
     client.proxyTarget
