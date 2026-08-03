@@ -303,6 +303,16 @@ export function buildBancoImportWidget(basePath: string): string {
       iFactura: window.BANCO_IDX_DOC,
     };
 
+    // IdMov no es una columna visible de la tabla (window.BANCO.columnas /
+    // filas) — viene aparte, en window.BANCO.ids, alineado por índice con
+    // filas. Con esto, editar/eliminar identifican la fila real por su
+    // clave única en vez de adivinar por Fecha+Valor+Factura.
+    function idMovDe(row){
+      if (!window.BANCO.ids) return '';
+      var idx = window.BANCO.filas.indexOf(row);
+      return idx > -1 ? (window.BANCO.ids[idx] || '') : '';
+    }
+
     var seleccionados = new Set();
     var editBtn, delBtn, selectAllChk;
 
@@ -380,6 +390,7 @@ export function buildBancoImportWidget(basePath: string): string {
 
     function guardarCambios(row, cambios){
       var original = {
+        idMov: idMovDe(row),
         fecha: row[cols.iFecha],
         idTransferencia: cols.iId > -1 ? row[cols.iId] : '',
         valor: row[cols.iValor],
@@ -418,6 +429,7 @@ export function buildBancoImportWidget(basePath: string): string {
         var row = items[i].row;
         var cambios = items[i].cambios;
         var original = {
+          idMov: idMovDe(row),
           fecha: row[cols.iFecha],
           idTransferencia: cols.iId > -1 ? row[cols.iId] : '',
           valor: row[cols.iValor],
@@ -458,6 +470,7 @@ export function buildBancoImportWidget(basePath: string): string {
           method: 'POST',
           headers: {'Content-Type':'application/json'},
           body: JSON.stringify({
+            idMov: idMovDe(row),
             fecha: row[cols.iFecha],
             idTransferencia: cols.iId > -1 ? row[cols.iId] : '',
             valor: row[cols.iValor],
@@ -466,7 +479,10 @@ export function buildBancoImportWidget(basePath: string): string {
         }).then(function(r){ return r.json(); }).then(function(data){
           if (!data.ok) { alert('Error eliminando una fila: ' + data.error); return; }
           var masterIdx = window.BANCO.filas.indexOf(row);
-          if (masterIdx > -1) window.BANCO.filas.splice(masterIdx, 1);
+          if (masterIdx > -1) {
+            window.BANCO.filas.splice(masterIdx, 1);
+            if (window.BANCO.ids) window.BANCO.ids.splice(masterIdx, 1);
+          }
         }).catch(function(){ alert('Error de red al eliminar.'); }).then(function(){
           i++; siguiente();
         });

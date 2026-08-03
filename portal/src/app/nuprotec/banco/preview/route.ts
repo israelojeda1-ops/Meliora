@@ -70,8 +70,12 @@ export async function POST(req: NextRequest) {
     const existingAll = parseCSV(currentText);
     const existingHeader = existingAll.shift() ?? BANCO_HEADER;
     const idxOf = (col: string) => existingHeader.findIndex((h) => h.trim().toLowerCase() === col.toLowerCase());
+    // Se ignora IdMov al comparar: cada fila del Excel a subir todavía no
+    // tiene uno (se genera recién al guardar), así que compararlo haría que
+    // ninguna fila calzara nunca con las ya existentes.
+    const colsSinId = BANCO_HEADER.filter((c) => c !== "IdMov");
     existentes = new Set(
-      existingAll.map((row) => BANCO_HEADER.map((col) => row[idxOf(col)] ?? "").join(""))
+      existingAll.map((row) => colsSinId.map((col) => row[idxOf(col)] ?? "").join(""))
     );
   }
 
@@ -83,7 +87,7 @@ export async function POST(req: NextRequest) {
     const facturaSugerida =
       !facturaOriginal && !agregador ? sugerirFactura(rutToArqueo, r["Rut Origen/Destino"], valorNum) : "";
     const cleanRow = valida ? buildCleanRow(r) : null;
-    const yaExiste = !!cleanRow && existentes.has(cleanRow.join(""));
+    const yaExiste = !!cleanRow && existentes.has(cleanRow.slice(1).join(""));
 
     return {
       idx,

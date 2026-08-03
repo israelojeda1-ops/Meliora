@@ -71,17 +71,23 @@ export async function POST(req: NextRequest) {
     })
   );
 
-  const seen = new Set(reordered.map((r) => r.join("")));
+  // La clave de "ya existe" ignora IdMov a propósito: cada fila nueva trae un
+  // IdMov recién generado (siempre distinto), así que compararlo haría que
+  // reimportar la misma planilla de origen nunca detecte duplicados.
+  const iIdMovHeader = BANCO_HEADER.indexOf("IdMov");
+  const sinId = (r: string[]) => r.filter((_, i) => i !== iIdMovHeader).join("");
+  const seen = new Set(reordered.map(sinId));
   let added = 0;
   for (const r of cleanRows) {
-    const key = r.join("");
+    const key = sinId(r);
     if (seen.has(key)) continue;
     seen.add(key);
     reordered.push(r);
     added++;
   }
 
-  reordered.sort((a, b) => (a[0] < b[0] ? 1 : a[0] > b[0] ? -1 : 0));
+  const iFechaHeader = BANCO_HEADER.indexOf("Fecha");
+  reordered.sort((a, b) => (a[iFechaHeader] < b[iFechaHeader] ? 1 : a[iFechaHeader] > b[iFechaHeader] ? -1 : 0));
 
   const newCsv = toCSV(BANCO_HEADER, reordered);
   const putResp = await fetch(apiUrl, {

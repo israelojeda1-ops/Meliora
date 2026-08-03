@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
   }
 
   let body: {
-    original?: { fecha?: string; idTransferencia?: string; valor?: string; factura?: string };
+    original?: { idMov?: string; fecha?: string; idTransferencia?: string; valor?: string; factura?: string };
     cambios?: {
       fecha?: string;
       idTransferencia?: string;
@@ -41,6 +41,7 @@ export async function POST(req: NextRequest) {
   }
 
   const original = {
+    idMov: String(body.original?.idMov ?? "").trim(),
     fecha: String(body.original?.fecha ?? "").trim(),
     idTransferencia: String(body.original?.idTransferencia ?? "").trim(),
     valor: String(body.original?.valor ?? "").trim(),

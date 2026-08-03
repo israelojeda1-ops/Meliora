@@ -1,7 +1,16 @@
 // Lógica compartida entre /banco/preview (previsualización + sugerencia) y
 // /banco/import (guardado real) para que ambos normalicen y decidan igual.
 
+import { randomBytes } from "crypto";
+
+// "IdMov" es la clave única y estable de cada fila del log de Banco — se
+// genera una sola vez al importar y no vuelve a cambiar aunque se edite el
+// resto de la fila. Antes de que existiera, editar/eliminar identificaban la
+// fila por Fecha+Valor+ID Transferencia+Factura, lo que fallaba seguido:
+// "ID Transferencia" no es único (se repite entre movimientos distintos) y
+// dos filas podían calzar exactamente en esos 4 campos.
 export const BANCO_HEADER = [
+  "IdMov",
   "Fecha",
   "ID Transferencia",
   "Rut Origen/Destino",
@@ -15,6 +24,12 @@ export const BANCO_HEADER = [
 ];
 
 export const BANCO_REQUIRED = ["Fecha", "Valor"];
+
+/** Genera un IdMov nuevo y único (10 caracteres hex). No requiere ninguna
+ * acción del usuario — se asigna solo, al importar. */
+export function genIdMov(): string {
+  return randomBytes(5).toString("hex");
+}
 
 const AGREGADORES_PAGO = ["transbank", "mercado pago", "mercado libre", "mercadolibre", "mercadopago"];
 
@@ -138,11 +153,13 @@ export function sugerirFactura(
   return Array.from(folios).sort().join(",");
 }
 
-/** Fila ya limpia (10 columnas, mismo orden que BANCO_HEADER) a partir de una
+/** Fila ya limpia (11 columnas, mismo orden que BANCO_HEADER) a partir de una
  * fila cruda del Excel. `facturaOverride`, si viene, reemplaza el valor de
- * "Factura / Boleta" (para cuando el usuario editó la sugerencia). */
+ * "Factura / Boleta" (para cuando el usuario editó la sugerencia). El IdMov
+ * se genera acá mismo — el usuario nunca lo ve ni lo ingresa. */
 export function buildCleanRow(r: Record<string, unknown>, facturaOverride?: string): string[] {
   return [
+    genIdMov(),
     normFecha(r["Fecha"]),
     String(r["ID Transferencia"] ?? "").trim(),
     String(r["Rut Origen/Destino"] ?? "").trim(),
@@ -160,19 +177,31 @@ export function filaValida(r: Record<string, unknown>): boolean {
   return BANCO_REQUIRED.every((c) => r[c] !== undefined && String(r[c]).trim() !== "");
 }
 
-/** Ubica una fila del log de Banco por sus valores originales (Fecha, ID
- * Transferencia, Valor, Factura/Boleta) — usado tanto para editar como para
- * eliminar, ya que no hay un ID único por fila en el CSV. */
+/** Ubica una fila del log de Banco. Si viene `idMov`, se busca por esa clave
+ * única y estable directamente (un solo resultado posible, sin ambigüedad).
+ * Si no viene (fila importada antes de que existiera IdMov), cae al matching
+ * anterior por Fecha+Valor+ID Transferencia+Factura — frágil (esos campos
+ * pueden repetirse entre movimientos distintos), pero sirve de respaldo para
+ * el historial ya cargado. */
 export function locateBancoRow(
   rows: string[][],
   header: string[],
-  original: { fecha: string; idTransferencia: string; valor: string; factura: string }
+  original: { idMov?: string; fecha: string; idTransferencia: string; valor: string; factura: string }
 ): { index: number; error?: undefined } | { index?: undefined; error: string } {
   const idxOf = (col: string) => header.findIndex((h) => h.trim().toLowerCase() === col.toLowerCase());
+  const iIdMov = idxOf("IdMov");
   const iFecha = idxOf("Fecha");
   const iId = idxOf("ID Transferencia");
   const iValor = idxOf("Valor");
   const iFactura = idxOf("Factura / Boleta");
+
+  if (original.idMov && iIdMov >= 0) {
+    const i = rows.findIndex((row) => (row[iIdMov] ?? "").trim() === original.idMov);
+    if (i === -1) {
+      return { error: "No se encontró la fila (puede que ya haya cambiado). Recarga la página e intenta de nuevo." };
+    }
+    return { index: i };
+  }
 
   // La fecha se compara normalizada (no como texto exacto): el CSV la
   // guarda en ISO (yyyy-mm-dd), pero el dashboard la muestra como
@@ -276,7 +305,12 @@ function fechaDisplay(v: string): string {
 
 export const BANCO_DISPLAY_COLUMNAS = ["Fecha", "ID Transferencia", "Banco", "RUT", "Valor", "Descripción", "Factura/Boleta"];
 
-export type BancoData = { disponible: boolean; columnas: string[]; filas: (string | number)[][] };
+export type BancoData = {
+  disponible: boolean;
+  columnas: string[];
+  filas: (string | number)[][];
+  ids: string[];
+};
 
 /** Reconstruye el mismo BANCO_DATA que arma generar.py (columnas + filas,
  * con rut_flag y sugerencia como dos campos extra al final de cada fila),
@@ -288,6 +322,7 @@ export function buildBancoData(
   folioToRut: Map<string, string>
 ): BancoData {
   const idxOf = (col: string) => csvHeader.findIndex((h) => h.trim().toLowerCase() === col.toLowerCase());
+  const iIdMov = idxOf("IdMov");
   const iFecha = idxOf("Fecha");
   const iId = idxOf("ID Transferencia");
   const iBanco = idxOf("Banco Origen/Destino");
@@ -342,7 +377,9 @@ export function buildBancoData(
     ];
   });
 
-  return { disponible: true, columnas: BANCO_DISPLAY_COLUMNAS, filas };
+  const ids = sorted.map((row) => (iIdMov >= 0 ? row[iIdMov] ?? "" : ""));
+
+  return { disponible: true, columnas: BANCO_DISPLAY_COLUMNAS, filas, ids };
 }
 
 /**

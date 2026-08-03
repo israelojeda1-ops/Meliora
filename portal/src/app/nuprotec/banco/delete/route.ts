@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: "GITHUB_TOKEN no configurado" }, { status: 500 });
   }
 
-  let body: { fecha?: string; idTransferencia?: string; valor?: string; factura?: string };
+  let body: { idMov?: string; fecha?: string; idTransferencia?: string; valor?: string; factura?: string };
   try {
     body = await req.json();
   } catch {
@@ -30,6 +30,7 @@ export async function POST(req: NextRequest) {
   }
 
   const original = {
+    idMov: String(body.idMov ?? "").trim(),
     fecha: String(body.fecha ?? "").trim(),
     idTransferencia: String(body.idTransferencia ?? "").trim(),
     valor: String(body.valor ?? "").trim(),
