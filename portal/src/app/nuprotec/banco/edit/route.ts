@@ -3,7 +3,7 @@ import { cookies } from "next/headers";
 import { decrypt, SESSION_COOKIE } from "@/lib/session";
 import { getClient } from "@/lib/clients";
 import { parseCSV, toCSV } from "@/lib/csv";
-import { BANCO_HEADER, locateBancoRow, patchBancoInHtml } from "@/lib/banco-import";
+import { BANCO_HEADER, locateBancoRow, normFecha, patchBancoInHtml } from "@/lib/banco-import";
 
 export async function POST(req: NextRequest) {
   const client = getClient("nuprotec");
@@ -79,7 +79,10 @@ export async function POST(req: NextRequest) {
     const i = idxOf(col);
     if (i >= 0) row[i] = value;
   };
-  setField("Fecha", cambios.fecha);
+  // El CSV siempre guarda la fecha en ISO (yyyy-mm-dd), aunque el formulario
+  // de edición la muestre/reciba como dd-mm-yyyy — normalizar acá evita que
+  // quede escrita en el formato de pantalla y rompa el próximo editar/eliminar.
+  setField("Fecha", cambios.fecha !== undefined ? normFecha(cambios.fecha) : undefined);
   setField("ID Transferencia", cambios.idTransferencia);
   setField("Banco Origen/Destino", cambios.banco);
   setField("Rut Origen/Destino", cambios.rut);

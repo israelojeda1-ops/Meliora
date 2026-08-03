@@ -174,10 +174,16 @@ export function locateBancoRow(
   const iValor = idxOf("Valor");
   const iFactura = idxOf("Factura / Boleta");
 
+  // La fecha se compara normalizada (no como texto exacto): el CSV la
+  // guarda en ISO (yyyy-mm-dd), pero el dashboard la muestra como
+  // dd-mm-yyyy y le manda ese valor mostrado de vuelta al editar/eliminar
+  // — sin esto, ninguna fila calzaba nunca.
+  const fechaOriginal = normFecha(original.fecha);
+
   const matches: number[] = [];
   rows.forEach((row, i) => {
     if (
-      (row[iFecha] ?? "").trim() === original.fecha &&
+      normFecha(row[iFecha]) === fechaOriginal &&
       (row[iValor] ?? "").trim() === original.valor &&
       (iId < 0 || (row[iId] ?? "").trim() === original.idTransferencia) &&
       (row[iFactura] ?? "").trim() === original.factura

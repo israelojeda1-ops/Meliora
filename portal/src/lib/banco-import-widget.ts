@@ -169,15 +169,10 @@ export function buildBancoImportWidget(basePath: string): string {
     reader.readAsArrayBuffer(file);
   });
 
-  // Ventana para editar la fila completa (todos los campos visibles) de un
-  // movimiento de banco.
-  function mostrarEdicionFila(row, cols, onGuardado){
-    var overlay = document.createElement('div');
-    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(17,24,39,.55);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px';
-    var box = document.createElement('div');
-    box.style.cssText = 'background:#fff;border-radius:12px;padding:20px;max-width:460px;width:100%;font-size:13px;color:#111827;box-shadow:0 10px 40px rgba(0,0,0,.25)';
-
-    var campos = [
+  // Campos editables de un movimiento de banco (compartido entre el editor
+  // de una fila y la grilla de edición múltiple).
+  function camposEditables(cols){
+    return [
       { key: 'fecha', label: 'Fecha', idx: cols.iFecha },
       { key: 'idTransferencia', label: 'ID Transferencia', idx: cols.iId },
       { key: 'banco', label: 'Banco', idx: cols.iBanco },
@@ -186,6 +181,17 @@ export function buildBancoImportWidget(basePath: string): string {
       { key: 'descripcion', label: 'Descripción', idx: cols.iDesc },
       { key: 'factura', label: 'Factura / Boleta', idx: cols.iFactura },
     ];
+  }
+
+  // Ventana para editar la fila completa (todos los campos visibles) de un
+  // movimiento de banco.
+  function mostrarEdicionFila(row, cols, onGuardado){
+    var overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(17,24,39,.55);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px';
+    var box = document.createElement('div');
+    box.style.cssText = 'background:#fff;border-radius:12px;padding:20px;max-width:460px;width:100%;font-size:13px;color:#111827;box-shadow:0 10px 40px rgba(0,0,0,.25)';
+
+    var campos = camposEditables(cols);
 
     var html = '<h3 style="margin:0 0 14px;font-size:16px">Editar movimiento</h3>';
     campos.forEach(function(c){
@@ -214,6 +220,66 @@ export function buildBancoImportWidget(basePath: string): string {
       });
       cerrar();
       onGuardado(cambios);
+    });
+  }
+
+  // Ventana con una grilla (una fila por movimiento seleccionado) para
+  // editar varios movimientos a la vez.
+  function mostrarEdicionGrilla(rows, cols, onGuardarTodos){
+    var overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(17,24,39,.55);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px';
+    var box = document.createElement('div');
+    box.style.cssText = 'background:#fff;border-radius:12px;padding:20px;max-width:1040px;width:100%;max-height:88vh;overflow:auto;font-size:13px;color:#111827;box-shadow:0 10px 40px rgba(0,0,0,.25)';
+
+    var campos = camposEditables(cols);
+
+    var html = '<h3 style="margin:0 0 6px;font-size:16px">Editar ' + rows.length + ' movimientos</h3>';
+    html += '<p style="margin:0 0 12px;color:#6B7280">Modifica lo que necesites y guarda todo junto.</p>';
+    html += '<div style="max-height:60vh;overflow:auto;border:1px solid #E5E7EB;border-radius:8px;margin-bottom:14px">';
+    html += '<table style="width:100%;border-collapse:collapse;font-size:12px;white-space:nowrap">';
+    html += '<thead><tr style="background:#F9FAFB;position:sticky;top:0">';
+    campos.forEach(function(c){
+      if (c.idx < 0) return;
+      html += '<th style="text-align:left;padding:5px 8px;border-bottom:1px solid #E5E7EB">' + c.label + '</th>';
+    });
+    html += '</tr></thead><tbody>';
+
+    rows.forEach(function(row, ridx){
+      html += '<tr data-ridx="' + ridx + '" style="border-top:1px solid #F3F4F6">';
+      campos.forEach(function(c){
+        if (c.idx < 0) return;
+        var val = (row[c.idx] == null ? '' : row[c.idx]).toString().replace(/"/g, '&quot;');
+        html += '<td style="padding:3px 6px">' +
+          '<input type="text" data-ridx="' + ridx + '" data-campo="' + c.key + '" value="' + val + '" ' +
+            'style="width:100%;min-width:100px;box-sizing:border-box;padding:4px 6px;border:1px solid #D1D5DB;border-radius:5px;font-size:12px">' +
+        '</td>';
+      });
+      html += '</tr>';
+    });
+
+    html += '</tbody></table></div>';
+    html += '<div style="display:flex;gap:10px;justify-content:flex-end">';
+    html += '<button id="banco-editgrilla-cancel" class="btn-export" style="cursor:pointer">Cancelar</button>';
+    html += '<button id="banco-editgrilla-guardar" class="btn-export primary" style="cursor:pointer">Guardar todos</button>';
+    html += '</div>';
+    box.innerHTML = html;
+    overlay.appendChild(box);
+    document.body.appendChild(overlay);
+
+    function cerrar(){ document.body.removeChild(overlay); }
+    document.getElementById('banco-editgrilla-cancel').addEventListener('click', cerrar);
+    document.getElementById('banco-editgrilla-guardar').addEventListener('click', function(){
+      var porFila = {};
+      box.querySelectorAll('input[data-campo]').forEach(function(inp){
+        var ridx = inp.getAttribute('data-ridx');
+        porFila[ridx] = porFila[ridx] || {};
+        porFila[ridx][inp.getAttribute('data-campo')] = inp.value.trim();
+      });
+      var items = rows.map(function(row, ridx){
+        return { row: row, cambios: porFila[ridx] || {} };
+      });
+      cerrar();
+      onGuardarTodos(items);
     });
   }
 
@@ -258,9 +324,13 @@ export function buildBancoImportWidget(basePath: string): string {
       barra.insertBefore(editBtn, barra.firstChild);
 
       editBtn.addEventListener('click', function(){
-        if (seleccionados.size !== 1) return;
-        var row = seleccionados.values().next().value;
-        mostrarEdicionFila(row, cols, function(cambios){ guardarCambios(row, cambios); });
+        if (!seleccionados.size) return;
+        var filas = Array.from(seleccionados);
+        if (filas.length === 1) {
+          mostrarEdicionFila(filas[0], cols, function(cambios){ guardarCambios(filas[0], cambios); });
+        } else {
+          mostrarEdicionGrilla(filas, cols, guardarCambiosMultiples);
+        }
       });
       delBtn.addEventListener('click', function(){
         if (!seleccionados.size) return;
@@ -272,7 +342,7 @@ export function buildBancoImportWidget(basePath: string): string {
 
     function actualizarToolbar(){
       if (!editBtn) return;
-      editBtn.disabled = seleccionados.size !== 1;
+      editBtn.disabled = seleccionados.size === 0;
       delBtn.disabled = seleccionados.size === 0;
       if (selectAllChk) {
         var visibles = tbody.querySelectorAll('input[data-banco-chk]');
@@ -331,6 +401,46 @@ export function buildBancoImportWidget(basePath: string): string {
         seleccionados.clear();
         window.renderBanco();
       }).catch(function(){ alert('Error de red al guardar.'); });
+    }
+
+    function guardarCambiosMultiples(items){
+      delBtn.disabled = true;
+      editBtn.disabled = true;
+      var errores = [];
+      var i = 0;
+      function siguiente(){
+        if (i >= items.length) {
+          seleccionados.clear();
+          window.renderBanco();
+          if (errores.length) alert('No se pudieron guardar ' + errores.length + ' fila(s):\\n' + errores.join('\\n'));
+          return;
+        }
+        var row = items[i].row;
+        var cambios = items[i].cambios;
+        var original = {
+          fecha: row[cols.iFecha],
+          idTransferencia: cols.iId > -1 ? row[cols.iId] : '',
+          valor: row[cols.iValor],
+          factura: row[cols.iFactura],
+        };
+        fetch(basePath + '/banco/edit', {
+          method: 'POST',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({ original: original, cambios: cambios }),
+        }).then(function(r){ return r.json(); }).then(function(data){
+          if (!data.ok) { errores.push((original.factura || original.idTransferencia || '(fila ' + (i+1) + ')') + ': ' + data.error); return; }
+          if (cols.iFecha > -1 && cambios.fecha !== undefined) row[cols.iFecha] = cambios.fecha;
+          if (cols.iId > -1 && cambios.idTransferencia !== undefined) row[cols.iId] = cambios.idTransferencia;
+          if (cols.iBanco > -1 && cambios.banco !== undefined) row[cols.iBanco] = cambios.banco;
+          if (cols.iRut > -1 && cambios.rut !== undefined) row[cols.iRut] = cambios.rut;
+          if (cols.iValor > -1 && cambios.valor !== undefined) row[cols.iValor] = cambios.valor;
+          if (cols.iDesc > -1 && cambios.descripcion !== undefined) row[cols.iDesc] = cambios.descripcion;
+          if (cols.iFactura > -1 && cambios.factura !== undefined) row[cols.iFactura] = cambios.factura;
+        }).catch(function(){ errores.push('(fila ' + (i+1) + '): error de red'); }).then(function(){
+          i++; siguiente();
+        });
+      }
+      siguiente();
     }
 
     function eliminarFilas(filas){
