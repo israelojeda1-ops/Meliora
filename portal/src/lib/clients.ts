@@ -29,6 +29,14 @@ export const CLIENTS: Record<string, ClientConfig> = {
       bancoLogPath: "generador/banco_movimientos_log.csv",
     },
   },
+  // Réplica de Nuprotec sobre Vercel + Neon: app propia, se proxea completa.
+  // Convive con /nuprotec (el HTML del repo) hasta el corte.
+  nuprotecV2: {
+    slug: "nuprotecV2",
+    name: "Nuprotec (nueva versión)",
+    passwordEnv: "NUPROTEC_PASSWORD",
+    proxyTarget: "https://nuprotec-v2.vercel.app",
+  },
   condores: {
     slug: "condores",
     name: "PreU Cóndores",
