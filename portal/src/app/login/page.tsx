@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { Logo } from "@/components/Logo";
 import { LoginForm } from "@/components/LoginForm";
 import { getClient } from "@/lib/clients";
@@ -12,6 +13,12 @@ export default async function LoginPage({
   // Sin parámetro de cliente no revelamos ningún nombre de cliente:
   // solo se muestra el formulario cuando el link de acceso trae un slug válido.
   const client = clientParam ? getClient(clientParam) : undefined;
+
+  // Cliente con login propio: pedirle la clave del portal acá sería el primero
+  // de dos logins. Se manda directo a su app, que autentica por su cuenta.
+  // Va como redirect y no como enlace porque los accesos que ya circulan
+  // apuntan a esta URL: así siguen funcionando sin repartir un link nuevo.
+  if (client?.loginPropio) redirect(`/${client.slug}`);
 
   return (
     <div className="flex-1 flex items-center justify-center px-4 py-16">

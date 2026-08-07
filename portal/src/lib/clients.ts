@@ -14,6 +14,10 @@ export type ClientConfig = {
   // request completa a este origen. La app debe estar montada con el
   // mismo basePath (`/${slug}`) para que sus assets y rutas calcen.
   proxyTarget?: string;
+  // La app de destino autentica por su cuenta (usuarios y roles en su base).
+  // Pedirle además la clave del portal sería un doble login, así que no pasa
+  // por el gate ni por la pantalla de /login.
+  loginPropio?: boolean;
 };
 
 export const CLIENTS: Record<string, ClientConfig> = {
@@ -36,12 +40,14 @@ export const CLIENTS: Record<string, ClientConfig> = {
     name: "Nuprotec (nueva versión)",
     passwordEnv: "NUPROTEC_PASSWORD",
     proxyTarget: "https://nuprotec-v2.vercel.app",
+    loginPropio: true,
   },
   condores: {
     slug: "condores",
     name: "PreU Cóndores",
     passwordEnv: "CONDORES_PASSWORD",
     proxyTarget: "https://condores.vercel.app",
+    loginPropio: true,
   },
   // Acceso privado, solo para Israel — no es un cliente, no se linkea desde
   // ningún lado del portal. Sin repo: las páginas propias no lo necesitan.
@@ -52,6 +58,16 @@ export const CLIENTS: Record<string, ClientConfig> = {
   },
 };
 
+/**
+ * Índice por slug en minúsculas.
+ *
+ * La búsqueda es insensible a mayúsculas porque los slugs viajan en URLs que
+ * la gente copia, guarda en favoritos y reescribe a mano: con el lookup
+ * exacto anterior, `nuprotecv2` no encontraba nada y el portal respondía
+ * "Cliente no encontrado" por una sola letra.
+ */
+const POR_SLUG = new Map(Object.values(CLIENTS).map((c) => [c.slug.toLowerCase(), c]));
+
 export function getClient(slug: string): ClientConfig | undefined {
-  return CLIENTS[slug];
+  return POR_SLUG.get(slug.trim().toLowerCase());
 }
