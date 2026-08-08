@@ -23,14 +23,13 @@ export type PartidoGuardado = {
 
 /** Permite apuntar a un servidor de prueba; en producción no se define. */
 const HOST = () => process.env.ALMACEN_URL ?? "https://api.github.com";
-// El GITHUB_TOKEN que vive en Vercel tiene permiso sobre nuprotec-informes, así
-// que los datos van ahí, en su propia carpeta datos-deportes/. Para moverlos a
-// otro repo basta definir ALMACEN_REPO (y que el token pueda escribirlo).
-const REPO = () => process.env.ALMACEN_REPO ?? "israelojeda1-ops/nuprotec-informes";
+// Los datos del portal viven aparte de los repos de clientes. ALMACEN_TOKEN
+// permite usar un token propio para este repo, sin ampliar el de Nuprotec.
+const REPO = () => process.env.ALMACEN_REPO ?? "israelojeda1-ops/pruebas";
 
 function token(): string {
-  const t = process.env.GITHUB_TOKEN;
-  if (!t) throw new ApiError("Falta GITHUB_TOKEN para el almacén de historial.");
+  const t = process.env.ALMACEN_TOKEN ?? process.env.GITHUB_TOKEN;
+  if (!t) throw new ApiError("Falta ALMACEN_TOKEN (o GITHUB_TOKEN) para el almacén de historial.");
   return t;
 }
 
