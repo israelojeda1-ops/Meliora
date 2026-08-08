@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
-import { COOKIE_PRIVADO, verificar } from "@/lib/futbol/sesion";
-import { diaAMostrar, getCartelera } from "@/lib/futbol/cartelera";
+import { COOKIE_PRIVADO, verificar } from "@/lib/deportes/sesion";
+import { diaAMostrar, getCartelera } from "@/lib/deportes/cartelera";
+import { getDeporte } from "@/lib/deportes/catalogo";
 import { Cartelera } from "./Cartelera";
 
 export const metadata = {
@@ -15,9 +16,9 @@ export const dynamic = "force-dynamic";
 export default async function PrivadoPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; fecha?: string }>;
+  searchParams: Promise<{ error?: string; fecha?: string; deporte?: string }>;
 }) {
-  const { error, fecha: fechaParam } = await searchParams;
+  const { error, fecha: fechaParam, deporte: deporteParam } = await searchParams;
   const token = (await cookies()).get(COOKIE_PRIVADO)?.value;
   const dentro = await verificar(token);
 
@@ -55,14 +56,17 @@ export default async function PrivadoPage({
   }
 
   const { fecha, titulo } = await diaAMostrar(fechaParam);
+  const deporte = getDeporte(deporteParam);
 
   let datos;
   let fallo: string | null = null;
   try {
-    datos = await getCartelera(fecha, { maxPeticiones: 6 });
+    datos = await getCartelera(deporte.id, fecha, { maxPeticiones: 6 });
   } catch (e) {
     fallo = (e as Error).message;
   }
 
-  return <Cartelera inicial={datos ?? null} fecha={fecha} titulo={titulo} fallo={fallo} />;
+  return (
+    <Cartelera inicial={datos ?? null} deporte={deporte.id} fecha={fecha} titulo={titulo} fallo={fallo} />
+  );
 }

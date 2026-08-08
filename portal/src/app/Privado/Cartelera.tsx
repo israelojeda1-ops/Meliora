@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
-import type { Cartelera as Datos } from "@/lib/futbol/cartelera";
-import type { Lado, Proyeccion, ResumenSede } from "@/lib/futbol/modelo";
-import { fechaCorta, horaChile, relativo } from "@/lib/futbol/fecha";
+import type { Cartelera as Datos } from "@/lib/deportes/cartelera";
+import type { Lado, Proyeccion, ResumenSede } from "@/lib/deportes/modelo";
+import type { Metricas } from "@/lib/deportes/catalogo";
+import { LISTA_DEPORTES } from "@/lib/deportes/catalogo";
+import { fechaCorta, horaChile, relativo } from "@/lib/deportes/fecha";
 
 const pct = (v: number) => `${Math.round(v * 100)}%`;
 
@@ -21,16 +23,17 @@ function Pill({ v, children }: { v: number; children: React.ReactNode }) {
   );
 }
 
-function Promedio({ titulo, r, resaltar }: { titulo: string; r: ResumenSede; resaltar: boolean }) {
+function Promedio({ titulo, r, m, resaltar }: { titulo: string; r: ResumenSede; m: Metricas; resaltar: boolean }) {
   if (!r.pj) return <div className="text-[11px] text-slate-400">{titulo}: sin partidos</div>;
   return (
     <div className={`text-[11px] ${resaltar ? "font-semibold text-slate-700" : "text-slate-400"}`}>
-      {titulo} ({r.pj}): rem {r.rem.toFixed(1)}-{r.remC.toFixed(1)} · cor {r.cor.toFixed(1)}-{r.corC.toFixed(1)}
+      {titulo} ({r.pj}): {m.a.corto} {r.a.toFixed(1)}-{r.aC.toFixed(1)} · {m.b.corto} {r.b.toFixed(1)}-
+      {r.bC.toFixed(1)}
     </div>
   );
 }
 
-function BloqueEquipo({ l }: { l: Lado }) {
+function BloqueEquipo({ l, m, marcador }: { l: Lado; m: Metricas; marcador: boolean }) {
   return (
     <div className="rounded-lg bg-slate-50 p-3">
       <div className="flex items-baseline justify-between gap-2">
@@ -40,14 +43,14 @@ function BloqueEquipo({ l }: { l: Lado }) {
 
       <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-slate-600">
         <span>
-          <b className="text-slate-900">{l.rem.toFixed(1)}</b> tiros <Pill v={l.pRem}>{pct(l.pRem)}</Pill>
+          <b className="text-slate-900">{l.a.toFixed(1)}</b> {m.a.nombre} <Pill v={l.pA}>{pct(l.pA)}</Pill>
         </span>
         <span>
-          <b className="text-slate-900">{l.cor.toFixed(1)}</b> córners <Pill v={l.pCor}>{pct(l.pCor)}</Pill>
+          <b className="text-slate-900">{l.b.toFixed(1)}</b> {m.b.nombre} <Pill v={l.pB}>{pct(l.pB)}</Pill>
         </span>
       </div>
 
-      {/* Historial reciente: fecha, rival, marcador, remates y córners (a favor-en contra) */}
+      {/* Historial reciente: fecha, rival, marcador y las dos métricas (a favor-en contra) */}
       {l.ultimos.length ? (
         <div className="mt-2.5 overflow-x-auto">
           <table className="w-full min-w-[290px] text-[11px] tabular-nums">
@@ -58,14 +61,16 @@ function BloqueEquipo({ l }: { l: Lado }) {
                   <td className="py-1 pr-2 text-slate-600">
                     <span className="text-slate-400">{u.casa ? "vs" : "@"}</span> {u.rival}
                   </td>
-                  <td className="py-1 pr-2 font-medium text-slate-700">
-                    {u.gf}-{u.gc}
-                  </td>
+                  {marcador && (
+                    <td className="py-1 pr-2 font-medium text-slate-700">
+                      {u.gf}-{u.gc}
+                    </td>
+                  )}
                   <td className="py-1 pr-2 text-slate-600">
-                    <span className="text-slate-400">rem</span> {u.tf}-{u.tc}
+                    <span className="text-slate-400">{m.a.corto}</span> {u.af}-{u.ac}
                   </td>
                   <td className="py-1 text-slate-600">
-                    <span className="text-slate-400">cor</span> {u.cf}-{u.cc}
+                    <span className="text-slate-400">{m.b.corto}</span> {u.bf}-{u.bc}
                   </td>
                 </tr>
               ))}
@@ -77,14 +82,14 @@ function BloqueEquipo({ l }: { l: Lado }) {
       )}
 
       <div className="mt-2 space-y-0.5">
-        <Promedio titulo="Promedio de local" r={l.promLocal} resaltar={l.casa} />
-        <Promedio titulo="Promedio de visita" r={l.promVisita} resaltar={!l.casa} />
+        <Promedio titulo="Promedio de local" r={l.promLocal} m={m} resaltar={l.casa} />
+        <Promedio titulo="Promedio de visita" r={l.promVisita} m={m} resaltar={!l.casa} />
       </div>
     </div>
   );
 }
 
-function Partido({ p, ahora }: { p: Proyeccion; ahora: number | null }) {
+function Partido({ p, m, marcador, ahora }: { p: Proyeccion; m: Metricas; marcador: boolean; ahora: number | null }) {
   const [abierto, setAbierto] = useState(false);
   // Solo se muestra cuando el navegador ya montó: si lo calculara el servidor,
   // el HTML llegaría con una cuenta regresiva vieja y no calzaría al hidratar.
@@ -109,18 +114,22 @@ function Partido({ p, ahora }: { p: Proyeccion; ahora: number | null }) {
           </div>
         </div>
         <div className="flex shrink-0 flex-col items-end gap-1">
-          <Pill v={p.pRem}>{p.rem.toFixed(0)} tiros · {pct(p.pRem)}</Pill>
-          <Pill v={p.pCor}>{p.cor.toFixed(1)} cór · {pct(p.pCor)}</Pill>
+          <Pill v={p.pA}>
+            {p.a.toFixed(p.a >= 100 ? 0 : 1)} {m.a.corto} · {pct(p.pA)}
+          </Pill>
+          <Pill v={p.pB}>
+            {p.b.toFixed(1)} {m.b.corto} · {pct(p.pB)}
+          </Pill>
         </div>
       </button>
       {abierto && (
         <div className="space-y-2 px-4 pb-4">
           {p.lados.map((l) => (
-            <BloqueEquipo key={l.nombre + (l.casa ? "L" : "V")} l={l} />
+            <BloqueEquipo key={l.nombre + (l.casa ? "L" : "V")} l={l} m={m} marcador={marcador} />
           ))}
           <p className="text-[11px] leading-relaxed text-slate-400">
-            Totales del partido: {p.rem.toFixed(1)} tiros y {p.cor.toFixed(1)} córners proyectados. Los porcentajes de
-            cada equipo son contra su propia línea, no contra el total.
+            Totales del partido: {p.a.toFixed(1)} {m.a.nombre} y {p.b.toFixed(1)} {m.b.nombre} proyectados. Los
+            porcentajes de cada equipo son contra su propia línea, no contra el total.
           </p>
         </div>
       )}
@@ -128,13 +137,17 @@ function Partido({ p, ahora }: { p: Proyeccion; ahora: number | null }) {
   );
 }
 
+const METRICAS_VACIAS: Metricas = { a: { nombre: "—", corto: "a" }, b: { nombre: "—", corto: "b" } };
+
 export function Cartelera({
   inicial,
+  deporte,
   fecha,
   titulo,
   fallo,
 }: {
   inicial: Datos | null;
+  deporte: string;
   fecha: string;
   titulo: string;
   fallo: string | null;
@@ -161,9 +174,10 @@ export function Cartelera({
       setMsg(forzar ? "Actualizando desde la API…" : "Cargando…");
       setError(null);
       try {
-        const r = await fetch(`/Privado/refrescar?fecha=${fecha}${forzar ? "&forzar=1" : ""}`, {
-          method: "POST",
-        });
+        const r = await fetch(
+          `/Privado/refrescar?deporte=${deporte}&fecha=${fecha}${forzar ? "&forzar=1" : ""}`,
+          { method: "POST" }
+        );
         const j = await r.json();
         if (!r.ok) throw new Error(j.error ?? `HTTP ${r.status}`);
         setDatos(j as Datos);
@@ -175,13 +189,16 @@ export function Cartelera({
     });
 
   const partidos = datos?.partidos ?? [];
+  const m = datos?.metricas ?? METRICAS_VACIAS;
 
   return (
     <main className="mx-auto w-full max-w-2xl flex-1 px-0 pb-16 sm:px-4">
       <header className="sticky top-0 z-10 border-b border-slate-200 bg-white/95 px-4 py-3 backdrop-blur">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <h1 className="text-base font-bold text-slate-900">Remates y córners</h1>
+            <h1 className="text-base font-bold text-slate-900 first-letter:uppercase">
+              {m.a.nombre} y {m.b.nombre}
+            </h1>
             <p className="text-xs text-slate-400">{titulo} · hora de Chile</p>
           </div>
           <div className="flex items-center gap-2">
@@ -197,6 +214,21 @@ export function Cartelera({
             </form>
           </div>
         </div>
+        <nav className="mt-2.5 flex gap-1.5">
+          {LISTA_DEPORTES.map((dep) => (
+            <a
+              key={dep.id}
+              href={`/Privado?deporte=${dep.id}`}
+              className={`rounded-full px-3 py-1 text-xs font-medium ${
+                dep.id === deporte
+                  ? "bg-slate-900 text-white"
+                  : "bg-slate-100 text-slate-500 active:bg-slate-200"
+              }`}
+            >
+              {dep.nombre}
+            </a>
+          ))}
+        </nav>
         {msg && <p className="mt-2 text-xs text-slate-400">{msg}</p>}
         {error && <p className="mt-2 text-xs text-red-600">{error}</p>}
       </header>
@@ -209,7 +241,7 @@ export function Cartelera({
           </div>
           <div className="bg-white px-2 py-3">
             <div className="text-lg font-bold tabular-nums text-slate-900">
-              {partidos.filter((p) => p.pRem >= 0.6 && p.pCor >= 0.6).length}
+              {partidos.filter((p) => p.pA >= 0.6 && p.pB >= 0.6).length}
             </div>
             <div className="text-[10px] uppercase tracking-wide text-slate-400">doble ≥60%</div>
           </div>
@@ -222,7 +254,7 @@ export function Cartelera({
 
       <ul className="divide-y divide-slate-100 bg-white">
         {partidos.map((p) => (
-          <Partido key={p.fid} p={p} ahora={ahora} />
+          <Partido key={p.fid} p={p} m={m} marcador={datos?.mostrarMarcador ?? true} ahora={ahora} />
         ))}
       </ul>
 
@@ -240,6 +272,7 @@ export function Cartelera({
               de nuevo en un minuto para completarlas.
             </p>
           )}
+          {datos.nota && <p className="mb-2 text-slate-500">{datos.nota}</p>}
           {datos.avisos.map((a, i) => (
             <p key={i} className="mb-1">
               {a}

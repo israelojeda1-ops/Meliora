@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { COOKIE_PRIVADO } from "@/lib/futbol/sesion";
+import { COOKIE_PRIVADO } from "@/lib/deportes/sesion";
 
 export async function POST(req: NextRequest) {
   const res = NextResponse.redirect(new URL("/Privado", req.url), 303);

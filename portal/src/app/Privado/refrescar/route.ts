@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { revalidateTag } from "next/cache";
-import { COOKIE_PRIVADO, verificar } from "@/lib/futbol/sesion";
-import { getCartelera } from "@/lib/futbol/cartelera";
-import { TAG_LISTAS } from "@/lib/futbol/apiFootball";
-import { fechaChile } from "@/lib/futbol/fecha";
+import { COOKIE_PRIVADO, verificar } from "@/lib/deportes/sesion";
+import { getCartelera } from "@/lib/deportes/cartelera";
+import { TAG_LISTAS } from "@/lib/deportes/api";
+import { fechaChile } from "@/lib/deportes/fecha";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -31,7 +31,9 @@ async function manejar(req: NextRequest) {
   if (forzar) revalidateTag(TAG_LISTAS, { expire: 0 });
 
   try {
-    const datos = await getCartelera(fecha, { maxPeticiones: 9 });
+    const datos = await getCartelera(url.searchParams.get("deporte") ?? undefined, fecha, {
+      maxPeticiones: 9,
+    });
     return NextResponse.json(datos);
   } catch (e) {
     return NextResponse.json({ error: (e as Error).message }, { status: 500 });

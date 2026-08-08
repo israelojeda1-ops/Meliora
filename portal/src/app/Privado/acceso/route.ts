@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { COOKIE_PRIVADO, claveCorrecta, firmar } from "@/lib/futbol/sesion";
+import { COOKIE_PRIVADO, claveCorrecta, firmar } from "@/lib/deportes/sesion";
 
 export async function POST(req: NextRequest) {
   const form = await req.formData();
