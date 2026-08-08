@@ -104,9 +104,10 @@ export type ResumenPoblado = {
 };
 
 /**
- * Puebla el almacén de fútbol con los últimos `dias` días desde ESPN. Los días
- * que ya existen en el almacén se respetan: esto rellena lo que falta, no pisa
- * lo cosechado.
+ * Puebla el almacén de fútbol con los últimos `dias` días desde ESPN. Sin liga,
+ * rellena solo los días que faltan, sin pisar lo cosechado. Con una liga, la
+ * inyecta también en los días ya guardados que aún no la tienen — es como se
+ * incorpora una competencia nueva (Leagues Cup) al historial existente.
  */
 export async function poblarFutbol(dias: number, ligaId?: number): Promise<ResumenPoblado> {
   const d = DEPORTES.futbol;
@@ -120,7 +121,9 @@ export async function poblarFutbol(dias: number, ligaId?: number): Promise<Resum
   for (let i = 1; i <= dias; i++) {
     const fecha = fechaChile(mediodiaHoy - i * DIA_MS);
     try {
-      if ((await leerDia(d, fecha, i < 2)) !== null) continue; // ya cosechado o poblado
+      const existente = await leerDia(d, fecha, i < 2);
+      if (existente !== null && ligaId === undefined) continue; // ya cosechado o poblado
+      if (existente !== null && existente.some((g) => g.ligaId === ligaId)) continue;
 
       const delDia: PartidoGuardado[] = [];
       for (const liga of ligas) {
@@ -148,7 +151,8 @@ export async function poblarFutbol(dias: number, ligaId?: number): Promise<Resum
         }
       }
 
-      await guardarDia(d, fecha, delDia);
+      if (existente !== null && !delDia.length) continue; // nada nuevo que anotar
+      await guardarDia(d, fecha, [...(existente ?? []), ...delDia]);
       diasEscritos += 1;
       partidos += delDia.length;
     } catch (err) {

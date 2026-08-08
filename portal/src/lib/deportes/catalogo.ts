@@ -73,6 +73,7 @@ export const DEPORTES: Record<DeporteId, Deporte> = {
     mostrarMarcador: true,
     enPortada: true,
     ligas: [
+      { id: 772, nombre: "Leagues Cup", pais: "Norteamérica", espn: "concacaf.leagues.cup" },
       { id: 265, nombre: "Primera División", pais: "Chile", espn: "chi.1" },
       { id: 39, nombre: "Premier League", pais: "Inglaterra", espn: "eng.1" },
       { id: 140, nombre: "LaLiga", pais: "España", espn: "esp.1" },
