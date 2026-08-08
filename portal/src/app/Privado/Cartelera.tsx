@@ -257,6 +257,20 @@ export function Cartelera({
   const m = datos?.metricas ?? METRICAS_VACIAS;
   const dobles = partidos.filter((p) => p.pA >= 0.6 && p.pB >= 0.6).length;
 
+  // Cartelera agrupada por liga: proyectados y "sin historial" juntos bajo su
+  // liga, y las ligas ordenadas por el primer partido del día.
+  type Grupo = { liga: string; ts: number; proyectados: typeof partidos; sinDatos: NonNullable<typeof datos>["sinDatos"] };
+  const porLiga = new Map<string, Grupo>();
+  const grupo = (liga: string, ts: number) => {
+    const g = porLiga.get(liga) ?? { liga, ts, proyectados: [], sinDatos: [] };
+    g.ts = Math.min(g.ts, ts);
+    porLiga.set(liga, g);
+    return g;
+  };
+  for (const p of partidos) grupo(p.liga, p.ts).proyectados.push(p);
+  for (const s of datos?.sinDatos ?? []) grupo(s.liga, s.ts).sinDatos.push(s);
+  const grupos = [...porLiga.values()].sort((a, b) => a.ts - b.ts);
+
   return (
     <div className="min-h-screen w-full bg-slate-950 text-slate-100">
       <main className="mx-auto w-full max-w-2xl pb-20">
@@ -317,15 +331,42 @@ export function Cartelera({
           </div>
         )}
 
-        <ul className="space-y-2.5 px-3 pt-3">
-          {partidos.map((p) => (
-            <Partido key={p.fid} p={p} m={m} marcador={datos?.mostrarMarcador ?? true} ahora={ahora} />
-          ))}
-        </ul>
+        {grupos.map((g) => (
+          <section key={g.liga} className="pt-4">
+            <div className="flex items-baseline justify-between px-4 pb-2">
+              <h2 className="text-xs font-bold uppercase tracking-widest text-slate-400">{g.liga}</h2>
+              <span className="text-[11px] tabular-nums text-slate-600">
+                {g.proyectados.length + g.sinDatos.length} partidos
+              </span>
+            </div>
+            <ul className="space-y-2.5 px-3">
+              {g.proyectados.map((p) => (
+                <Partido key={p.fid} p={p} m={m} marcador={datos?.mostrarMarcador ?? true} ahora={ahora} />
+              ))}
+              {g.sinDatos.map((s, i) => (
+                <li
+                  key={`sd-${i}`}
+                  className="flex items-center gap-3.5 rounded-2xl px-4 py-3 ring-1 ring-white/5"
+                >
+                  <div className="w-12 shrink-0 text-center text-base font-extrabold tabular-nums text-slate-300">
+                    {horaChile(s.ts)}
+                  </div>
+                  <div className="min-w-0 flex-1 border-l border-white/10 pl-3.5">
+                    <div className="truncate text-[15px] font-semibold leading-snug text-slate-300">{s.local}</div>
+                    <div className="truncate text-[15px] font-medium leading-snug text-slate-400">{s.visita}</div>
+                  </div>
+                  <span className="shrink-0 rounded-full bg-white/5 px-2.5 py-1 text-[10px] font-semibold text-slate-500 ring-1 ring-white/10">
+                    sin historial
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </section>
+        ))}
 
-        {!partidos.length && !error && (
+        {!grupos.length && !error && (
           <p className="px-4 py-14 text-center text-sm text-slate-500">
-            {datos ? "No hay partidos proyectables hoy en las ligas seguidas." : "Cargando…"}
+            {datos ? "No hay partidos hoy en las ligas seguidas." : "Cargando…"}
           </p>
         )}
 
@@ -341,35 +382,14 @@ export function Cartelera({
           </div>
         )}
 
-        {datos && (datos.sinDatos.length > 0 || datos.ligasPendientes.length > 0 || datos.avisos.length > 0) && (
+        {datos && datos.avisos.length > 0 && (
           <section className="mt-5 px-4 text-xs text-slate-500">
-            {datos.ligasPendientes.length > 0 && (
-              <p className="mb-2">
-                <b className="text-slate-400">Ligas sin historial:</b> {datos.ligasPendientes.join(", ")}.
-              </p>
-            )}
             {datos.nota && <p className="mb-2">{datos.nota}</p>}
             {datos.avisos.map((a, i) => (
               <p key={i} className="mb-1">
                 {a}
               </p>
             ))}
-            {datos.sinDatos.length > 0 && (
-              <details className="mt-2">
-                <summary className="cursor-pointer text-slate-400">
-                  {datos.sinDatos.length} partidos sin historial suficiente
-                </summary>
-                <ul className="mt-2 space-y-1.5">
-                  {datos.sinDatos.map((s, i) => (
-                    <li key={i} className="tabular-nums">
-                      {horaChile(s.ts)} · <span className="text-slate-300">{s.local}</span> vs{" "}
-                      <span className="text-slate-300">{s.visita}</span>{" "}
-                      <span className="text-slate-600">({s.liga})</span>
-                    </li>
-                  ))}
-                </ul>
-              </details>
-            )}
           </section>
         )}
 
