@@ -100,6 +100,40 @@ async function statsEspn(slug: string, eventoId: number): Promise<Map<number, { 
   return out;
 }
 
+/**
+ * Remates, córners y marcador de un partido en una sola petición. En el schedule
+ * el marcador viene como un `$ref` (un enlace, no el número), así que se toma del
+ * `summary`, que además trae las estadísticas.
+ */
+async function resumenEspn(
+  slug: string,
+  eventoId: number
+): Promise<{ stats: Map<number, { a: number; b: number }>; marcador: Map<number, number> }> {
+  const json = await espnGet(`/apis/site/v2/sports/soccer/${slug}/summary?event=${eventoId}`);
+  const stats = new Map<number, { a: number; b: number }>();
+  for (const t of arr(obj(json.boxscore)?.teams)) {
+    const lado = obj(t);
+    const tid = num(obj(lado?.team)?.id);
+    if (tid === null) continue;
+    let remates: number | null = null;
+    let corners: number | null = null;
+    for (const st of arr(lado?.statistics)) {
+      const fila = obj(st);
+      if (fila?.name === "totalShots") remates = num(fila.displayValue ?? fila.value);
+      if (fila?.name === "wonCorners") corners = num(fila.displayValue ?? fila.value);
+    }
+    if (remates !== null && corners !== null) stats.set(tid, { a: remates, b: corners });
+  }
+  const marcador = new Map<number, number>();
+  for (const c of arr(obj(arr(obj(json.header)?.competitions)[0])?.competitors)) {
+    const comp = obj(c);
+    const tid = num(comp?.id) ?? num(obj(comp?.team)?.id);
+    const g = num(comp?.score);
+    if (tid !== null && g !== null) marcador.set(tid, g);
+  }
+  return { stats, marcador };
+}
+
 /** Equipos de una liga (id y nombre de ESPN). */
 async function equiposDeLiga(slug: string): Promise<{ id: number; nombre: string }[]> {
   const json = await espnGet(`/apis/site/v2/sports/soccer/${slug}/teams`);
@@ -267,11 +301,12 @@ export async function poblarPorEquipo(forzar = false, porEquipo = 12): Promise<R
         const eventos = (await scheduleEquipo(dom.slug, eq.id, temporadas)).slice(0, porEquipo);
         const guardados: PartidoGuardado[] = [];
         for (const ev of eventos) {
-          let stats: Map<number, { a: number; b: number }>;
+          let stats = new Map<number, { a: number; b: number }>();
+          let marcador = new Map<number, number>();
           try {
-            stats = await statsEspn(dom.slug, ev.id);
+            ({ stats, marcador } = await resumenEspn(dom.slug, ev.id));
           } catch {
-            stats = new Map();
+            /* sin resumen: el partido queda sin stats y se descarta al leer */
           }
           const l = stats.get(ev.local.id) ?? null;
           const v = stats.get(ev.visita.id) ?? null;
@@ -281,8 +316,9 @@ export async function poblarPorEquipo(forzar = false, porEquipo = 12): Promise<R
             ligaId: dom.ligaId,
             local: ev.local,
             visita: ev.visita,
-            gl: ev.gl,
-            gv: ev.gv,
+            // marcador del summary; si falta, el del schedule (que suele ser 0)
+            gl: marcador.get(ev.local.id) ?? ev.gl,
+            gv: marcador.get(ev.visita.id) ?? ev.gv,
             stats: l && v ? { l, v } : null,
           });
         }

@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useTransition } from "react";
 import type { Cartelera as Datos } from "@/lib/deportes/cartelera";
-import type { Lado, LineaSegura, Proyeccion, ResumenSede } from "@/lib/deportes/modelo";
+import type { DesgloseMetrica, Lado, LineaSegura, Proyeccion, ResumenSede } from "@/lib/deportes/modelo";
 import type { Metricas } from "@/lib/deportes/catalogo";
 import { DEPORTES_EN_PORTADA } from "@/lib/deportes/catalogo";
 import { fechaCorta, horaChile, relativo } from "@/lib/deportes/fecha";
@@ -134,6 +134,7 @@ function BloqueEquipo({ l, m, marcador }: { l: Lado; m: Metricas; marcador: bool
 
 function Partido({ p, m, marcador, ahora }: { p: Proyeccion; m: Metricas; marcador: boolean; ahora: number | null }) {
   const [abierto, setAbierto] = useState(false);
+  const [analisis, setAnalisis] = useState(false);
   // Solo se muestra cuando el navegador ya montó: si lo calculara el servidor,
   // el HTML llegaría con una cuenta regresiva vieja y no calzaría al hidratar.
   const rel = ahora === null ? "" : relativo(p.ts, ahora);
@@ -175,11 +176,19 @@ function Partido({ p, m, marcador, ahora }: { p: Proyeccion; m: Metricas; marcad
           </div>
         </div>
       </button>
-      {(p.segA || p.segB) && (
-        <div className="px-3 pb-3">
-          <LineaSeguraStrip segA={p.segA} segB={p.segB} m={m} />
-        </div>
-      )}
+      <div className="flex items-center gap-2 px-3 pb-3">
+        {(p.segA || p.segB) && (
+          <div className="min-w-0 flex-1">
+            <LineaSeguraStrip segA={p.segA} segB={p.segB} m={m} />
+          </div>
+        )}
+        <button
+          onClick={() => setAnalisis(true)}
+          className="shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-semibold text-slate-300 ring-1 ring-white/10 active:bg-white/5"
+        >
+          Análisis
+        </button>
+      </div>
       {abierto && (
         <div className="space-y-2.5 px-3 pb-3.5">
           {p.lados.map((l) => (
@@ -192,6 +201,7 @@ function Partido({ p, m, marcador, ahora }: { p: Proyeccion; m: Metricas; marcad
           </p>
         </div>
       )}
+      {analisis && <ModalAnalisis p={p} m={m} onClose={() => setAnalisis(false)} />}
     </li>
   );
 }
@@ -212,6 +222,123 @@ function LineaSeguraStrip({ segA, segB, m }: { segA: LineaSegura | null; segB: L
       <span className="font-bold uppercase tracking-wide text-emerald-300/80">Línea segura</span>
       {item(segA, m.a.corto)}
       {item(segB, m.b.corto)}
+    </div>
+  );
+}
+
+const x1 = (v: number) => `×${v.toFixed(2)}`;
+
+/** Desglose de una métrica dentro del modal de análisis. */
+function DesgloseMetricaVista({ dm, nombre }: { dm: DesgloseMetrica; nombre: string }) {
+  const fila = (f: DesgloseMetrica["local"], sede: string) => (
+    <tr className="border-t border-white/5">
+      <td className="py-1.5 pr-2 text-slate-300">
+        {f.nombre} <span className="text-slate-500">({sede})</span>
+      </td>
+      <td className="py-1.5 px-1 text-right tabular-nums text-slate-400">{x1(f.ataque)}</td>
+      <td className="py-1.5 px-1 text-right tabular-nums text-slate-400">{x1(f.defensaRival)}</td>
+      <td className="py-1.5 px-1 text-right tabular-nums text-slate-400">{x1(f.localia)}</td>
+      <td className="py-1.5 pl-1 text-right font-bold tabular-nums text-white">{f.proyeccion.toFixed(1)}</td>
+    </tr>
+  );
+  return (
+    <div className="rounded-xl bg-black/30 p-3.5 ring-1 ring-white/5">
+      <h3 className="mb-1 text-sm font-bold capitalize text-white">{nombre}</h3>
+      <p className="mb-2 text-[11px] text-slate-500">
+        Base de la liga: <b className="text-slate-300">{dm.base.toFixed(1)}</b> por equipo. Cada lado ={" "}
+        base × ataque × defensa del rival × localía.
+      </p>
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[300px] text-[11px]">
+          <thead>
+            <tr className="text-[10px] uppercase tracking-wide text-slate-500">
+              <th className="pb-1 text-left font-semibold">Equipo</th>
+              <th className="pb-1 px-1 text-right font-semibold">Ataque</th>
+              <th className="pb-1 px-1 text-right font-semibold">Def. rival</th>
+              <th className="pb-1 px-1 text-right font-semibold">Local</th>
+              <th className="pb-1 pl-1 text-right font-semibold">Proyec.</th>
+            </tr>
+          </thead>
+          <tbody>
+            {fila(dm.local, "local")}
+            {fila(dm.visita, "visita")}
+          </tbody>
+        </table>
+      </div>
+      <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-white/5 pt-2.5 text-[11px]">
+        <span className="text-slate-400">
+          Total: <b className="text-white">{dm.total.toFixed(1)}</b>
+        </span>
+        <span className="text-slate-500">
+          P(&gt; {dm.linea}) = <b className={dm.prob >= 0.6 ? "text-emerald-300" : "text-slate-300"}>{pct(dm.prob)}</b>
+        </span>
+        {dm.segura && (
+          <span className="text-emerald-300/80">
+            segura: <b>+{dm.segura.linea.toFixed(1)}</b> ({pct(dm.segura.prob)})
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/** Modal con el análisis matemático del partido. */
+function ModalAnalisis({ p, m, onClose }: { p: Proyeccion; m: Metricas; onClose: () => void }) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    document.addEventListener("keydown", onKey);
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = "";
+    };
+  }, [onClose]);
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 backdrop-blur-sm sm:items-center"
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+    >
+      <div
+        className="max-h-[88vh] w-full max-w-lg overflow-y-auto rounded-t-3xl bg-slate-900 ring-1 ring-white/10 sm:rounded-3xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="sticky top-0 flex items-center justify-between gap-3 border-b border-white/10 bg-slate-900/95 px-4 py-3 backdrop-blur">
+          <div className="min-w-0">
+            <h2 className="truncate text-sm font-bold text-white">
+              {p.local} <span className="text-slate-500">vs</span> {p.visita}
+            </h2>
+            <p className="text-[11px] text-slate-500">Análisis · la matemática detrás</p>
+          </div>
+          <button
+            onClick={onClose}
+            className="shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold text-slate-400 ring-1 ring-white/10 active:bg-white/5"
+          >
+            Cerrar
+          </button>
+        </div>
+        <div className="space-y-3 p-4">
+          <DesgloseMetricaVista dm={p.desglose.a} nombre={m.a.nombre} />
+          <DesgloseMetricaVista dm={p.desglose.b} nombre={m.b.nombre} />
+          <div className="rounded-xl bg-white/[0.03] p-3.5 text-[11px] leading-relaxed text-slate-400 ring-1 ring-white/5">
+            <p className="mb-1.5">
+              <b className="text-slate-300">Cómo se lee.</b> El <b>ataque</b> es cuánto genera el equipo respecto a
+              la media de su liga (×1.20 = 20% más que el promedio). La <b>defensa del rival</b> es cuánto concede el
+              otro equipo. La <b>localía</b> ajusta por jugar de local (&gt;1) o visita (&lt;1).
+            </p>
+            <p className="mb-1.5">
+              Multiplicados dan la proyección de cada lado; sumadas, el total del partido. La <b>probabilidad</b> es
+              la de Poisson de superar la línea con ese total esperado.
+            </p>
+            <p>
+              La <b className="text-emerald-300/80">línea segura</b> es la línea Over más alta que aún supera el 80%.
+              El modelo tiende a ser algo optimista en los extremos: úsalo como probabilidad alta, no como certeza.
+            </p>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
