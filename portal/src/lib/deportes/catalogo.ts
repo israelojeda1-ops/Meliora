@@ -7,8 +7,13 @@ import type { Lineas } from "./modelo";
 
 export type DeporteId = "futbol" | "nba" | "beisbol";
 
-/** `espn` es el código de esa liga en la API pública de ESPN, si existe. */
-export type Liga = { id: number; nombre: string; pais: string; espn?: string };
+/**
+ * `espn` es el código de esa liga en la API pública de ESPN, si existe.
+ * `activa: false` la deja fuera de la cartelera del día y de la cosecha, pero su
+ * historial ya guardado sigue alimentando las proyecciones (los equipos que
+ * juegan varias competencias cruzan por nombre igual).
+ */
+export type Liga = { id: number; nombre: string; pais: string; espn?: string; activa?: boolean };
 
 /** Los dos números por equipo que la página proyecta y muestra. */
 export type Metricas = { a: { nombre: string; corto: string }; b: { nombre: string; corto: string } };
@@ -74,16 +79,19 @@ export const DEPORTES: Record<DeporteId, Deporte> = {
     usaTimezone: true,
     mostrarMarcador: true,
     enPortada: true,
+    // Activas hoy: Leagues Cup y MLS. El resto queda en el catálogo (su
+    // historial guardado sigue sirviendo a los equipos que se cruzan), pero no
+    // aparece en la cartelera del día. Reactivar una es poner activa: true.
     ligas: [
-      { id: 772, nombre: "Leagues Cup", pais: "Norteamérica", espn: "concacaf.leagues.cup" },
+      { id: 772, nombre: "Leagues Cup", pais: "Norteamérica", espn: "concacaf.leagues.cup", activa: true },
+      { id: 253, nombre: "Major League Soccer", pais: "Estados Unidos", espn: "usa.1", activa: true },
+      { id: 262, nombre: "Liga MX", pais: "México", espn: "mex.1" },
       { id: 265, nombre: "Primera División", pais: "Chile", espn: "chi.1" },
       { id: 39, nombre: "Premier League", pais: "Inglaterra", espn: "eng.1" },
       { id: 140, nombre: "LaLiga", pais: "España", espn: "esp.1" },
       { id: 135, nombre: "Serie A", pais: "Italia", espn: "ita.1" },
       { id: 78, nombre: "Bundesliga", pais: "Alemania", espn: "ger.1" },
       { id: 61, nombre: "Ligue 1", pais: "Francia", espn: "fra.1" },
-      { id: 253, nombre: "Major League Soccer", pais: "Estados Unidos", espn: "usa.1" },
-      { id: 262, nombre: "Liga MX", pais: "México", espn: "mex.1" },
       { id: 13, nombre: "Copa Libertadores", pais: "Sudamérica", espn: "conmebol.libertadores" },
       { id: 11, nombre: "Copa Sudamericana", pais: "Sudamérica", espn: "conmebol.sudamericana" },
       { id: 2, nombre: "Champions League", pais: "Europa", espn: "uefa.champions" },
@@ -149,3 +157,6 @@ export const getDeporte = (id: string | undefined): Deporte =>
   esDeporteId(id) ? DEPORTES[id] : DEPORTES.futbol;
 
 export const buscarLiga = (d: Deporte, id: number): Liga | undefined => d.ligas.find((l) => l.id === id);
+
+/** Ligas que se muestran hoy en la cartelera y se cosechan. */
+export const ligasActivas = (d: Deporte): Liga[] => d.ligas.filter((l) => l.activa);

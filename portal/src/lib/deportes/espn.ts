@@ -1,7 +1,7 @@
 import "server-only";
 import { ApiError, TAG_STATS, TTL_STATS } from "./api";
 import { DIA_MS, aTs, fechaChile } from "./fecha";
-import { DEPORTES, Liga } from "./catalogo";
+import { DEPORTES, Liga, ligasActivas } from "./catalogo";
 import { PartidoGuardado, guardarDia, leerDia } from "./almacen";
 
 // Fuente abierta para poblar el historial de fútbol de una vez, en lugar de
@@ -111,7 +111,10 @@ export type ResumenPoblado = {
  */
 export async function poblarFutbol(dias: number, ligaId?: number): Promise<ResumenPoblado> {
   const d = DEPORTES.futbol;
-  const ligas = d.ligas.filter((l) => l.espn && (ligaId === undefined || l.id === ligaId));
+  // Sin liga explícita se puebla lo activo; con liga, esa aunque no esté activa
+  // (permite backfillear una competencia puntual).
+  const base = ligaId === undefined ? ligasActivas(d) : d.ligas;
+  const ligas = base.filter((l) => l.espn && (ligaId === undefined || l.id === ligaId));
   const avisos: string[] = [];
   let diasEscritos = 0;
   let partidos = 0;

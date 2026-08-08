@@ -1,6 +1,6 @@
 import "server-only";
 import { DIA_MS, aTs, fechaChile, nombreDia } from "./fecha";
-import { Deporte, DeporteId, buscarLiga, getDeporte } from "./catalogo";
+import { Deporte, DeporteId, buscarLiga, getDeporte, ligasActivas } from "./catalogo";
 import {
   ApiError,
   PartidoApi,
@@ -269,7 +269,10 @@ export async function getCartelera(
   const d = getDeporte(deporteId);
   const presupuesto = nuevoPresupuesto(opciones.maxPeticiones ?? 9);
   const avisos: string[] = [];
-  const ligaIds = new Set(d.ligas.map((l) => l.id));
+  // Solo las ligas activas aparecen en la cartelera y se cosechan. El historial
+  // se arma con todo lo guardado (historialDeAlmacen no filtra por liga), así un
+  // equipo que también juega otra competencia conserva sus partidos.
+  const ligaIds = new Set(ligasActivas(d).map((l) => l.id));
   const hoy = fechaChile(Date.now());
 
   const delDia = (await carteleraDeFecha(d, fecha, presupuesto)).filter((p) => {
