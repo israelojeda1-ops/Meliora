@@ -19,7 +19,7 @@ import {
   terminado,
   tsDe,
 } from "./api";
-import { PartidoGuardado, guardarDia, leerDia } from "./almacen";
+import { PartidoGuardado, guardarDia, leerEquipo, leerDia } from "./almacen";
 import { buscarPorNombre, normNombre } from "./nombres";
 import { leerDirecto, leerMarcador, leerNba } from "./lectores";
 import {
@@ -185,6 +185,7 @@ async function historialDeAlmacen(
   fecha: string,
   hoy: string,
   ligaIds: Set<number>,
+  clavesEquipo: string[],
   presupuesto: Presupuesto,
   avisos: string[]
 ): Promise<Map<string, { nombre: string; ligaId: number; hist: PartidoHist[] }>> {
@@ -229,11 +230,35 @@ async function historialDeAlmacen(
     );
   }
 
+  // Historial profundo por equipo (temporada actual + anterior), para los
+  // clubes que juegan hoy. Se lee en paralelo y no gasta cuota de la API.
+  const porEquipoFiles = await Promise.all(
+    clavesEquipo.map(async (clave) => {
+      try {
+        return await leerEquipo(d, clave);
+      } catch (err) {
+        avisos.push((err as Error).message);
+        return null;
+      }
+    })
+  );
+
+  // Se juntan los partidos de los archivos por día y por equipo, deduplicados
+  // por `fid` (un mismo partido puede estar en ambos lugares); gana la copia con
+  // estadísticas.
+  const porFid = new Map<number, PartidoGuardado>();
+  for (const lista of [...leidos, ...porEquipoFiles]) {
+    for (const g of lista ?? []) {
+      const previo = porFid.get(g.fid);
+      if (!previo || (!previo.stats && g.stats)) porFid.set(g.fid, g);
+    }
+  }
+
   // La llave es el nombre normalizado: el historial puede venir de fuentes con
   // ids distintos para el mismo equipo (API-Sports y ESPN).
   const porEquipo = new Map<string, { nombre: string; ligaId: number; hist: PartidoHist[] }>();
-  for (const dia of leidos) {
-    for (const g of dia ?? []) {
+  {
+    for (const g of porFid.values()) {
       if (!g.stats) continue;
       const anotar = (eq: { id: number; nombre: string }, enCasa: boolean, rival: string) => {
         const clave = normNombre(eq.nombre);
@@ -280,12 +305,23 @@ export async function getCartelera(
     return id === null || ligaIds.has(id);
   });
 
+  // Claves de los equipos que juegan hoy, para leer su historial profundo por
+  // equipo (mismo slug que usa el poblado por equipo: normalizado con guiones).
+  const clavesEquipo = [
+    ...new Set(
+      delDia.flatMap((p) => {
+        const eq = equiposDe(p);
+        return eq ? [normNombre(eq.home.name), normNombre(eq.away.name)] : [];
+      })
+    ),
+  ].map((n) => n.replace(/ /g, "-"));
+
   const equipos = new Map<string, Equipo>();
   const cargadas: string[] = [];
   const pendientes: string[] = [];
 
   try {
-    const hist = await historialDeAlmacen(d, fecha, hoy, ligaIds, presupuesto, avisos);
+    const hist = await historialDeAlmacen(d, fecha, hoy, ligaIds, clavesEquipo, presupuesto, avisos);
     for (const [id, e] of hist) equipos.set(id, { id, nombre: e.nombre, ligaId: e.ligaId, hist: e.hist });
   } catch (err) {
     avisos.push((err as Error).message);
