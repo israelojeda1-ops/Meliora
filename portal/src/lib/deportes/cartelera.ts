@@ -7,13 +7,16 @@ import {
   SinCuota,
   estadoDe,
   idDe,
+  ligaIdDe,
+  ligaObj,
   nuevoPresupuesto,
   partidosDelDia,
   porLote,
   statsDePartido,
+  temporadaDe,
+  temporadaDeLiga,
   terminado,
   tsDe,
-  ultimosDeLiga,
 } from "./api";
 import { leerDirecto, leerMarcador, leerNba } from "./lectores";
 import {
@@ -58,9 +61,14 @@ export async function diaAMostrar(fechaParam?: string): Promise<{ fecha: string;
 async function historialDeLiga(
   d: Deporte,
   ligaId: number,
+  temporada: number | string,
   presupuesto: Presupuesto
 ): Promise<Map<number, { nombre: string; hist: PartidoHist[] }>> {
-  const lista = (await ultimosDeLiga(d, ligaId, presupuesto)).filter((p) => terminado(d, p));
+  // La temporada entera en una petición; los últimos jugados se filtran aquí.
+  const lista = (await temporadaDeLiga(d, ligaId, temporada, presupuesto))
+    .filter((p) => terminado(d, p) && Number.isFinite(tsDe(p)))
+    .sort((a, b) => tsDe(b) - tsDe(a))
+    .slice(0, d.ultimosPorLiga);
 
   // Fútbol: las estadísticas llegan pidiendo los partidos por id, de 20 en 20.
   const detalle: PartidoApi[] =
@@ -124,16 +132,21 @@ export async function getCartelera(
   const avisos: string[] = [];
   const ligaIds = new Set(d.ligas.map((l) => l.id));
 
-  const delDia = (await partidosDelDia(d, fecha, presupuesto)).filter(
-    (p) => !p.league || ligaIds.has(p.league.id)
-  );
+  const delDia = (await partidosDelDia(d, fecha, presupuesto)).filter((p) => {
+    const id = ligaIdDe(d, p);
+    return id === null || ligaIds.has(id);
+  });
 
   // Las ligas con partidos hoy, de la que más partidos tiene hacia abajo: si el
-  // presupuesto se acaba, al menos se cargan las que más aportan.
+  // presupuesto se acaba, al menos se cargan las que más aportan. La temporada
+  // vigente de cada liga se aprende de sus propios partidos del día.
   const cuenta = new Map<number, number>();
+  const temporadas = new Map<number, number | string>();
   for (const p of delDia) {
-    const id = p.league?.id ?? d.ligas[0]?.id ?? 0;
+    const id = ligaIdDe(d, p) ?? d.ligas[0]?.id ?? 0;
     cuenta.set(id, (cuenta.get(id) ?? 0) + 1);
+    const t = temporadaDe(p);
+    if (t !== null && !temporadas.has(id)) temporadas.set(id, t);
   }
   const ligas = [...cuenta.entries()].sort((a, b) => b[1] - a[1]).map(([id]) => id);
 
@@ -144,8 +157,14 @@ export async function getCartelera(
   for (const ligaId of ligas) {
     const meta = buscarLiga(d, ligaId);
     const nombre = meta ? `${meta.nombre} (${meta.pais})` : String(ligaId);
+    const temporada = temporadas.get(ligaId);
+    if (temporada === undefined) {
+      pendientes.push(nombre);
+      avisos.push(`${nombre}: los partidos del día no traen la temporada, no se puede pedir su historial.`);
+      continue;
+    }
     try {
-      const hist = await historialDeLiga(d, ligaId, presupuesto);
+      const hist = await historialDeLiga(d, ligaId, temporada, presupuesto);
       for (const [id, e] of hist) equipos.set(id, { id, nombre: e.nombre, ligaId, hist: e.hist });
       if (hist.size) cargadas.push(nombre);
       else {
@@ -170,7 +189,9 @@ export async function getCartelera(
     const ts = tsDe(p);
     const local = p.teams ? equipos.get(p.teams.home.id) : undefined;
     const visita = p.teams ? equipos.get(p.teams.away.id) : undefined;
-    const meta = p.league ? buscarLiga(d, p.league.id) : undefined;
+    const ligaId = ligaIdDe(d, p);
+    const meta = ligaId !== null ? buscarLiga(d, ligaId) : undefined;
+    const nombreLiga = meta?.nombre ?? ligaObj(p)?.name ?? d.nombre;
     const id = idDe(p);
 
     const entrada: EntradaPartido | null =
@@ -178,9 +199,9 @@ export async function getCartelera(
         ? {
             fid: id,
             ts,
-            liga: meta?.nombre ?? p.league?.name ?? d.nombre,
-            pais: meta?.pais ?? p.league?.country ?? "",
-            ligaId: p.league?.id ?? 0,
+            liga: nombreLiga,
+            pais: meta?.pais ?? ligaObj(p)?.country ?? "",
+            ligaId: ligaId ?? 0,
             local,
             visita,
           }
@@ -193,7 +214,7 @@ export async function getCartelera(
         local: p.teams.home.name,
         visita: p.teams.away.name,
         ts,
-        liga: meta?.nombre ?? p.league?.name ?? d.nombre,
+        liga: nombreLiga,
       });
   }
 

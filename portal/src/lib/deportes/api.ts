@@ -82,10 +82,31 @@ export type PartidoApi = {
   date?: string | { start?: string };
   status?: { short?: string | number; long?: string };
   scores?: Record<string, unknown>;
-  // comunes
-  league?: { id: number; name?: string; country?: string; season?: number | string };
+  season?: number | string; // NBA: la temporada viene arriba, no dentro de league
+  // comunes. En la NBA `league` es una cadena ("standard"), no un objeto.
+  league?: { id: number; name?: string; country?: string; season?: number | string } | string;
   teams?: { home: { id: number; name: string }; away: { id: number; name: string } };
 };
+
+/** `league` como objeto, si lo es (en la NBA es una cadena). */
+export const ligaObj = (p: PartidoApi) =>
+  typeof p.league === "object" && p.league !== null ? p.league : null;
+
+/**
+ * Id de liga normalizado. La NBA no numera sus ligas: "standard" es la liga
+ * regular y aquí se le asigna el id sintético del catálogo.
+ */
+export function ligaIdDe(d: Deporte, p: PartidoApi): number | null {
+  if (d.id === "nba") {
+    const liga = typeof p.league === "string" ? p.league : null;
+    return liga === "standard" || liga === null ? d.ligas[0].id : -1;
+  }
+  return ligaObj(p)?.id ?? null;
+}
+
+/** Temporada del partido, se declare donde se declare. */
+export const temporadaDe = (p: PartidoApi): number | string | null =>
+  p.season ?? ligaObj(p)?.season ?? null;
 
 /** Identificador del partido, se llame como se llame en cada API. */
 export const idDe = (p: PartidoApi): number | null => p.fixture?.id ?? p.id ?? null;
@@ -111,13 +132,26 @@ export const partidosDelDia = (d: Deporte, fecha: string, presupuesto: Presupues
     presupuesto,
   });
 
-/** Últimos N partidos jugados de una liga. */
-export const ultimosDeLiga = (d: Deporte, ligaId: number, presupuesto: Presupuesto) =>
-  apiGet<PartidoApi>(d, d.recurso, { league: ligaId, last: d.ultimosPorLiga }, {
+/**
+ * Todos los partidos de la temporada de una liga, en una petición. El parámetro
+ * `last` sería lo natural, pero el plan gratuito no lo permite ("Free plans do
+ * not have access to the Last parameter"), así que se trae la temporada entera
+ * —se cachea días— y los últimos jugados se filtran localmente.
+ */
+export function temporadaDeLiga(
+  d: Deporte,
+  ligaId: number,
+  temporada: number | string,
+  presupuesto: Presupuesto
+) {
+  // La NBA identifica la liga por nombre, no por número.
+  const liga = d.id === "nba" ? "standard" : ligaId;
+  return apiGet<PartidoApi>(d, d.recurso, { league: liga, season: temporada }, {
     revalidate: TTL_HISTORIAL,
-    tags: [TAG_LISTAS, `liga-${d.id}-${ligaId}`],
+    tags: [TAG_LISTAS, `liga-${d.id}-${ligaId}-${temporada}`],
     presupuesto,
   });
+}
 
 /** Fútbol: hasta 20 partidos por petición, con estadísticas incluidas. */
 export async function porLote(d: Deporte, ids: number[], presupuesto: Presupuesto) {

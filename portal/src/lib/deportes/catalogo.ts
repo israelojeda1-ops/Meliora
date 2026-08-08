@@ -77,7 +77,9 @@ export const DEPORTES: Record<DeporteId, Deporte> = {
     metricas: { a: { nombre: "puntos", corto: "pts" }, b: { nombre: "triples", corto: "3pt" } },
     // Líneas de referencia: total del partido y por equipo.
     lineas: { total: { a: 224.5, b: 25.5 }, equipo: { a: 112.5, b: 12.5 } },
-    terminados: ["FT", "AOT"],
+    // En la API de la NBA el estado corto es un número: 1 programado, 2 en
+    // juego, 3 terminado.
+    terminados: ["3"],
     estrategiaStats: "porPartido",
     mostrarMarcador: false,
     // Una petición por partido: con 30 se gastaría demasiado, así que la muestra
