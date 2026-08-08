@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { revalidateTag } from "next/cache";
 import { COOKIE_PRIVADO, verificar } from "@/lib/deportes/sesion";
 import { getCartelera } from "@/lib/deportes/cartelera";
+import { LISTA_DEPORTES } from "@/lib/deportes/catalogo";
 import { TAG_LISTAS } from "@/lib/deportes/api";
 import { fechaChile } from "@/lib/deportes/fecha";
 
@@ -30,11 +31,21 @@ async function manejar(req: NextRequest) {
   // en caché, así que actualizar no vuelve a pagar por ellas.
   if (forzar) revalidateTag(TAG_LISTAS, { expire: 0 });
 
+  const deporte = url.searchParams.get("deporte");
+
   try {
-    const datos = await getCartelera(url.searchParams.get("deporte") ?? undefined, fecha, {
-      maxPeticiones: 30,
-    });
-    return NextResponse.json(datos);
+    // Con deporte, responde esa cartelera (es lo que pide la página). Sin él —
+    // así llama el cron de la mañana — recorre los tres deportes para que la
+    // cosecha diaria del historial no dependa de que alguien abra la página.
+    if (deporte) {
+      return NextResponse.json(await getCartelera(deporte, fecha, { maxPeticiones: 30 }));
+    }
+    const resumen: Record<string, { partidos: number; avisos: string[] }> = {};
+    for (const dep of LISTA_DEPORTES) {
+      const c = await getCartelera(dep.id, fecha, { maxPeticiones: 30 });
+      resumen[dep.id] = { partidos: c.partidos.length, avisos: c.avisos };
+    }
+    return NextResponse.json({ cosecha: resumen });
   } catch (e) {
     return NextResponse.json({ error: (e as Error).message }, { status: 500 });
   }

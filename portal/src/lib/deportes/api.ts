@@ -99,10 +99,20 @@ export type PartidoApi = {
   status?: { short?: string | number; long?: string };
   scores?: Record<string, unknown>;
   season?: number | string; // NBA: la temporada viene arriba, no dentro de league
-  // comunes. En la NBA `league` es una cadena ("standard"), no un objeto.
+  // comunes. En la NBA `league` es una cadena ("standard"), no un objeto, y el
+  // visitante se llama `visitors`, no `away`.
   league?: { id: number; name?: string; country?: string; season?: number | string } | string;
-  teams?: { home: { id: number; name: string }; away: { id: number; name: string } };
+  teams?: { home?: EquipoApi; away?: EquipoApi; visitors?: EquipoApi };
 };
+
+export type EquipoApi = { id: number; name: string };
+
+/** Local y visitante normalizados; null si la respuesta no trae alguno. */
+export function equiposDe(p: PartidoApi): { home: EquipoApi; away: EquipoApi } | null {
+  const home = p.teams?.home;
+  const away = p.teams?.away ?? p.teams?.visitors;
+  return home && away ? { home, away } : null;
+}
 
 /** `league` como objeto, si lo es (en la NBA es una cadena). */
 export const ligaObj = (p: PartidoApi) =>
@@ -144,18 +154,16 @@ export const terminado = (d: Deporte, p: PartidoApi): boolean => d.terminados.in
  * Partidos de una fecha. Es la única consulta del plan gratuito que sirve datos
  * del año en curso: ni `last` ni las temporadas vigentes están permitidas
  * ("Free plans do not have access to the Last parameter" / "...to this
- * season"). Un día ya pasado no cambia nunca, así que se cachea como las
- * estadísticas —para siempre y fuera del alcance de "Actualizar"—, y por eso el
- * historial de todas las ligas se arma barriendo días hacia atrás sin volver a
- * gastar cuota.
+ * season"), y solo alcanza de ayer a mañana. Se cachea corto incluso para ayer:
+ * un partido nocturno puede seguir en juego pasada la medianoche, y congelar esa
+ * foto dejaría el partido fuera del historial. Lo inmutable vive en el almacén.
  */
-export function partidosDeFecha(d: Deporte, fecha: string, hoy: string, presupuesto: Presupuesto) {
-  const pasado = fecha < hoy;
+export function partidosDeFecha(d: Deporte, fecha: string, presupuesto: Presupuesto) {
   const params: Record<string, string | number> = { date: fecha };
   if (d.usaTimezone) params.timezone = ZONA;
   return apiGet<PartidoApi>(d, d.recurso, params, {
-    revalidate: pasado ? TTL_STATS : TTL_CARTELERA,
-    tags: pasado ? [TAG_STATS, `dia-${d.id}-${fecha}`] : [TAG_LISTAS, `dia-${d.id}-${fecha}`],
+    revalidate: TTL_CARTELERA,
+    tags: [TAG_LISTAS, `dia-${d.id}-${fecha}`],
     presupuesto,
   });
 }
@@ -175,6 +183,14 @@ export async function porLote(d: Deporte, ids: number[], presupuesto: Presupuest
   }
   return out;
 }
+
+/** Fútbol: estadísticas de un solo partido, cuando el lote por ids no está permitido. */
+export const statsDeFixture = (d: Deporte, id: number, presupuesto: Presupuesto) =>
+  apiGet<NonNullable<PartidoApi["statistics"]>[number]>(d, "fixtures/statistics", { fixture: id }, {
+    revalidate: TTL_STATS,
+    tags: [TAG_STATS],
+    presupuesto,
+  });
 
 /** NBA: una petición por partido al endpoint de estadísticas. */
 export const statsDePartido = (d: Deporte, id: number, presupuesto: Presupuesto) =>

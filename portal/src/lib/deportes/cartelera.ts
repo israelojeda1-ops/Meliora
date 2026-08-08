@@ -2,9 +2,11 @@ import "server-only";
 import { DIA_MS, aTs, fechaChile, nombreDia } from "./fecha";
 import { Deporte, DeporteId, buscarLiga, getDeporte } from "./catalogo";
 import {
+  ApiError,
   PartidoApi,
   Presupuesto,
   SinCuota,
+  equiposDe,
   estadoDe,
   idDe,
   ligaIdDe,
@@ -12,10 +14,12 @@ import {
   nuevoPresupuesto,
   partidosDeFecha,
   porLote,
+  statsDeFixture,
   statsDePartido,
   terminado,
   tsDe,
 } from "./api";
+import { PartidoGuardado, guardarDia, leerDia } from "./almacen";
 import { leerDirecto, leerMarcador, leerNba } from "./lectores";
 import {
   Equipo,
@@ -63,21 +67,119 @@ export async function diaAMostrar(fechaParam?: string): Promise<{ fecha: string;
 async function carteleraDeFecha(
   d: Deporte,
   fecha: string,
-  hoy: string,
   presupuesto: Presupuesto
 ): Promise<PartidoApi[]> {
   const fechas = d.usaTimezone ? [fecha] : [fecha, fechaChile(aTs(`${fecha}T12:00`) + DIA_MS)];
   const out: PartidoApi[] = [];
-  for (const f of fechas) out.push(...(await partidosDeFecha(d, f, hoy, presupuesto)));
+  for (const f of fechas) out.push(...(await partidosDeFecha(d, f, presupuesto)));
   return d.usaTimezone ? out : out.filter((p) => fechaChile(tsDe(p)) === fecha);
 }
 
 /**
- * Historial de todas las ligas seguidas a la vez, barriendo días hacia atrás.
- * Cada día pasado es una petición cacheada para siempre, así que solo el primer
- * llenado gasta cuota; después, un día nuevo por jornada.
+ * Cosecha un día ya jugado desde la API: sus partidos en las ligas seguidas,
+ * con marcador y estadísticas. Devuelve null si la pasada quedó a medias por
+ * cuota — en ese caso no se guarda nada y se reintenta en la siguiente.
  */
-async function historialPorBarrido(
+async function cosecharDia(
+  d: Deporte,
+  fechaDia: string,
+  ligaIds: Set<number>,
+  presupuesto: Presupuesto,
+  avisos: string[]
+): Promise<PartidoGuardado[] | null> {
+  let lista: PartidoApi[];
+  try {
+    lista = await carteleraDeFecha(d, fechaDia, presupuesto);
+  } catch (err) {
+    if (err instanceof SinCuota) {
+      avisos.push("La cosecha de ayer quedó a medias por cuota; toca Actualizar en un minuto.");
+      return null;
+    }
+    throw err;
+  }
+
+  const seguidos = lista.filter((p) => {
+    const liga = ligaIdDe(d, p);
+    return liga === null || ligaIds.has(liga);
+  });
+
+  // Un partido nocturno puede seguir en juego pasada la medianoche. Si algo del
+  // día aún puede terminar, no se guarda nada: el día se cosecha entero más
+  // tarde (los que nunca van a terminar —suspendidos, postergados— no bloquean).
+  const pendientes = seguidos.filter(
+    (p) => !terminado(d, p) && Number.isFinite(tsDe(p)) && tsDe(p) > Date.now() - 8 * 3_600_000
+  );
+  if (pendientes.length) {
+    avisos.push("Ayer aún tiene partidos por terminar; la cosecha se hará más tarde sola.");
+    return null;
+  }
+
+  const jugados = seguidos.filter(
+    (p) => terminado(d, p) && Number.isFinite(tsDe(p)) && idDe(p) !== null && equiposDe(p) !== null
+  );
+
+  // Estadísticas, según lo que cobre (y permita) cada API.
+  const statsPorId = new Map<number, ReturnType<typeof leerDirecto>>();
+  try {
+    if (d.estrategiaStats === "lote") {
+      const ids = jugados.map(idDe).filter((x): x is number => x !== null);
+      try {
+        for (const p of await porLote(d, ids, presupuesto)) {
+          const id = idDe(p);
+          if (id !== null) statsPorId.set(id, leerDirecto(d, p));
+        }
+      } catch (err) {
+        // Si el plan tampoco permite el lote por ids, partido por partido.
+        if (!(err instanceof ApiError)) throw err;
+        for (const p of jugados) {
+          const id = idDe(p);
+          if (id === null) continue;
+          const filas = await statsDeFixture(d, id, presupuesto);
+          statsPorId.set(id, leerDirecto(d, { ...p, statistics: filas }));
+        }
+      }
+    } else if (d.estrategiaStats === "porPartido") {
+      const recientes = [...jugados].sort((a, b) => tsDe(b) - tsDe(a)).slice(0, d.ultimosPorLiga);
+      for (const p of recientes) {
+        const id = idDe(p);
+        const eq = equiposDe(p);
+        if (id === null || !eq) continue;
+        statsPorId.set(id, leerNba(await statsDePartido(d, id, presupuesto), eq.home.id, eq.away.id));
+      }
+    }
+  } catch (err) {
+    if (err instanceof SinCuota) {
+      avisos.push("La cosecha de ayer quedó a medias por cuota; toca Actualizar en un minuto.");
+      return null;
+    }
+    throw err;
+  }
+
+  return jugados.map((p) => {
+    const id = idDe(p)!;
+    const eq = equiposDe(p)!;
+    const marcador = leerMarcador(d, p);
+    const stats = leerDirecto(d, p) ?? statsPorId.get(id) ?? null;
+    return {
+      fid: id,
+      ts: tsDe(p),
+      ligaId: ligaIdDe(d, p) ?? d.ligas[0]?.id ?? 0,
+      local: { id: eq.home.id, nombre: eq.home.name },
+      visita: { id: eq.away.id, nombre: eq.away.name },
+      gl: marcador.home,
+      gv: marcador.away,
+      stats: stats ? { l: stats.home, v: stats.away } : null,
+    };
+  });
+}
+
+/**
+ * Historial desde el almacén. El plan gratuito de la API solo sirve ayer, hoy y
+ * mañana — no hay forma de pedirle el pasado —, así que el portal guarda cada
+ * ayer en el almacén y el historial crece un día por jornada. Leer el almacén
+ * no gasta cuota de la API.
+ */
+async function historialDeAlmacen(
   d: Deporte,
   fecha: string,
   hoy: string,
@@ -85,87 +187,72 @@ async function historialPorBarrido(
   presupuesto: Presupuesto,
   avisos: string[]
 ): Promise<Map<number, { nombre: string; ligaId: number; hist: PartidoHist[] }>> {
-  const jugados: PartidoApi[] = [];
-  let diasCargados = 0;
   const mediodia = aTs(`${fecha}T12:00`);
+  const dias = Array.from({ length: d.diasHistorial }, (_, i) => fechaChile(mediodia - (i + 1) * DIA_MS));
 
-  for (let i = 1; i <= d.diasHistorial; i++) {
-    const dia = fechaChile(mediodia - i * DIA_MS);
-    try {
-      const lista = await partidosDeFecha(d, dia, hoy, presupuesto);
-      jugados.push(
-        ...lista.filter((p) => {
-          const liga = ligaIdDe(d, p);
-          return (liga === null || ligaIds.has(liga)) && terminado(d, p) && Number.isFinite(tsDe(p));
-        })
-      );
-      diasCargados = i;
-    } catch (err) {
-      if (err instanceof SinCuota) {
-        avisos.push(
-          `Historial cargado hasta ${diasCargados} de ${d.diasHistorial} días atrás; ` +
-            `toca Actualizar en un minuto para seguir completándolo.`
-        );
-        break;
+  const leidos = await Promise.all(
+    dias.map(async (dia, i) => {
+      try {
+        return await leerDia(d, dia, i < 2);
+      } catch (err) {
+        avisos.push((err as Error).message);
+        return null;
       }
-      throw err;
+    })
+  );
+
+  // El ayer que aún no está guardado se cosecha ahora y queda guardado.
+  const ayer = fechaChile(aTs(`${hoy}T12:00`) - DIA_MS);
+  const iAyer = dias.indexOf(ayer);
+  if (iAyer >= 0 && leidos[iAyer] === null) {
+    try {
+      const cosecha = await cosecharDia(d, ayer, ligaIds, presupuesto, avisos);
+      if (cosecha !== null) {
+        leidos[iAyer] = cosecha;
+        try {
+          await guardarDia(d, ayer, cosecha);
+        } catch (err) {
+          avisos.push((err as Error).message);
+        }
+      }
+    } catch (err) {
+      avisos.push(`Cosecha de ayer: ${(err as Error).message}`);
     }
   }
 
-  // Estadísticas según lo que cobre cada API.
-  let detalle: PartidoApi[] = jugados;
-  const statsExtra = new Map<number, ReturnType<typeof leerDirecto>>();
-  try {
-    if (d.estrategiaStats === "lote") {
-      detalle = await porLote(d, jugados.map(idDe).filter((x): x is number => x !== null), presupuesto);
-    } else if (d.estrategiaStats === "porPartido") {
-      const recientes = [...jugados].sort((a, b) => tsDe(b) - tsDe(a)).slice(0, d.ultimosPorLiga);
-      for (const p of recientes) {
-        const id = idDe(p);
-        const eq = p.teams;
-        if (id === null || !eq) continue;
-        statsExtra.set(id, leerNba(await statsDePartido(d, id, presupuesto), eq.home.id, eq.away.id));
-      }
-      detalle = recientes;
-    }
-  } catch (err) {
-    if (!(err instanceof SinCuota)) throw err;
-    avisos.push("El presupuesto se acabó pidiendo estadísticas; toca Actualizar en un minuto para seguir.");
+  const diasConDatos = leidos.filter((x) => x !== null).length;
+  if (diasConDatos < Math.min(3, d.diasHistorial)) {
+    avisos.push(
+      `El historial se construye día a día (el plan gratuito de la API no entrega el pasado): ` +
+        `va ${diasConDatos} de ${d.diasHistorial} días guardados.`
+    );
   }
 
   const porEquipo = new Map<number, { nombre: string; ligaId: number; hist: PartidoHist[] }>();
-  for (const p of detalle) {
-    const id = idDe(p);
-    const local = p.teams?.home;
-    const visita = p.teams?.away;
-    const ts = tsDe(p);
-    const ligaId = ligaIdDe(d, p) ?? d.ligas[0]?.id ?? 0;
-    if (id === null || !local || !visita || !Number.isFinite(ts)) continue;
-
-    const stats = leerDirecto(d, p) ?? statsExtra.get(id) ?? null;
-    if (!stats) continue;
-
-    const marcador = leerMarcador(d, p);
-    const anotar = (eqId: number, nombre: string, enCasa: boolean, rival: string) => {
-      const e = porEquipo.get(eqId) ?? { nombre, ligaId, hist: [] };
-      const mio = enCasa ? stats.home : stats.away;
-      const suyo = enCasa ? stats.away : stats.home;
-      e.hist.push({
-        fid: id,
-        ts,
-        casa: enCasa,
-        rival,
-        gf: enCasa ? marcador.home : marcador.away,
-        gc: enCasa ? marcador.away : marcador.home,
-        af: mio.a,
-        ac: suyo.a,
-        bf: mio.b,
-        bc: suyo.b,
-      });
-      porEquipo.set(eqId, e);
-    };
-    anotar(local.id, local.name, true, visita.name);
-    anotar(visita.id, visita.name, false, local.name);
+  for (const dia of leidos) {
+    for (const g of dia ?? []) {
+      if (!g.stats) continue;
+      const anotar = (eq: { id: number; nombre: string }, enCasa: boolean, rival: string) => {
+        const e = porEquipo.get(eq.id) ?? { nombre: eq.nombre, ligaId: g.ligaId, hist: [] };
+        const mio = enCasa ? g.stats!.l : g.stats!.v;
+        const suyo = enCasa ? g.stats!.v : g.stats!.l;
+        e.hist.push({
+          fid: g.fid,
+          ts: g.ts,
+          casa: enCasa,
+          rival,
+          gf: enCasa ? g.gl : g.gv,
+          gc: enCasa ? g.gv : g.gl,
+          af: mio.a,
+          ac: suyo.a,
+          bf: mio.b,
+          bc: suyo.b,
+        });
+        porEquipo.set(eq.id, e);
+      };
+      anotar(g.local, true, g.visita.nombre);
+      anotar(g.visita, false, g.local.nombre);
+    }
   }
   return porEquipo;
 }
@@ -181,7 +268,7 @@ export async function getCartelera(
   const ligaIds = new Set(d.ligas.map((l) => l.id));
   const hoy = fechaChile(Date.now());
 
-  const delDia = (await carteleraDeFecha(d, fecha, hoy, presupuesto)).filter((p) => {
+  const delDia = (await carteleraDeFecha(d, fecha, presupuesto)).filter((p) => {
     const id = ligaIdDe(d, p);
     return id === null || ligaIds.has(id);
   });
@@ -191,7 +278,7 @@ export async function getCartelera(
   const pendientes: string[] = [];
 
   try {
-    const hist = await historialPorBarrido(d, fecha, hoy, ligaIds, presupuesto, avisos);
+    const hist = await historialDeAlmacen(d, fecha, hoy, ligaIds, presupuesto, avisos);
     for (const [id, e] of hist) equipos.set(id, { id, nombre: e.nombre, ligaId: e.ligaId, hist: e.hist });
   } catch (err) {
     avisos.push((err as Error).message);
@@ -212,8 +299,9 @@ export async function getCartelera(
 
   for (const p of delDia) {
     const ts = tsDe(p);
-    const local = p.teams ? equipos.get(p.teams.home.id) : undefined;
-    const visita = p.teams ? equipos.get(p.teams.away.id) : undefined;
+    const eq = equiposDe(p);
+    const local = eq ? equipos.get(eq.home.id) : undefined;
+    const visita = eq ? equipos.get(eq.away.id) : undefined;
     const ligaId = ligaIdDe(d, p);
     const meta = ligaId !== null ? buscarLiga(d, ligaId) : undefined;
     const nombreLiga = meta?.nombre ?? ligaObj(p)?.name ?? d.nombre;
@@ -234,11 +322,12 @@ export async function getCartelera(
 
     const proy = entrada ? proyectar(entrada, bases, d.lineas) : null;
     if (proy) partidos.push(proy);
-    else if (p.teams)
+    else if (eq)
       sinDatos.push({
-        local: p.teams.home.name,
-        visita: p.teams.away.name,
-        ts,
+        local: eq.home.name,
+        visita: eq.away.name,
+        // Sin fecha válida no hay hora que mostrar; el mediodía ordena razonable.
+        ts: Number.isFinite(ts) ? ts : aTs(`${fecha}T12:00`),
         liga: nombreLiga,
       });
   }
@@ -247,7 +336,7 @@ export async function getCartelera(
   sinDatos.sort((a, b) => a.ts - b.ts);
 
   // Los partidos ya empezados no se proyectan: el estado lo dice la propia API.
-  const enJuego = delDia.filter((p) => !["NS", "TBD", "PST"].includes(estadoDe(p))).length;
+  const enJuego = delDia.filter((p) => !d.noIniciados.includes(estadoDe(p))).length;
   if (enJuego && !partidos.length && !avisos.length) {
     avisos.push("Todos los partidos del día ya empezaron o terminaron.");
   }

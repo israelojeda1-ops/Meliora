@@ -23,6 +23,8 @@ export type Deporte = {
   ligas: Liga[];
   /** Estados que cuentan como partido terminado. */
   terminados: string[];
+  /** Estados de un partido que aún no empieza. */
+  noIniciados: string[];
   /**
    * Cómo se consiguen las estadísticas de los partidos ya jugados:
    * - "lote": vienen incluidas al pedir varios partidos por id (fútbol).
@@ -60,6 +62,7 @@ export const DEPORTES: Record<DeporteId, Deporte> = {
     metricas: { a: { nombre: "remates", corto: "rem" }, b: { nombre: "córners", corto: "cor" } },
     lineas: { total: { a: 24.5, b: 9.5 }, equipo: { a: 16.5, b: 5.5 } },
     terminados: ["FT", "AET", "PEN"],
+    noIniciados: ["NS", "TBD", "PST"],
     estrategiaStats: "lote",
     diasHistorial: 14,
     ultimosPorLiga: 60,
@@ -91,6 +94,7 @@ export const DEPORTES: Record<DeporteId, Deporte> = {
     // En la API de la NBA el estado corto es un número: 1 programado, 2 en
     // juego, 3 terminado.
     terminados: ["3"],
+    noIniciados: ["1"],
     estrategiaStats: "porPartido",
     diasHistorial: 10,
     mostrarMarcador: false,
@@ -113,6 +117,7 @@ export const DEPORTES: Record<DeporteId, Deporte> = {
     metricas: { a: { nombre: "carreras", corto: "car" }, b: { nombre: "hits", corto: "hits" } },
     lineas: { total: { a: 8.5, b: 16.5 }, equipo: { a: 4.5, b: 8.5 } },
     terminados: ["FT", "AOT"],
+    noIniciados: ["NS", "TBD", "PST"],
     estrategiaStats: "enLista",
     diasHistorial: 8,
     ultimosPorLiga: 60,

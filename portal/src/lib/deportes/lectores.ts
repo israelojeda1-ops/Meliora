@@ -1,5 +1,5 @@
 import type { Deporte } from "./catalogo";
-import type { PartidoApi } from "./api";
+import { PartidoApi, equiposDe } from "./api";
 
 // Cada API entrega las estadísticas en un lugar distinto. Los lectores son
 // deliberadamente tolerantes: si un campo no está donde se espera, devuelven
@@ -22,10 +22,9 @@ const obj = (v: unknown): Obj | null => (v && typeof v === "object" ? (v as Obj)
 /** Fútbol: bloque `statistics` por equipo, con filas {type, value}. */
 function leerFutbol(p: PartidoApi): StatsPartido {
   const bloques = p.statistics ?? [];
-  const idLocal = p.teams?.home.id;
-  const idVisita = p.teams?.away.id;
-  const casa = bloques.find((b) => b.team.id === idLocal);
-  const fuera = bloques.find((b) => b.team.id === idVisita);
+  const eq = equiposDe(p);
+  const casa = bloques.find((b) => b.team.id === eq?.home.id);
+  const fuera = bloques.find((b) => b.team.id === eq?.away.id);
   if (!casa || !fuera) return null;
 
   const val = (b: NonNullable<PartidoApi["statistics"]>[number], tipo: string) => {
@@ -94,8 +93,9 @@ export function leerMarcador(d: Deporte, p: PartidoApi): { home: number; away: n
     return { home: numero(p.goals?.home) ?? 0, away: numero(p.goals?.away) ?? 0 };
   }
   const scores = obj(p.scores);
+  // La NBA llama "visitors" al visitante, también en el marcador.
   const lado = (k: "home" | "away") => {
-    const v = scores?.[k];
+    const v = scores?.[k] ?? (k === "away" ? scores?.visitors : undefined);
     const o = obj(v);
     return numero(o ? (o.total ?? o.points ?? o.runs) : v) ?? 0;
   };
