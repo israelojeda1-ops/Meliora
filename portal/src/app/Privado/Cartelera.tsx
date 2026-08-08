@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useTransition } from "react";
 import type { Cartelera as Datos } from "@/lib/deportes/cartelera";
-import type { Lado, Proyeccion, ResumenSede } from "@/lib/deportes/modelo";
+import type { Lado, LineaSegura, Proyeccion, ResumenSede } from "@/lib/deportes/modelo";
 import type { Metricas } from "@/lib/deportes/catalogo";
 import { DEPORTES_EN_PORTADA } from "@/lib/deportes/catalogo";
 import { fechaCorta, horaChile, relativo } from "@/lib/deportes/fecha";
@@ -81,6 +81,12 @@ function BloqueEquipo({ l, m, marcador }: { l: Lado; m: Metricas; marcador: bool
         <Metrica valor={l.a} nombre={m.a.nombre} p={l.pA} />
         <Metrica valor={l.b} nombre={m.b.nombre} p={l.pB} />
       </div>
+
+      {(l.segA || l.segB) && (
+        <div className="mt-2.5">
+          <LineaSeguraStrip segA={l.segA} segB={l.segB} m={m} />
+        </div>
+      )}
 
       {/* Historial reciente: fecha, rival, marcador y las dos métricas (a favor-en contra) */}
       {l.ultimos.length ? (
@@ -169,18 +175,44 @@ function Partido({ p, m, marcador, ahora }: { p: Proyeccion; m: Metricas; marcad
           </div>
         </div>
       </button>
+      {(p.segA || p.segB) && (
+        <div className="px-3 pb-3">
+          <LineaSeguraStrip segA={p.segA} segB={p.segB} m={m} />
+        </div>
+      )}
       {abierto && (
         <div className="space-y-2.5 px-3 pb-3.5">
           {p.lados.map((l) => (
             <BloqueEquipo key={l.nombre + (l.casa ? "L" : "V")} l={l} m={m} marcador={marcador} />
           ))}
           <p className="px-1 text-[11px] leading-relaxed text-slate-500">
-            Totales del partido: {p.a.toFixed(1)} {m.a.nombre} y {p.b.toFixed(1)} {m.b.nombre} proyectados. Los
-            porcentajes de cada equipo son contra su propia línea, no contra el total.
+            Totales del partido: {p.a.toFixed(1)} {m.a.nombre} y {p.b.toFixed(1)} {m.b.nombre} proyectados. La
+            «línea segura» es la línea Over más alta con más de 80% de caer, según el modelo. Los porcentajes de
+            cada equipo son contra su propia línea, no contra el total.
           </p>
         </div>
       )}
     </li>
+  );
+}
+
+/** Franja verde con la recomendación de línea segura (Over con prob > 80%). */
+function LineaSeguraStrip({ segA, segB, m }: { segA: LineaSegura | null; segB: LineaSegura | null; m: Metricas }) {
+  if (!segA && !segB) return null;
+  const item = (s: LineaSegura | null, corto: string) =>
+    s ? (
+      <span className="inline-flex items-baseline gap-1">
+        <span className="font-bold text-emerald-300">+{s.linea.toFixed(1)}</span>
+        <span className="text-emerald-400/70">{corto}</span>
+        <span className="text-emerald-400/50 tabular-nums">{pct(s.prob)}</span>
+      </span>
+    ) : null;
+  return (
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg bg-emerald-400/10 px-3 py-1.5 text-[11px] ring-1 ring-emerald-400/20">
+      <span className="font-bold uppercase tracking-wide text-emerald-300/80">Línea segura</span>
+      {item(segA, m.a.corto)}
+      {item(segB, m.b.corto)}
+    </div>
   );
 }
 

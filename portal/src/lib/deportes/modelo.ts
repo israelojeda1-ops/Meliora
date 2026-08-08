@@ -37,6 +37,9 @@ export type Lado = {
   b: number;
   pA: number;
   pB: number;
+  // línea Over más alta con prob > 80% para este equipo, o null
+  segA: LineaSegura | null;
+  segB: LineaSegura | null;
   ultimos: PartidoHist[];
   // los dos promedios se muestran siempre, aunque la proyección use solo el
   // que corresponde a la sede en que juega este partido
@@ -55,6 +58,9 @@ export type Proyeccion = {
   b: number;
   pA: number;
   pB: number;
+  // línea Over más alta con prob > 80% para el total del partido, o null
+  segA: LineaSegura | null;
+  segB: LineaSegura | null;
   idx: number;
   pjMin: number;
   lados: [Lado, Lado];
@@ -78,6 +84,26 @@ export function poissonTail(lam: number, k: number): number {
 }
 
 const sobreLinea = (lam: number, linea: number) => poissonTail(lam, Math.floor(linea) + 1);
+
+export type LineaSegura = { linea: number; prob: number };
+
+/**
+ * La línea "Más de X.5" más alta cuya probabilidad de superarse sigue por
+ * encima del umbral (0.80 por defecto). Es la recomendación conservadora:
+ * "Más de 21.5 remates" con ~81% de caer. null si ni "Más de 0.5" llega al
+ * umbral (proyección demasiado baja).
+ */
+export function lineaSegura(lam: number, umbral = 0.8): LineaSegura | null {
+  let mejor: LineaSegura | null = null;
+  // k = mínimo entero que hace ganar el "Más de (k-0.5)"; se sube mientras
+  // la cola siga sobre el umbral.
+  for (let k = 1; k <= Math.ceil(lam) + 40; k++) {
+    const prob = poissonTail(lam, k);
+    if (prob < umbral) break;
+    mejor = { linea: k - 0.5, prob };
+  }
+  return mejor;
+}
 
 /**
  * Promedios de un equipo. `sede` restringe a partidos de local o de visita, y
@@ -201,6 +227,8 @@ export function proyectar(
     b: vb,
     pA: sobreLinea(va, lineas.equipo.a),
     pB: sobreLinea(vb, lineas.equipo.b),
+    segA: lineaSegura(va),
+    segB: lineaSegura(vb),
     // el listado muestra todo el historial reciente, de local y de visita
     ultimos: [...eq.hist].sort((a, b) => b.ts - a.ts).slice(0, 8),
     promLocal: resumenSede(eq.hist, true),
@@ -218,6 +246,8 @@ export function proyectar(
     b: totalB,
     pA,
     pB,
+    segA: lineaSegura(totalA),
+    segB: lineaSegura(totalB),
     idx: (pA + pB) / 2,
     pjMin: Math.min(sL.pj, sV.pj),
     lados: [lado(p.local, sL, aL, bL2, true), lado(p.visita, sV, aV, bV2, false)],
