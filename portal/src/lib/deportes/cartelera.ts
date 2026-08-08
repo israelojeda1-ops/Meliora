@@ -20,7 +20,7 @@ import {
   tsDe,
 } from "./api";
 import { PartidoGuardado, guardarDia, leerDia } from "./almacen";
-import { normNombre } from "./nombres";
+import { buscarPorNombre, normNombre } from "./nombres";
 import { leerDirecto, leerMarcador, leerNba } from "./lectores";
 import {
   Equipo,
@@ -304,8 +304,8 @@ export async function getCartelera(
   for (const p of delDia) {
     const ts = tsDe(p);
     const eq = equiposDe(p);
-    const local = eq ? equipos.get(normNombre(eq.home.name)) : undefined;
-    const visita = eq ? equipos.get(normNombre(eq.away.name)) : undefined;
+    const local = eq ? buscarPorNombre(equipos, eq.home.name) : undefined;
+    const visita = eq ? buscarPorNombre(equipos, eq.away.name) : undefined;
     const ligaId = ligaIdDe(d, p);
     const meta = ligaId !== null ? buscarLiga(d, ligaId) : undefined;
     const nombreLiga = meta?.nombre ?? ligaObj(p)?.name ?? d.nombre;
