@@ -71,27 +71,36 @@ async function guardarRuta(url: string, mensaje: string, partidos: PartidoGuarda
     "X-GitHub-Api-Version": "2022-11-28",
   };
   const rama = RAMA();
-  // El sha actual, si el archivo ya existe (sin caché: tiene que ser el vigente).
-  const previo = await fetch(`${url}${rama ? `?ref=${rama}` : ""}`, { headers: cab, cache: "no-store" });
-  const sha = previo.ok ? ((await previo.json()) as { sha?: string }).sha : undefined;
+  const cuerpo = Buffer.from(JSON.stringify(partidos)).toString("base64");
 
-  const res = await fetch(url, {
-    method: "PUT",
-    headers: { ...cab, "Content-Type": "application/json" },
-    cache: "no-store",
-    body: JSON.stringify({
-      message: mensaje,
-      content: Buffer.from(JSON.stringify(partidos)).toString("base64"),
-      ...(rama ? { branch: rama } : {}),
-      ...(sha ? { sha } : {}),
-    }),
-  });
-  if (!res.ok) {
-    throw new ApiError(
-      `El almacén respondió HTTP ${res.status} al guardar. ` +
-        `Revisa que ALMACEN_TOKEN tenga permiso de escritura en ${REPO()}.`
-    );
+  // La API de contenidos de GitHub devuelve 409 cuando la rama se movió entre
+  // que leímos el sha y hacemos el PUT (pasa al escribir muchos archivos
+  // seguidos). Se reintenta releyendo el sha vigente.
+  let ultimo = 0;
+  for (let intento = 0; intento < 4; intento++) {
+    const previo = await fetch(`${url}${rama ? `?ref=${rama}` : ""}`, { headers: cab, cache: "no-store" });
+    const sha = previo.ok ? ((await previo.json()) as { sha?: string }).sha : undefined;
+
+    const res = await fetch(url, {
+      method: "PUT",
+      headers: { ...cab, "Content-Type": "application/json" },
+      cache: "no-store",
+      body: JSON.stringify({
+        message: mensaje,
+        content: cuerpo,
+        ...(rama ? { branch: rama } : {}),
+        ...(sha ? { sha } : {}),
+      }),
+    });
+    if (res.ok) return;
+    ultimo = res.status;
+    if (res.status !== 409) break;
+    await new Promise((r) => setTimeout(r, 300 * (intento + 1)));
   }
+  throw new ApiError(
+    `El almacén respondió HTTP ${ultimo} al guardar. ` +
+      `Revisa que ALMACEN_TOKEN tenga permiso de escritura en ${REPO()}.`
+  );
 }
 
 /** El día guardado, o null si aún no se cosecha. */
