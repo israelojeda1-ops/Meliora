@@ -14,7 +14,15 @@ export class SinCuota extends Error {}
 export class ApiError extends Error {}
 
 export type Presupuesto = { max: number; usadas: number };
-export const nuevoPresupuesto = (max = 9): Presupuesto => ({ max, usadas: 0 });
+
+/**
+ * El tope por pasada es un respaldo, no el control fino: cuenta cada URL tocada
+ * aunque salga del caché (un acierto de caché no gasta cuota real). El control
+ * fino lo pone la propia API con su límite de 10 por minuto: cuando responde
+ * "too many requests" se corta la pasada con gracia y lo cargado ya queda en
+ * caché, así que la siguiente pasada avanza desde ahí en vez de repetir gasto.
+ */
+export const nuevoPresupuesto = (max = 30): Presupuesto => ({ max, usadas: 0 });
 
 // Las listas caducan (aparecen partidos nuevos); las estadísticas de un partido
 // ya jugado no cambian nunca, así que se cachean aparte y no se expiran al
@@ -60,10 +68,18 @@ export async function apiGet<T>(
 
   const json = (await res.json()) as { response?: T[]; errors?: unknown };
   const errs = json.errors;
-  if (errs && !Array.isArray(errs) && Object.keys(errs as object).length) {
-    throw new ApiError(Object.values(errs as Record<string, string>).join(" · "));
+  const textos = Array.isArray(errs)
+    ? errs.map(String)
+    : errs && typeof errs === "object"
+      ? Object.values(errs as Record<string, string>).map(String)
+      : [];
+  if (textos.length) {
+    // La API avisa el límite de ritmo con HTTP 200 y un error en el cuerpo;
+    // eso es "espera un minuto", no una falla de la consulta.
+    const msg = textos.join(" · ");
+    if (/rate ?limit|too many|request limit/i.test(msg)) throw new SinCuota(msg);
+    throw new ApiError(msg);
   }
-  if (Array.isArray(errs) && errs.length) throw new ApiError(errs.join(" · "));
   return json.response ?? [];
 }
 
@@ -124,31 +140,22 @@ export const estadoDe = (p: PartidoApi): string =>
 
 export const terminado = (d: Deporte, p: PartidoApi): boolean => d.terminados.includes(estadoDe(p));
 
-/** Partidos de un día, en hora de Chile. Una sola petición por deporte. */
-export const partidosDelDia = (d: Deporte, fecha: string, presupuesto: Presupuesto) =>
-  apiGet<PartidoApi>(d, d.recurso, { date: fecha, timezone: ZONA }, {
-    revalidate: TTL_CARTELERA,
-    tags: [TAG_LISTAS, `dia-${d.id}-${fecha}`],
-    presupuesto,
-  });
-
 /**
- * Todos los partidos de la temporada de una liga, en una petición. El parámetro
- * `last` sería lo natural, pero el plan gratuito no lo permite ("Free plans do
- * not have access to the Last parameter"), así que se trae la temporada entera
- * —se cachea días— y los últimos jugados se filtran localmente.
+ * Partidos de una fecha. Es la única consulta del plan gratuito que sirve datos
+ * del año en curso: ni `last` ni las temporadas vigentes están permitidas
+ * ("Free plans do not have access to the Last parameter" / "...to this
+ * season"). Un día ya pasado no cambia nunca, así que se cachea como las
+ * estadísticas —para siempre y fuera del alcance de "Actualizar"—, y por eso el
+ * historial de todas las ligas se arma barriendo días hacia atrás sin volver a
+ * gastar cuota.
  */
-export function temporadaDeLiga(
-  d: Deporte,
-  ligaId: number,
-  temporada: number | string,
-  presupuesto: Presupuesto
-) {
-  // La NBA identifica la liga por nombre, no por número.
-  const liga = d.id === "nba" ? "standard" : ligaId;
-  return apiGet<PartidoApi>(d, d.recurso, { league: liga, season: temporada }, {
-    revalidate: TTL_HISTORIAL,
-    tags: [TAG_LISTAS, `liga-${d.id}-${ligaId}-${temporada}`],
+export function partidosDeFecha(d: Deporte, fecha: string, hoy: string, presupuesto: Presupuesto) {
+  const pasado = fecha < hoy;
+  const params: Record<string, string | number> = { date: fecha };
+  if (d.usaTimezone) params.timezone = ZONA;
+  return apiGet<PartidoApi>(d, d.recurso, params, {
+    revalidate: pasado ? TTL_STATS : TTL_CARTELERA,
+    tags: pasado ? [TAG_STATS, `dia-${d.id}-${fecha}`] : [TAG_LISTAS, `dia-${d.id}-${fecha}`],
     presupuesto,
   });
 }

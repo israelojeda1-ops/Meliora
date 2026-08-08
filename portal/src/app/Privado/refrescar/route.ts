@@ -32,7 +32,7 @@ async function manejar(req: NextRequest) {
 
   try {
     const datos = await getCartelera(url.searchParams.get("deporte") ?? undefined, fecha, {
-      maxPeticiones: 9,
+      maxPeticiones: 30,
     });
     return NextResponse.json(datos);
   } catch (e) {

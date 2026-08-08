@@ -61,7 +61,7 @@ export default async function PrivadoPage({
   let datos;
   let fallo: string | null = null;
   try {
-    datos = await getCartelera(deporte.id, fecha, { maxPeticiones: 6 });
+    datos = await getCartelera(deporte.id, fecha, { maxPeticiones: 30 });
   } catch (e) {
     fallo = (e as Error).message;
   }

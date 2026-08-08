@@ -1,5 +1,5 @@
 import "server-only";
-import { aTs, fechaChile, nombreDia } from "./fecha";
+import { DIA_MS, aTs, fechaChile, nombreDia } from "./fecha";
 import { Deporte, DeporteId, buscarLiga, getDeporte } from "./catalogo";
 import {
   PartidoApi,
@@ -10,11 +10,9 @@ import {
   ligaIdDe,
   ligaObj,
   nuevoPresupuesto,
-  partidosDelDia,
+  partidosDeFecha,
   porLote,
   statsDePartido,
-  temporadaDe,
-  temporadaDeLiga,
   terminado,
   tsDe,
 } from "./api";
@@ -57,51 +55,101 @@ export async function diaAMostrar(fechaParam?: string): Promise<{ fecha: string;
   return { fecha, titulo: nombreDia(aTs(`${fecha}T12:00`), ahora) };
 }
 
-/** Historial de una liga completa, con el costo en peticiones que exige cada API. */
-async function historialDeLiga(
+/**
+ * La cartelera de una fecha en hora de Chile. Los partidos de la NBA nocturnos
+ * caen en el día UTC siguiente y su API no acepta timezone, así que ahí se
+ * consultan dos fechas y se filtra localmente.
+ */
+async function carteleraDeFecha(
   d: Deporte,
-  ligaId: number,
-  temporada: number | string,
+  fecha: string,
+  hoy: string,
   presupuesto: Presupuesto
-): Promise<Map<number, { nombre: string; hist: PartidoHist[] }>> {
-  // La temporada entera en una petición; los últimos jugados se filtran aquí.
-  const lista = (await temporadaDeLiga(d, ligaId, temporada, presupuesto))
-    .filter((p) => terminado(d, p) && Number.isFinite(tsDe(p)))
-    .sort((a, b) => tsDe(b) - tsDe(a))
-    .slice(0, d.ultimosPorLiga);
+): Promise<PartidoApi[]> {
+  const fechas = d.usaTimezone ? [fecha] : [fecha, fechaChile(aTs(`${fecha}T12:00`) + DIA_MS)];
+  const out: PartidoApi[] = [];
+  for (const f of fechas) out.push(...(await partidosDeFecha(d, f, hoy, presupuesto)));
+  return d.usaTimezone ? out : out.filter((p) => fechaChile(tsDe(p)) === fecha);
+}
 
-  // Fútbol: las estadísticas llegan pidiendo los partidos por id, de 20 en 20.
-  const detalle: PartidoApi[] =
-    d.estrategiaStats === "lote"
-      ? await porLote(d, lista.map(idDe).filter((x): x is number => x !== null), presupuesto)
-      : lista;
+/**
+ * Historial de todas las ligas seguidas a la vez, barriendo días hacia atrás.
+ * Cada día pasado es una petición cacheada para siempre, así que solo el primer
+ * llenado gasta cuota; después, un día nuevo por jornada.
+ */
+async function historialPorBarrido(
+  d: Deporte,
+  fecha: string,
+  hoy: string,
+  ligaIds: Set<number>,
+  presupuesto: Presupuesto,
+  avisos: string[]
+): Promise<Map<number, { nombre: string; ligaId: number; hist: PartidoHist[] }>> {
+  const jugados: PartidoApi[] = [];
+  let diasCargados = 0;
+  const mediodia = aTs(`${fecha}T12:00`);
 
-  const porEquipo = new Map<number, { nombre: string; hist: PartidoHist[] }>();
+  for (let i = 1; i <= d.diasHistorial; i++) {
+    const dia = fechaChile(mediodia - i * DIA_MS);
+    try {
+      const lista = await partidosDeFecha(d, dia, hoy, presupuesto);
+      jugados.push(
+        ...lista.filter((p) => {
+          const liga = ligaIdDe(d, p);
+          return (liga === null || ligaIds.has(liga)) && terminado(d, p) && Number.isFinite(tsDe(p));
+        })
+      );
+      diasCargados = i;
+    } catch (err) {
+      if (err instanceof SinCuota) {
+        avisos.push(
+          `Historial cargado hasta ${diasCargados} de ${d.diasHistorial} días atrás; ` +
+            `toca Actualizar en un minuto para seguir completándolo.`
+        );
+        break;
+      }
+      throw err;
+    }
+  }
 
+  // Estadísticas según lo que cobre cada API.
+  let detalle: PartidoApi[] = jugados;
+  const statsExtra = new Map<number, ReturnType<typeof leerDirecto>>();
+  try {
+    if (d.estrategiaStats === "lote") {
+      detalle = await porLote(d, jugados.map(idDe).filter((x): x is number => x !== null), presupuesto);
+    } else if (d.estrategiaStats === "porPartido") {
+      const recientes = [...jugados].sort((a, b) => tsDe(b) - tsDe(a)).slice(0, d.ultimosPorLiga);
+      for (const p of recientes) {
+        const id = idDe(p);
+        const eq = p.teams;
+        if (id === null || !eq) continue;
+        statsExtra.set(id, leerNba(await statsDePartido(d, id, presupuesto), eq.home.id, eq.away.id));
+      }
+      detalle = recientes;
+    }
+  } catch (err) {
+    if (!(err instanceof SinCuota)) throw err;
+    avisos.push("El presupuesto se acabó pidiendo estadísticas; toca Actualizar en un minuto para seguir.");
+  }
+
+  const porEquipo = new Map<number, { nombre: string; ligaId: number; hist: PartidoHist[] }>();
   for (const p of detalle) {
     const id = idDe(p);
     const local = p.teams?.home;
     const visita = p.teams?.away;
     const ts = tsDe(p);
+    const ligaId = ligaIdDe(d, p) ?? d.ligas[0]?.id ?? 0;
     if (id === null || !local || !visita || !Number.isFinite(ts)) continue;
 
-    // La NBA cobra una petición por partido, así que se pide aquí y no antes.
-    let stats = leerDirecto(d, p);
-    if (!stats && d.estrategiaStats === "porPartido") {
-      try {
-        stats = leerNba(await statsDePartido(d, id, presupuesto), local.id, visita.id);
-      } catch (err) {
-        if (err instanceof SinCuota) break; // se acabó el presupuesto: lo que haya alcanzado sirve
-        throw err;
-      }
-    }
+    const stats = leerDirecto(d, p) ?? statsExtra.get(id) ?? null;
     if (!stats) continue;
 
     const marcador = leerMarcador(d, p);
     const anotar = (eqId: number, nombre: string, enCasa: boolean, rival: string) => {
-      const e = porEquipo.get(eqId) ?? { nombre, hist: [] };
-      const mio = enCasa ? stats!.home : stats!.away;
-      const suyo = enCasa ? stats!.away : stats!.home;
+      const e = porEquipo.get(eqId) ?? { nombre, ligaId, hist: [] };
+      const mio = enCasa ? stats.home : stats.away;
+      const suyo = enCasa ? stats.away : stats.home;
       e.hist.push({
         fid: id,
         ts,
@@ -131,54 +179,31 @@ export async function getCartelera(
   const presupuesto = nuevoPresupuesto(opciones.maxPeticiones ?? 9);
   const avisos: string[] = [];
   const ligaIds = new Set(d.ligas.map((l) => l.id));
+  const hoy = fechaChile(Date.now());
 
-  const delDia = (await partidosDelDia(d, fecha, presupuesto)).filter((p) => {
+  const delDia = (await carteleraDeFecha(d, fecha, hoy, presupuesto)).filter((p) => {
     const id = ligaIdDe(d, p);
     return id === null || ligaIds.has(id);
   });
-
-  // Las ligas con partidos hoy, de la que más partidos tiene hacia abajo: si el
-  // presupuesto se acaba, al menos se cargan las que más aportan. La temporada
-  // vigente de cada liga se aprende de sus propios partidos del día.
-  const cuenta = new Map<number, number>();
-  const temporadas = new Map<number, number | string>();
-  for (const p of delDia) {
-    const id = ligaIdDe(d, p) ?? d.ligas[0]?.id ?? 0;
-    cuenta.set(id, (cuenta.get(id) ?? 0) + 1);
-    const t = temporadaDe(p);
-    if (t !== null && !temporadas.has(id)) temporadas.set(id, t);
-  }
-  const ligas = [...cuenta.entries()].sort((a, b) => b[1] - a[1]).map(([id]) => id);
 
   const equipos = new Map<number, Equipo>();
   const cargadas: string[] = [];
   const pendientes: string[] = [];
 
-  for (const ligaId of ligas) {
+  try {
+    const hist = await historialPorBarrido(d, fecha, hoy, ligaIds, presupuesto, avisos);
+    for (const [id, e] of hist) equipos.set(id, { id, nombre: e.nombre, ligaId: e.ligaId, hist: e.hist });
+  } catch (err) {
+    avisos.push((err as Error).message);
+  }
+
+  // Qué ligas de hoy quedaron con historial y cuáles no.
+  const ligasHoy = new Set(delDia.map((p) => ligaIdDe(d, p) ?? d.ligas[0]?.id ?? 0));
+  const conDatos = new Set([...equipos.values()].map((e) => e.ligaId));
+  for (const ligaId of ligasHoy) {
     const meta = buscarLiga(d, ligaId);
     const nombre = meta ? `${meta.nombre} (${meta.pais})` : String(ligaId);
-    const temporada = temporadas.get(ligaId);
-    if (temporada === undefined) {
-      pendientes.push(nombre);
-      avisos.push(`${nombre}: los partidos del día no traen la temporada, no se puede pedir su historial.`);
-      continue;
-    }
-    try {
-      const hist = await historialDeLiga(d, ligaId, temporada, presupuesto);
-      for (const [id, e] of hist) equipos.set(id, { id, nombre: e.nombre, ligaId, hist: e.hist });
-      if (hist.size) cargadas.push(nombre);
-      else {
-        pendientes.push(nombre);
-        avisos.push(`${nombre}: la API no devolvió estadísticas utilizables para sus últimos partidos.`);
-      }
-    } catch (err) {
-      pendientes.push(nombre);
-      if (err instanceof SinCuota) {
-        avisos.push("Se acabó el presupuesto de peticiones de esta pasada; las ligas que faltan quedan para la próxima.");
-        break;
-      }
-      avisos.push(`${nombre}: ${(err as Error).message}`);
-    }
+    (conDatos.has(ligaId) ? cargadas : pendientes).push(nombre);
   }
 
   const bases = basesPorLiga([...equipos.values()]);

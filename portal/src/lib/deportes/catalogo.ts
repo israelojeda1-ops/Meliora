@@ -30,8 +30,17 @@ export type Deporte = {
    * - "enLista": ya vienen en la propia lista de partidos (béisbol).
    */
   estrategiaStats: "lote" | "porPartido" | "enLista";
-  /** Cuántos partidos recientes pedir por liga. */
+  /**
+   * Días hacia atrás que se barren para armar el historial. El plan gratuito
+   * no da acceso ni a `last` ni a las temporadas en curso; lo único que sirve
+   * datos actuales son las consultas por fecha, así que el historial son N
+   * días pasados, cada uno cacheado para siempre (un día jugado no cambia).
+   */
+  diasHistorial: number;
+  /** Tope de partidos a los que pedirles estadísticas (solo "porPartido"). */
   ultimosPorLiga: number;
+  /** La API de la NBA no acepta el parámetro timezone; el resto sí. */
+  usaTimezone: boolean;
   /**
    * Si el marcador aporta algo además de las métricas. En fútbol sí (los goles
    * no son remates ni córners); en NBA y béisbol la métrica A *es* el marcador,
@@ -52,7 +61,9 @@ export const DEPORTES: Record<DeporteId, Deporte> = {
     lineas: { total: { a: 24.5, b: 9.5 }, equipo: { a: 16.5, b: 5.5 } },
     terminados: ["FT", "AET", "PEN"],
     estrategiaStats: "lote",
+    diasHistorial: 14,
     ultimosPorLiga: 60,
+    usaTimezone: true,
     mostrarMarcador: true,
     ligas: [
       { id: 265, nombre: "Primera División", pais: "Chile" },
@@ -81,9 +92,11 @@ export const DEPORTES: Record<DeporteId, Deporte> = {
     // juego, 3 terminado.
     terminados: ["3"],
     estrategiaStats: "porPartido",
+    diasHistorial: 10,
     mostrarMarcador: false,
-    // Una petición por partido: con 30 se gastaría demasiado, así que la muestra
-    // es más corta que en fútbol.
+    usaTimezone: false,
+    // Una petición por partido: con más se gastaría demasiado, así que la
+    // muestra es más corta que en fútbol.
     ultimosPorLiga: 14,
     ligas: [{ id: 12, nombre: "NBA", pais: "Estados Unidos" }],
     nota:
@@ -101,7 +114,9 @@ export const DEPORTES: Record<DeporteId, Deporte> = {
     lineas: { total: { a: 8.5, b: 16.5 }, equipo: { a: 4.5, b: 8.5 } },
     terminados: ["FT", "AOT"],
     estrategiaStats: "enLista",
+    diasHistorial: 8,
     ultimosPorLiga: 60,
+    usaTimezone: true,
     mostrarMarcador: false,
     ligas: [
       { id: 1, nombre: "MLB", pais: "Estados Unidos" },
