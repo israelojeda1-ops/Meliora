@@ -5,8 +5,19 @@
 
 const SUFIJOS = new Set(["fc", "cf", "sc", "afc", "ac", "cd", "club"]);
 
+// Algunos clubes llegan con nombre distinto seg\u00fan la fuente (API-Football en la
+// cartelera del d\u00eda, ESPN en el historial) y el parecido de tokens no basta.
+// Aqu\u00ed cada variante normalizada se lleva a una forma can\u00f3nica com\u00fan. Es una
+// lista acotada \u2014 se agrega un par cuando aparezca un equipo "sin historial"
+// que en realidad s\u00ed lo tiene bajo otro nombre.
+const ALIAS: Record<string, string> = {
+  "los angeles": "lafc", // API-Football "Los Angeles FC" \u2194 ESPN "LAFC" (LA Galaxy es "la galaxy", no colisiona)
+  "guadalajara chivas": "guadalajara",
+  chivas: "guadalajara",
+};
+
 export function normNombre(nombre: string): string {
-  return nombre
+  const base = nombre
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
@@ -14,6 +25,7 @@ export function normNombre(nombre: string): string {
     .split(/\s+/)
     .filter((t) => t.length > 1 && !SUFIJOS.has(t))
     .join(" ");
+  return ALIAS[base] ?? base;
 }
 
 /**
