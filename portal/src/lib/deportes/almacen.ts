@@ -23,11 +23,11 @@ export type PartidoGuardado = {
 
 /** Permite apuntar a un servidor de prueba; en producción no se define. */
 const HOST = () => process.env.ALMACEN_URL ?? "https://api.github.com";
-// Los datos del portal viven aparte de los repos de clientes. ALMACEN_TOKEN
-// permite usar un token propio para este repo, sin ampliar el de Nuprotec.
-const REPO = () => process.env.ALMACEN_REPO ?? "israelojeda1-ops/pruebas";
-// Rama dedicada a los datos, para no mezclarlos con el trabajo del repo.
-const RAMA = () => process.env.ALMACEN_RAMA ?? "datos";
+// Los datos del portal viven en su propio repo, aparte de los de clientes.
+// ALMACEN_TOKEN permite un token dedicado, sin ampliar el de Nuprotec.
+const REPO = () => process.env.ALMACEN_REPO ?? "israelojeda1-ops/datos-deportes";
+// Sin ALMACEN_RAMA se usa la rama por defecto del repo.
+const RAMA = () => process.env.ALMACEN_RAMA;
 
 function token(): string {
   const t = process.env.ALMACEN_TOKEN ?? process.env.GITHUB_TOKEN;
@@ -44,7 +44,8 @@ const ruta = (d: Deporte, fecha: string) =>
  * viejos quedan cacheados como las estadísticas, para siempre.
  */
 export async function leerDia(d: Deporte, fecha: string, reciente: boolean): Promise<PartidoGuardado[] | null> {
-  const res = await fetch(`${ruta(d, fecha)}?ref=${RAMA()}`, {
+  const rama = RAMA();
+  const res = await fetch(`${ruta(d, fecha)}${rama ? `?ref=${rama}` : ""}`, {
     headers: {
       Authorization: `Bearer ${token()}`,
       Accept: "application/vnd.github.raw+json",
@@ -68,7 +69,11 @@ export async function guardarDia(d: Deporte, fecha: string, partidos: PartidoGua
   };
 
   // El sha actual, si el archivo ya existe (sin caché: tiene que ser el vigente).
-  const previo = await fetch(`${ruta(d, fecha)}?ref=${RAMA()}`, { headers: cab, cache: "no-store" });
+  const rama = RAMA();
+  const previo = await fetch(`${ruta(d, fecha)}${rama ? `?ref=${rama}` : ""}`, {
+    headers: cab,
+    cache: "no-store",
+  });
   const sha = previo.ok ? ((await previo.json()) as { sha?: string }).sha : undefined;
 
   const res = await fetch(ruta(d, fecha), {
@@ -78,7 +83,7 @@ export async function guardarDia(d: Deporte, fecha: string, partidos: PartidoGua
     body: JSON.stringify({
       message: `Cosecha ${d.id} ${fecha}`,
       content: Buffer.from(JSON.stringify(partidos)).toString("base64"),
-      branch: RAMA(),
+      ...(rama ? { branch: rama } : {}),
       ...(sha ? { sha } : {}),
     }),
   });
