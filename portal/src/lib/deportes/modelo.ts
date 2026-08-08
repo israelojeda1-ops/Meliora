@@ -61,6 +61,7 @@ export type Proyeccion = {
   // línea Over más alta con prob > 80% para el total del partido, o null
   segA: LineaSegura | null;
   segB: LineaSegura | null;
+  desglose: Desglose;
   idx: number;
   pjMin: number;
   lados: [Lado, Lado];
@@ -69,6 +70,26 @@ export type Proyeccion = {
 export type { Metricas } from "./catalogo";
 
 export type Lineas = { total: { a: number; b: number }; equipo: { a: number; b: number } };
+
+// Desglose de cómo se arma la proyección de una métrica, para el modal de
+// "análisis": cada factor por separado y cómo se multiplican.
+export type FactorLado = {
+  nombre: string;
+  ataque: number; // cuánto genera este equipo vs la media de la liga
+  defensaRival: number; // cuánto concede el rival vs la media de la liga
+  localia: number; // ajuste por jugar de local (>1) o visita (<1)
+  proyeccion: number; // resultado para este lado
+};
+export type DesgloseMetrica = {
+  base: number; // media de la liga por equipo
+  local: FactorLado;
+  visita: FactorLado;
+  total: number;
+  linea: number; // línea del total con la que se compara
+  prob: number; // probabilidad de superar esa línea
+  segura: LineaSegura | null;
+};
+export type Desglose = { a: DesgloseMetrica; b: DesgloseMetrica };
 
 /** P(X >= k) con X ~ Poisson(lam). */
 export function poissonTail(lam: number, k: number): number {
@@ -248,6 +269,26 @@ export function proyectar(
     pB,
     segA: lineaSegura(totalA),
     segB: lineaSegura(totalB),
+    desglose: {
+      a: {
+        base: baseA,
+        local: { nombre: p.local.nombre, ataque: atkAL, defensaRival: defAV, localia: hL, proyeccion: aL },
+        visita: { nombre: p.visita.nombre, ataque: atkAV, defensaRival: defAL, localia: hV, proyeccion: aV },
+        total: totalA,
+        linea: lineas.total.a,
+        prob: pA,
+        segura: lineaSegura(totalA),
+      },
+      b: {
+        base: baseB,
+        local: { nombre: p.local.nombre, ataque: atkBL, defensaRival: defBV, localia: hL, proyeccion: bL2 },
+        visita: { nombre: p.visita.nombre, ataque: atkBV, defensaRival: defBL, localia: hV, proyeccion: bV2 },
+        total: totalB,
+        linea: lineas.total.b,
+        prob: pB,
+        segura: lineaSegura(totalB),
+      },
+    },
     idx: (pA + pB) / 2,
     pjMin: Math.min(sL.pj, sV.pj),
     lados: [lado(p.local, sL, aL, bL2, true), lado(p.visita, sV, aV, bV2, false)],
