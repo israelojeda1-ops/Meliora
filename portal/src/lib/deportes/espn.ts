@@ -117,8 +117,17 @@ export async function poblarFutbol(dias: number, ligaId?: number): Promise<Resum
   let partidos = 0;
   let sinStats = 0;
 
+  // La función corre dentro de un lambda con tope de tiempo: si el poblado no
+  // alcanza, se corta limpio y el siguiente toque del botón continúa (los días
+  // ya escritos se saltan al tiro).
+  const limite = Date.now() + 45_000;
+
   const mediodiaHoy = aTs(`${fechaChile(Date.now())}T12:00`);
   for (let i = 1; i <= dias; i++) {
+    if (Date.now() > limite) {
+      avisos.push(`Se acabó el tiempo de esta pasada; toca el botón de nuevo para seguir (va ${i - 1} de ${dias} días).`);
+      break;
+    }
     const fecha = fechaChile(mediodiaHoy - i * DIA_MS);
     try {
       const existente = await leerDia(d, fecha, i < 2);

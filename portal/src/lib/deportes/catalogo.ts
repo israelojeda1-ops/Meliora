@@ -67,7 +67,9 @@ export const DEPORTES: Record<DeporteId, Deporte> = {
     terminados: ["FT", "AET", "PEN"],
     noIniciados: ["NS", "TBD", "PST"],
     estrategiaStats: "lote",
-    diasHistorial: 14,
+    // ~5 semanas: en ligas de un partido por semana, unos 5 por equipo. Leer
+    // el almacén no gasta cuota, así que mirar lejos solo cuesta unos GET.
+    diasHistorial: 35,
     ultimosPorLiga: 60,
     usaTimezone: true,
     mostrarMarcador: true,
