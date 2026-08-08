@@ -235,14 +235,15 @@ const claveEquipo = (nombre: string) => normNombre(nombre).replace(/ /g, "-");
  * da profundidad real cuando una temporada recién empezó. Se salta los equipos
  * ya guardados, así que corre a tramos y se retoma tocando de nuevo.
  */
-export async function poblarPorEquipo(porEquipo = 12): Promise<ResumenEquipos> {
+export async function poblarPorEquipo(forzar = false, porEquipo = 12): Promise<ResumenEquipos> {
   const d = DEPORTES.futbol;
   const avisos: string[] = [];
   let equiposEscritos = 0;
   let partidos = 0;
   const limite = Date.now() + 45_000;
-  const anio = new Date().getFullYear();
-  const temporadas = [anio, anio - 1];
+  // Solo la temporada en curso: refleja el plantel y la forma actual, sin
+  // arrastrar la campaña anterior. `forzar` reescribe los archivos existentes.
+  const temporadas = [new Date().getFullYear()];
 
   for (const dom of DOMESTICAS) {
     let equipos: { id: number; nombre: string }[];
@@ -261,7 +262,7 @@ export async function poblarPorEquipo(porEquipo = 12): Promise<ResumenEquipos> {
       const clave = claveEquipo(eq.nombre);
       if (!clave) continue;
       try {
-        if ((await leerEquipo(d, clave)) !== null) continue; // ya poblado
+        if (!forzar && (await leerEquipo(d, clave)) !== null) continue; // ya poblado
 
         const eventos = (await scheduleEquipo(dom.slug, eq.id, temporadas)).slice(0, porEquipo);
         const guardados: PartidoGuardado[] = [];

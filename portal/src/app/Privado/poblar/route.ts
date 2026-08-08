@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
       const ligaParam = url.searchParams.get("liga");
       return NextResponse.json(await poblarFutbol(dias, ligaParam ? Number(ligaParam) : undefined));
     }
-    return NextResponse.json(await poblarPorEquipo());
+    return NextResponse.json(await poblarPorEquipo(url.searchParams.get("forzar") === "1"));
   } catch (e) {
     return NextResponse.json({ error: (e as Error).message }, { status: 500 });
   }
