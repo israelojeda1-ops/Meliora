@@ -218,13 +218,14 @@ export function Cartelera({
 
   const poblar = () =>
     empezar(async () => {
-      setMsg("Poblando historial desde ESPN… (puede tomar un minuto)");
+      setMsg("Trayendo historial por equipo desde ESPN… (puede tomar un minuto)");
       setError(null);
       try {
-        const r = await fetch(`/Privado/poblar?dias=35`, { method: "POST" });
+        const r = await fetch(`/Privado/poblar?modo=equipo`, { method: "POST" });
         const j = await r.json();
         if (!r.ok) throw new Error(j.error ?? `HTTP ${r.status}`);
-        setMsg(`Historial poblado: ${j.diasEscritos} días, ${j.partidos} partidos.`);
+        const aviso = (j.avisos ?? []).join(" ");
+        setMsg(`Historial: ${j.equiposEscritos} equipos, ${j.partidos} partidos. ${aviso}`.trim());
       } catch (e) {
         setError((e as Error).message);
         setMsg(null);

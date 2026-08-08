@@ -2,7 +2,8 @@ import "server-only";
 import { ApiError, TAG_STATS, TTL_STATS } from "./api";
 import { DIA_MS, aTs, fechaChile } from "./fecha";
 import { DEPORTES, Liga, ligasActivas } from "./catalogo";
-import { PartidoGuardado, guardarDia, leerDia } from "./almacen";
+import { PartidoGuardado, guardarDia, guardarEquipo, leerDia, leerEquipo } from "./almacen";
+import { normNombre } from "./nombres";
 
 // Fuente abierta para poblar el historial de fútbol de una vez, en lugar de
 // esperar a que la cosecha diaria lo junte: la API pública de ESPN (sin clave)
@@ -40,45 +41,48 @@ type EventoDia = {
   gv: number;
 };
 
+/** Interpreta un evento de ESPN (scoreboard o schedule tienen la misma forma). */
+function parseEvento(e: unknown): EventoDia | null {
+  const ev = obj(e);
+  const comp = obj(arr(ev?.competitions)[0]);
+  const lados = arr(comp?.competitors).map(obj);
+  const local = lados.find((c) => c?.homeAway === "home");
+  const visita = lados.find((c) => c?.homeAway === "away");
+  const id = num(ev?.id);
+  const ts = ev?.date ? new Date(String(ev.date)).getTime() : NaN;
+  const equipo = (c: Obj | null | undefined) => {
+    const t = obj(c?.team);
+    const tid = num(t?.id);
+    const nombre = t?.displayName ?? t?.name;
+    return tid !== null && typeof nombre === "string" ? { id: tid, nombre } : null;
+  };
+  const eqL = equipo(local);
+  const eqV = equipo(visita);
+  if (id === null || !Number.isFinite(ts) || !eqL || !eqV) return null;
+  // El estado puede venir en el evento o en la competición según el endpoint.
+  const estado = obj(obj(ev?.status)?.type)?.state ?? obj(obj(comp?.status)?.type)?.state;
+  return {
+    id,
+    ts,
+    terminado: estado === "post",
+    local: eqL,
+    visita: eqV,
+    gl: num(local?.score) ?? 0,
+    gv: num(visita?.score) ?? 0,
+  };
+}
+
 /** Los partidos de una liga en un día, según el marcador de ESPN. */
 async function diaEspn(liga: Liga, fecha: string): Promise<EventoDia[]> {
   const json = await espnGet(
     `/apis/site/v2/sports/soccer/${liga.espn}/scoreboard?dates=${fecha.replaceAll("-", "")}`
   );
-  const out: EventoDia[] = [];
-  for (const e of arr(json.events)) {
-    const ev = obj(e);
-    const comp = obj(arr(ev?.competitions)[0]);
-    const lados = arr(comp?.competitors).map(obj);
-    const local = lados.find((c) => c?.homeAway === "home");
-    const visita = lados.find((c) => c?.homeAway === "away");
-    const id = num(ev?.id);
-    const ts = ev?.date ? new Date(String(ev.date)).getTime() : NaN;
-    const equipo = (c: Obj | null | undefined) => {
-      const t = obj(c?.team);
-      const tid = num(t?.id);
-      const nombre = t?.displayName ?? t?.name;
-      return tid !== null && typeof nombre === "string" ? { id: tid, nombre } : null;
-    };
-    const eqL = equipo(local);
-    const eqV = equipo(visita);
-    if (id === null || !Number.isFinite(ts) || !eqL || !eqV) continue;
-    out.push({
-      id,
-      ts,
-      terminado: obj(obj(ev?.status)?.type)?.state === "post",
-      local: eqL,
-      visita: eqV,
-      gl: num(local?.score) ?? 0,
-      gv: num(visita?.score) ?? 0,
-    });
-  }
-  return out;
+  return arr(json.events).map(parseEvento).filter((e): e is EventoDia => e !== null);
 }
 
 /** Remates y córners de un partido, por id de equipo de ESPN. */
-async function statsEspn(liga: Liga, eventoId: number): Promise<Map<number, { a: number; b: number }>> {
-  const json = await espnGet(`/apis/site/v2/sports/soccer/${liga.espn}/summary?event=${eventoId}`);
+async function statsEspn(slug: string, eventoId: number): Promise<Map<number, { a: number; b: number }>> {
+  const json = await espnGet(`/apis/site/v2/sports/soccer/${slug}/summary?event=${eventoId}`);
   const out = new Map<number, { a: number; b: number }>();
   for (const t of arr(obj(json.boxscore)?.teams)) {
     const lado = obj(t);
@@ -94,6 +98,39 @@ async function statsEspn(liga: Liga, eventoId: number): Promise<Map<number, { a:
     if (remates !== null && corners !== null) out.set(tid, { a: remates, b: corners });
   }
   return out;
+}
+
+/** Equipos de una liga (id y nombre de ESPN). */
+async function equiposDeLiga(slug: string): Promise<{ id: number; nombre: string }[]> {
+  const json = await espnGet(`/apis/site/v2/sports/soccer/${slug}/teams`);
+  const sports = arr(json.sports);
+  const leagues = arr(obj(sports[0])?.leagues);
+  const teams = arr(obj(leagues[0])?.teams);
+  const out: { id: number; nombre: string }[] = [];
+  for (const t of teams) {
+    const team = obj(obj(t)?.team);
+    const id = num(team?.id);
+    const nombre = team?.displayName;
+    if (id !== null && typeof nombre === "string") out.push({ id, nombre });
+  }
+  return out;
+}
+
+/** Últimos partidos jugados de un equipo, de sus temporadas recientes. */
+async function scheduleEquipo(slug: string, teamId: number, temporadas: number[]): Promise<EventoDia[]> {
+  const vistos = new Set<number>();
+  const out: EventoDia[] = [];
+  for (const s of temporadas) {
+    const json = await espnGet(`/apis/site/v2/sports/soccer/${slug}/teams/${teamId}/schedule?season=${s}`);
+    for (const e of arr(json.events)) {
+      const p = parseEvento(e);
+      if (p && p.terminado && !vistos.has(p.id)) {
+        vistos.add(p.id);
+        out.push(p);
+      }
+    }
+  }
+  return out.sort((a, b) => b.ts - a.ts);
 }
 
 export type ResumenPoblado = {
@@ -143,7 +180,7 @@ export async function poblarFutbol(dias: number, ligaId?: number): Promise<Resum
           if (!ev.terminado) continue;
           let stats: Map<number, { a: number; b: number }>;
           try {
-            stats = await statsEspn(liga, ev.id);
+            stats = await statsEspn(liga.espn!, ev.id);
           } catch {
             stats = new Map();
           }
@@ -173,4 +210,89 @@ export async function poblarFutbol(dias: number, ligaId?: number): Promise<Resum
   }
 
   return { diasEscritos, partidos, sinStats, avisos };
+}
+
+export type ResumenEquipos = {
+  equiposEscritos: number;
+  partidos: number;
+  avisos: string[];
+};
+
+// Ligas domésticas de las que se traen los equipos: dan el historial profundo
+// (temporada actual + anterior) de todos los clubes que juegan MLS y Leagues
+// Cup, incluidos los mexicanos que llegan a la Leagues Cup.
+const DOMESTICAS: { slug: string; ligaId: number }[] = [
+  { slug: "usa.1", ligaId: 253 },
+  { slug: "mex.1", ligaId: 262 },
+];
+
+const claveEquipo = (nombre: string) => normNombre(nombre).replace(/ /g, "-");
+
+/**
+ * Puebla el historial **por equipo** (no por liga/día): recorre los clubes de
+ * las ligas domésticas y guarda, para cada uno, sus últimos partidos de la
+ * temporada en curso y la anterior con remates y córners, desde ESPN. Es lo que
+ * da profundidad real cuando una temporada recién empezó. Se salta los equipos
+ * ya guardados, así que corre a tramos y se retoma tocando de nuevo.
+ */
+export async function poblarPorEquipo(porEquipo = 12): Promise<ResumenEquipos> {
+  const d = DEPORTES.futbol;
+  const avisos: string[] = [];
+  let equiposEscritos = 0;
+  let partidos = 0;
+  const limite = Date.now() + 45_000;
+  const anio = new Date().getFullYear();
+  const temporadas = [anio, anio - 1];
+
+  for (const dom of DOMESTICAS) {
+    let equipos: { id: number; nombre: string }[];
+    try {
+      equipos = await equiposDeLiga(dom.slug);
+    } catch (err) {
+      avisos.push(`${dom.slug}: ${(err as Error).message}`);
+      continue;
+    }
+
+    for (const eq of equipos) {
+      if (Date.now() > limite) {
+        avisos.push("Se acabó el tiempo de esta pasada; toca de nuevo para seguir con el resto de equipos.");
+        return { equiposEscritos, partidos, avisos };
+      }
+      const clave = claveEquipo(eq.nombre);
+      if (!clave) continue;
+      try {
+        if ((await leerEquipo(d, clave)) !== null) continue; // ya poblado
+
+        const eventos = (await scheduleEquipo(dom.slug, eq.id, temporadas)).slice(0, porEquipo);
+        const guardados: PartidoGuardado[] = [];
+        for (const ev of eventos) {
+          let stats: Map<number, { a: number; b: number }>;
+          try {
+            stats = await statsEspn(dom.slug, ev.id);
+          } catch {
+            stats = new Map();
+          }
+          const l = stats.get(ev.local.id) ?? null;
+          const v = stats.get(ev.visita.id) ?? null;
+          guardados.push({
+            fid: ev.id,
+            ts: ev.ts,
+            ligaId: dom.ligaId,
+            local: ev.local,
+            visita: ev.visita,
+            gl: ev.gl,
+            gv: ev.gv,
+            stats: l && v ? { l, v } : null,
+          });
+        }
+        await guardarEquipo(d, clave, guardados);
+        equiposEscritos += 1;
+        partidos += guardados.length;
+      } catch (err) {
+        avisos.push(`${eq.nombre}: ${(err as Error).message}`);
+      }
+    }
+  }
+
+  return { equiposEscritos, partidos, avisos };
 }

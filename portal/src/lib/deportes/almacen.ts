@@ -35,53 +35,52 @@ function token(): string {
   return t;
 }
 
-const ruta = (d: Deporte, fecha: string) =>
+// El almacén guarda dos vistas de los mismos partidos:
+// - por día: datos-deportes/futbol/2026-08-08.json (lo que cosecha la jornada).
+// - por equipo: datos-deportes/futbol/equipos/guadalajara.json (historial
+//   profundo de un club, traído por equipo desde ESPN, incluye temporada
+//   anterior y todas sus competencias).
+// La lectura fusiona ambas y deduplica por `fid`, así un mismo partido nunca
+// cuenta dos veces aunque esté en los dos lugares.
+const rutaDia = (d: Deporte, fecha: string) =>
   `${HOST()}/repos/${REPO()}/contents/datos-deportes/${d.id}/${fecha}.json`;
+const rutaEquipo = (d: Deporte, clave: string) =>
+  `${HOST()}/repos/${REPO()}/contents/datos-deportes/${d.id}/equipos/${clave}.json`;
 
-/**
- * El día guardado, o null si aún no se cosecha. Los días recientes se
- * revalidan cada 15 minutos (la cosecha pudo escribirlos hace un momento); los
- * viejos quedan cacheados como las estadísticas, para siempre.
- */
-export async function leerDia(d: Deporte, fecha: string, reciente: boolean): Promise<PartidoGuardado[] | null> {
+async function leerRuta(url: string, reciente: boolean, tag: string): Promise<PartidoGuardado[] | null> {
   const rama = RAMA();
-  const res = await fetch(`${ruta(d, fecha)}${rama ? `?ref=${rama}` : ""}`, {
+  const res = await fetch(`${url}${rama ? `?ref=${rama}` : ""}`, {
     headers: {
       Authorization: `Bearer ${token()}`,
       Accept: "application/vnd.github.raw+json",
       "X-GitHub-Api-Version": "2022-11-28",
     },
     cache: "force-cache",
-    next: { revalidate: reciente ? 900 : TTL_STATS, tags: [TAG_STATS, `alm-${d.id}-${fecha}`] },
+    next: { revalidate: reciente ? 900 : TTL_STATS, tags: [TAG_STATS, tag] },
   });
   if (res.status === 404) return null;
-  if (!res.ok) throw new ApiError(`El almacén respondió HTTP ${res.status} al leer ${fecha}.`);
+  if (!res.ok) throw new ApiError(`El almacén respondió HTTP ${res.status} al leer ${tag}.`);
   const json = (await res.json()) as unknown;
   return Array.isArray(json) ? (json as PartidoGuardado[]) : null;
 }
 
-/** Escribe (o reescribe) el día en el repo. */
-export async function guardarDia(d: Deporte, fecha: string, partidos: PartidoGuardado[]): Promise<void> {
+async function guardarRuta(url: string, mensaje: string, partidos: PartidoGuardado[]): Promise<void> {
   const cab = {
     Authorization: `Bearer ${token()}`,
     Accept: "application/vnd.github+json",
     "X-GitHub-Api-Version": "2022-11-28",
   };
-
-  // El sha actual, si el archivo ya existe (sin caché: tiene que ser el vigente).
   const rama = RAMA();
-  const previo = await fetch(`${ruta(d, fecha)}${rama ? `?ref=${rama}` : ""}`, {
-    headers: cab,
-    cache: "no-store",
-  });
+  // El sha actual, si el archivo ya existe (sin caché: tiene que ser el vigente).
+  const previo = await fetch(`${url}${rama ? `?ref=${rama}` : ""}`, { headers: cab, cache: "no-store" });
   const sha = previo.ok ? ((await previo.json()) as { sha?: string }).sha : undefined;
 
-  const res = await fetch(ruta(d, fecha), {
+  const res = await fetch(url, {
     method: "PUT",
     headers: { ...cab, "Content-Type": "application/json" },
     cache: "no-store",
     body: JSON.stringify({
-      message: `Cosecha ${d.id} ${fecha}`,
+      message: mensaje,
       content: Buffer.from(JSON.stringify(partidos)).toString("base64"),
       ...(rama ? { branch: rama } : {}),
       ...(sha ? { sha } : {}),
@@ -89,8 +88,24 @@ export async function guardarDia(d: Deporte, fecha: string, partidos: PartidoGua
   });
   if (!res.ok) {
     throw new ApiError(
-      `El almacén respondió HTTP ${res.status} al guardar ${fecha}. ` +
-        `Revisa que GITHUB_TOKEN tenga permiso de escritura en ${REPO()}.`
+      `El almacén respondió HTTP ${res.status} al guardar. ` +
+        `Revisa que ALMACEN_TOKEN tenga permiso de escritura en ${REPO()}.`
     );
   }
 }
+
+/** El día guardado, o null si aún no se cosecha. */
+export const leerDia = (d: Deporte, fecha: string, reciente: boolean) =>
+  leerRuta(rutaDia(d, fecha), reciente, `alm-${d.id}-${fecha}`);
+
+/** Escribe (o reescribe) el día en el repo. */
+export const guardarDia = (d: Deporte, fecha: string, partidos: PartidoGuardado[]) =>
+  guardarRuta(rutaDia(d, fecha), `Cosecha ${d.id} ${fecha}`, partidos);
+
+/** Historial profundo de un equipo (clave = nombre normalizado a slug). */
+export const leerEquipo = (d: Deporte, clave: string) =>
+  leerRuta(rutaEquipo(d, clave), true, `alm-eq-${d.id}-${clave}`);
+
+/** Guarda el historial profundo de un equipo. */
+export const guardarEquipo = (d: Deporte, clave: string, partidos: PartidoGuardado[]) =>
+  guardarRuta(rutaEquipo(d, clave), `Equipo ${d.id} ${clave}`, partidos);
