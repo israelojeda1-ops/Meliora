@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
   }
 
   const url = new URL(req.url);
-  const dias = Math.min(30, Math.max(1, Number(url.searchParams.get("dias")) || 21));
+  const dias = Math.min(45, Math.max(1, Number(url.searchParams.get("dias")) || 35));
   const ligaParam = url.searchParams.get("liga");
   const liga = ligaParam ? Number(ligaParam) : undefined;
 

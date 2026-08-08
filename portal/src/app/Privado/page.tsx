@@ -24,28 +24,28 @@ export default async function PrivadoPage({
 
   if (!dentro) {
     return (
-      <div className="flex-1 flex items-center justify-center px-4 py-16">
+      <div className="flex min-h-screen w-full flex-1 items-center justify-center bg-slate-950 px-4 py-16">
         <form action="/Privado/acceso" method="post" className="w-full max-w-sm">
-          <div className="rounded-2xl border border-slate-200 bg-white p-7 shadow-sm">
-            <h1 className="text-lg font-bold text-slate-900 mb-1">Zona privada</h1>
-            <p className="text-sm text-slate-500 mb-5">Ingresa la clave para continuar.</p>
+          <div className="rounded-2xl bg-white/[0.04] p-7 ring-1 ring-white/10">
+            <h1 className="mb-1 text-lg font-extrabold tracking-tight text-white">Zona privada</h1>
+            <p className="mb-5 text-sm text-slate-400">Ingresa la clave para continuar.</p>
             <input
               type="password"
               name="clave"
               autoFocus
               autoComplete="current-password"
               placeholder="Clave"
-              className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-base outline-none focus:border-slate-900"
+              className="w-full rounded-xl bg-white/5 px-3.5 py-2.5 text-base text-white placeholder-slate-500 outline-none ring-1 ring-white/10 focus:ring-emerald-400/50"
             />
-            {error === "clave" && <p className="mt-3 text-sm text-red-600">Clave incorrecta.</p>}
+            {error === "clave" && <p className="mt-3 text-sm font-medium text-red-400">Clave incorrecta.</p>}
             {error === "config" && (
-              <p className="mt-3 text-sm text-red-600">
+              <p className="mt-3 text-sm font-medium text-red-400">
                 Falta configurar la variable de entorno <code>PRIVADO_PASSWORD</code>.
               </p>
             )}
             <button
               type="submit"
-              className="mt-5 w-full rounded-lg bg-slate-900 py-2.5 text-sm font-semibold text-white active:bg-slate-800"
+              className="mt-5 w-full rounded-xl bg-emerald-400 py-2.5 text-sm font-extrabold text-slate-950 active:bg-emerald-300"
             >
               Entrar
             </button>
