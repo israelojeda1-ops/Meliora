@@ -4,7 +4,9 @@ import { decrypt, SESSION_COOKIE } from "@/lib/session";
 // Cóndores y la nueva versión de Nuprotec son aplicaciones con login propio
 // (usuarios y roles en su base): la clave del portal encima de su login sería
 // un doble acceso, así que pasan sin la puerta del portal.
-const PUBLIC_PREFIXES = ["/login", "/logout", "/demo", "/condores", "/nuprotecV2"];
+// /Privado tampoco pasa por aquí: tiene su propia clave y su propia cookie, y no
+// es un cliente del portal, así que la puerta por slug de cliente no le aplica.
+const PUBLIC_PREFIXES = ["/login", "/logout", "/demo", "/condores", "/nuprotecV2", "/Privado"];
 
 export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;

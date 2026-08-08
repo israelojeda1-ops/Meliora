@@ -58,3 +58,38 @@ npm install
 cp .env.example .env.local   # y completa los valores
 npm run dev
 ```
+
+## Zona privada de fútbol (`/Privado`)
+
+Página propia, pensada para el celular: la cartelera del día en las ligas
+seguidas, con los remates y córners proyectados de cada equipo y su historial
+reciente. Todo se muestra en hora de Chile, sin importar el reloj del
+dispositivo.
+
+Tiene su propia clave y su propia cookie (`privado_session`), y no pasa por la
+puerta de clientes del portal.
+
+### Variables de entorno
+
+| Variable | Para qué |
+| --- | --- |
+| `PRIVADO_PASSWORD` | Clave de acceso a `/Privado`. Sin ella la página no deja entrar. |
+| `API_FOOTBALL_KEY` | Clave de API-Football (plan gratuito: 100 peticiones al día, 10 por minuto). |
+| `SESSION_SECRET` | Ya usado por el portal; firma también la cookie de esta zona. |
+| `CRON_SECRET` | Lo define Vercel; autoriza al cron a llamar `/Privado/refrescar`. |
+
+### Cómo se gasta la cuota
+
+- La cartelera del día es **una** petición para todas las ligas.
+- El historial se pide **por liga, no por equipo**: una petición para la lista de
+  los últimos 60 partidos y una cada 20 partidos para sus estadísticas. Son ~3
+  peticiones por liga en vez de ~2 por equipo.
+- Las estadísticas de un partido jugado no cambian nunca, así que se cachean
+  aparte (`futbol-stats`) y el botón **Actualizar** no las vuelve a pedir: solo
+  caduca las listas (`futbol-listas`).
+- Cada invocación tiene un tope de peticiones para no chocar con el límite por
+  minuto. Si quedan ligas sin cargar, la página lo dice y se completan en la
+  siguiente pasada o con el cron.
+
+El cron de `vercel.json` corre tres veces seguidas a las 05:00, 05:10 y 05:20 de
+Chile para ir completando las ligas del día sin pasarse del límite por minuto.
