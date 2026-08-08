@@ -3,7 +3,7 @@ import { cookies } from "next/headers";
 import { revalidateTag } from "next/cache";
 import { COOKIE_PRIVADO, verificar } from "@/lib/deportes/sesion";
 import { getCartelera } from "@/lib/deportes/cartelera";
-import { LISTA_DEPORTES } from "@/lib/deportes/catalogo";
+import { DEPORTES_EN_PORTADA } from "@/lib/deportes/catalogo";
 import { TAG_LISTAS } from "@/lib/deportes/api";
 import { fechaChile } from "@/lib/deportes/fecha";
 
@@ -41,7 +41,7 @@ async function manejar(req: NextRequest) {
       return NextResponse.json(await getCartelera(deporte, fecha, { maxPeticiones: 30 }));
     }
     const resumen: Record<string, { partidos: number; avisos: string[] }> = {};
-    for (const dep of LISTA_DEPORTES) {
+    for (const dep of DEPORTES_EN_PORTADA) {
       const c = await getCartelera(dep.id, fecha, { maxPeticiones: 30 });
       resumen[dep.id] = { partidos: c.partidos.length, avisos: c.avisos };
     }

@@ -20,6 +20,7 @@ import {
   tsDe,
 } from "./api";
 import { PartidoGuardado, guardarDia, leerDia } from "./almacen";
+import { normNombre } from "./nombres";
 import { leerDirecto, leerMarcador, leerNba } from "./lectores";
 import {
   Equipo,
@@ -186,7 +187,7 @@ async function historialDeAlmacen(
   ligaIds: Set<number>,
   presupuesto: Presupuesto,
   avisos: string[]
-): Promise<Map<number, { nombre: string; ligaId: number; hist: PartidoHist[] }>> {
+): Promise<Map<string, { nombre: string; ligaId: number; hist: PartidoHist[] }>> {
   const mediodia = aTs(`${fecha}T12:00`);
   const dias = Array.from({ length: d.diasHistorial }, (_, i) => fechaChile(mediodia - (i + 1) * DIA_MS));
 
@@ -228,12 +229,15 @@ async function historialDeAlmacen(
     );
   }
 
-  const porEquipo = new Map<number, { nombre: string; ligaId: number; hist: PartidoHist[] }>();
+  // La llave es el nombre normalizado: el historial puede venir de fuentes con
+  // ids distintos para el mismo equipo (API-Sports y ESPN).
+  const porEquipo = new Map<string, { nombre: string; ligaId: number; hist: PartidoHist[] }>();
   for (const dia of leidos) {
     for (const g of dia ?? []) {
       if (!g.stats) continue;
       const anotar = (eq: { id: number; nombre: string }, enCasa: boolean, rival: string) => {
-        const e = porEquipo.get(eq.id) ?? { nombre: eq.nombre, ligaId: g.ligaId, hist: [] };
+        const clave = normNombre(eq.nombre);
+        const e = porEquipo.get(clave) ?? { nombre: eq.nombre, ligaId: g.ligaId, hist: [] };
         const mio = enCasa ? g.stats!.l : g.stats!.v;
         const suyo = enCasa ? g.stats!.v : g.stats!.l;
         e.hist.push({
@@ -248,7 +252,7 @@ async function historialDeAlmacen(
           bf: mio.b,
           bc: suyo.b,
         });
-        porEquipo.set(eq.id, e);
+        porEquipo.set(clave, e);
       };
       anotar(g.local, true, g.visita.nombre);
       anotar(g.visita, false, g.local.nombre);
@@ -273,7 +277,7 @@ export async function getCartelera(
     return id === null || ligaIds.has(id);
   });
 
-  const equipos = new Map<number, Equipo>();
+  const equipos = new Map<string, Equipo>();
   const cargadas: string[] = [];
   const pendientes: string[] = [];
 
@@ -300,8 +304,8 @@ export async function getCartelera(
   for (const p of delDia) {
     const ts = tsDe(p);
     const eq = equiposDe(p);
-    const local = eq ? equipos.get(eq.home.id) : undefined;
-    const visita = eq ? equipos.get(eq.away.id) : undefined;
+    const local = eq ? equipos.get(normNombre(eq.home.name)) : undefined;
+    const visita = eq ? equipos.get(normNombre(eq.away.name)) : undefined;
     const ligaId = ligaIdDe(d, p);
     const meta = ligaId !== null ? buscarLiga(d, ligaId) : undefined;
     const nombreLiga = meta?.nombre ?? ligaObj(p)?.name ?? d.nombre;

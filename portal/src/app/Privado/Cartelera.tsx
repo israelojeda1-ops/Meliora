@@ -4,7 +4,7 @@ import { useEffect, useState, useTransition } from "react";
 import type { Cartelera as Datos } from "@/lib/deportes/cartelera";
 import type { Lado, Proyeccion, ResumenSede } from "@/lib/deportes/modelo";
 import type { Metricas } from "@/lib/deportes/catalogo";
-import { LISTA_DEPORTES } from "@/lib/deportes/catalogo";
+import { DEPORTES_EN_PORTADA } from "@/lib/deportes/catalogo";
 import { fechaCorta, horaChile, relativo } from "@/lib/deportes/fecha";
 
 const pct = (v: number) => `${Math.round(v * 100)}%`;
@@ -169,24 +169,42 @@ export function Cartelera({
     };
   }, []);
 
-  const refrescar = (forzar: boolean) =>
+  const poblar = () =>
     empezar(async () => {
-      setMsg(forzar ? "Actualizando desde la API…" : "Cargando…");
+      setMsg("Poblando historial desde ESPN… (puede tomar un minuto)");
       setError(null);
       try {
-        const r = await fetch(
-          `/Privado/refrescar?deporte=${deporte}&fecha=${fecha}${forzar ? "&forzar=1" : ""}`,
-          { method: "POST" }
-        );
+        const r = await fetch(`/Privado/poblar?dias=21`, { method: "POST" });
         const j = await r.json();
         if (!r.ok) throw new Error(j.error ?? `HTTP ${r.status}`);
-        setDatos(j as Datos);
-        setMsg(`Listo · ${j.peticiones} peticiones usadas`);
+        setMsg(`Historial poblado: ${j.diasEscritos} días, ${j.partidos} partidos.`);
       } catch (e) {
         setError((e as Error).message);
         setMsg(null);
+        return;
       }
+      await refrescarInterno(false);
     });
+
+  const refrescarInterno = async (forzar: boolean) => {
+    setMsg(forzar ? "Actualizando desde la API…" : "Cargando…");
+    setError(null);
+    try {
+      const r = await fetch(
+        `/Privado/refrescar?deporte=${deporte}&fecha=${fecha}${forzar ? "&forzar=1" : ""}`,
+        { method: "POST" }
+      );
+      const j = await r.json();
+      if (!r.ok) throw new Error(j.error ?? `HTTP ${r.status}`);
+      setDatos(j as Datos);
+      setMsg(`Listo · ${j.peticiones} peticiones usadas`);
+    } catch (e) {
+      setError((e as Error).message);
+      setMsg(null);
+    }
+  };
+
+  const refrescar = (forzar: boolean) => empezar(() => refrescarInterno(forzar));
 
   const partidos = datos?.partidos ?? [];
   const m = datos?.metricas ?? METRICAS_VACIAS;
@@ -214,8 +232,8 @@ export function Cartelera({
             </form>
           </div>
         </div>
-        <nav className="mt-2.5 flex gap-1.5">
-          {LISTA_DEPORTES.map((dep) => (
+        <nav className={`mt-2.5 gap-1.5 ${DEPORTES_EN_PORTADA.length > 1 ? "flex" : "hidden"}`}>
+          {DEPORTES_EN_PORTADA.map((dep) => (
             <a
               key={dep.id}
               href={`/Privado?deporte=${dep.id}`}
@@ -229,6 +247,15 @@ export function Cartelera({
             </a>
           ))}
         </nav>
+        {deporte === "futbol" && (
+          <button
+            onClick={poblar}
+            disabled={cargando}
+            className="mt-2 text-xs text-slate-400 underline underline-offset-2 disabled:opacity-50"
+          >
+            Poblar historial desde ESPN (últimas 3 semanas)
+          </button>
+        )}
         {msg && <p className="mt-2 text-xs text-slate-400">{msg}</p>}
         {error && <p className="mt-2 text-xs text-red-600">{error}</p>}
       </header>

@@ -22,7 +22,9 @@ export type PartidoHist = {
 /** Promedios de un equipo restringidos a local o a visita. */
 export type ResumenSede = { pj: number; a: number; aC: number; b: number; bC: number };
 
-export type Equipo = { id: number; nombre: string; ligaId: number; hist: PartidoHist[] };
+// La id es el nombre normalizado (ver nombres.ts): permite cruzar historial de
+// fuentes distintas que numeran los equipos cada una a su manera.
+export type Equipo = { id: string; nombre: string; ligaId: number; hist: PartidoHist[] };
 
 export type Medias = { pj: number; af: number; ac: number; bf: number; bc: number; sede: boolean; hist: PartidoHist[] };
 

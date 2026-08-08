@@ -7,7 +7,8 @@ import type { Lineas } from "./modelo";
 
 export type DeporteId = "futbol" | "nba" | "beisbol";
 
-export type Liga = { id: number; nombre: string; pais: string };
+/** `espn` es el código de esa liga en la API pública de ESPN, si existe. */
+export type Liga = { id: number; nombre: string; pais: string; espn?: string };
 
 /** Los dos números por equipo que la página proyecta y muestra. */
 export type Metricas = { a: { nombre: string; corto: string }; b: { nombre: string; corto: string } };
@@ -51,6 +52,8 @@ export type Deporte = {
   mostrarMarcador: boolean;
   /** Advertencia a mostrar en la página, si el modelo calza peor con el deporte. */
   nota?: string;
+  /** Si el deporte se muestra en la página. Los apagados conservan su código. */
+  enPortada: boolean;
 };
 
 export const DEPORTES: Record<DeporteId, Deporte> = {
@@ -68,18 +71,19 @@ export const DEPORTES: Record<DeporteId, Deporte> = {
     ultimosPorLiga: 60,
     usaTimezone: true,
     mostrarMarcador: true,
+    enPortada: true,
     ligas: [
-      { id: 265, nombre: "Primera División", pais: "Chile" },
-      { id: 39, nombre: "Premier League", pais: "Inglaterra" },
-      { id: 140, nombre: "LaLiga", pais: "España" },
-      { id: 135, nombre: "Serie A", pais: "Italia" },
-      { id: 78, nombre: "Bundesliga", pais: "Alemania" },
-      { id: 61, nombre: "Ligue 1", pais: "Francia" },
-      { id: 253, nombre: "Major League Soccer", pais: "Estados Unidos" },
-      { id: 262, nombre: "Liga MX", pais: "México" },
-      { id: 13, nombre: "Copa Libertadores", pais: "Sudamérica" },
-      { id: 11, nombre: "Copa Sudamericana", pais: "Sudamérica" },
-      { id: 2, nombre: "Champions League", pais: "Europa" },
+      { id: 265, nombre: "Primera División", pais: "Chile", espn: "chi.1" },
+      { id: 39, nombre: "Premier League", pais: "Inglaterra", espn: "eng.1" },
+      { id: 140, nombre: "LaLiga", pais: "España", espn: "esp.1" },
+      { id: 135, nombre: "Serie A", pais: "Italia", espn: "ita.1" },
+      { id: 78, nombre: "Bundesliga", pais: "Alemania", espn: "ger.1" },
+      { id: 61, nombre: "Ligue 1", pais: "Francia", espn: "fra.1" },
+      { id: 253, nombre: "Major League Soccer", pais: "Estados Unidos", espn: "usa.1" },
+      { id: 262, nombre: "Liga MX", pais: "México", espn: "mex.1" },
+      { id: 13, nombre: "Copa Libertadores", pais: "Sudamérica", espn: "conmebol.libertadores" },
+      { id: 11, nombre: "Copa Sudamericana", pais: "Sudamérica", espn: "conmebol.sudamericana" },
+      { id: 2, nombre: "Champions League", pais: "Europa", espn: "uefa.champions" },
     ],
   },
 
@@ -99,6 +103,7 @@ export const DEPORTES: Record<DeporteId, Deporte> = {
     diasHistorial: 10,
     mostrarMarcador: false,
     usaTimezone: false,
+    enPortada: false,
     // Una petición por partido: con más se gastaría demasiado, así que la
     // muestra es más corta que en fútbol.
     ultimosPorLiga: 14,
@@ -123,6 +128,7 @@ export const DEPORTES: Record<DeporteId, Deporte> = {
     ultimosPorLiga: 60,
     usaTimezone: true,
     mostrarMarcador: false,
+    enPortada: false,
     ligas: [
       { id: 1, nombre: "MLB", pais: "Estados Unidos" },
       { id: 2, nombre: "NPB", pais: "Japón" },
@@ -131,6 +137,7 @@ export const DEPORTES: Record<DeporteId, Deporte> = {
 };
 
 export const LISTA_DEPORTES = Object.values(DEPORTES);
+export const DEPORTES_EN_PORTADA = LISTA_DEPORTES.filter((d) => d.enPortada);
 
 export const esDeporteId = (v: unknown): v is DeporteId =>
   typeof v === "string" && Object.prototype.hasOwnProperty.call(DEPORTES, v);
