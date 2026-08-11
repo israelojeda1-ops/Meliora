@@ -17,14 +17,30 @@ const ALIAS: Record<string, string> = {
 };
 
 export function normNombre(nombre: string): string {
-  const base = nombre
+  const tokens = nombre
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
     .replace(/[^a-z0-9 ]+/g, " ")
     .split(/\s+/)
-    .filter((t) => t.length > 1 && !SUFIJOS.has(t))
-    .join(" ");
+    .filter(Boolean);
+
+  // Une las siglas con puntos que quedaron como letras sueltas: "u n a m" ->
+  // "unam", "d c united" -> "dc united". Si no, cada letra se descartar\u00eda por
+  // tener un solo car\u00e1cter y la sigla desaparecer\u00eda del nombre.
+  const unidos: string[] = [];
+  let sigla = "";
+  for (const t of tokens) {
+    if (t.length === 1) sigla += t;
+    else {
+      if (sigla) unidos.push(sigla);
+      sigla = "";
+      unidos.push(t);
+    }
+  }
+  if (sigla) unidos.push(sigla);
+
+  const base = unidos.filter((t) => t.length > 1 && !SUFIJOS.has(t)).join(" ");
   return ALIAS[base] ?? base;
 }
 
