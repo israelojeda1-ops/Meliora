@@ -333,3 +333,47 @@ export async function poblarPorEquipo(forzar = false, porEquipo = 12): Promise<R
 
   return { equiposEscritos, partidos, avisos };
 }
+
+export type ResultadoEspn = { a: number; b: number; gl: number; gv: number; homeNorm: string };
+
+/** Clave del partido independiente del orden de los equipos. */
+const parClave = (n1: string, n2: string) => [normNombre(n1), normNombre(n2)].sort().join("|");
+
+/**
+ * Totales reales (remates, córners, marcador) de los partidos terminados de una
+ * fecha en las ligas activas, desde ESPN (gratis). Indexados por el par de
+ * equipos normalizado, así se cruzan con la cartelera aunque la API del día use
+ * otros nombres. `homeNorm` permite orientar el marcador.
+ */
+export async function resultadosEspn(fecha: string): Promise<Map<string, ResultadoEspn>> {
+  const d = DEPORTES.futbol;
+  const out = new Map<string, ResultadoEspn>();
+  for (const liga of ligasActivas(d)) {
+    if (!liga.espn) continue;
+    let eventos: EventoDia[];
+    try {
+      eventos = await diaEspn(liga, fecha);
+    } catch {
+      continue;
+    }
+    for (const ev of eventos) {
+      if (!ev.terminado) continue;
+      try {
+        const { stats } = await resumenEspn(liga.espn, ev.id);
+        const l = stats.get(ev.local.id);
+        const v = stats.get(ev.visita.id);
+        if (!l || !v) continue;
+        out.set(parClave(ev.local.nombre, ev.visita.nombre), {
+          a: l.a + v.a,
+          b: l.b + v.b,
+          gl: ev.gl,
+          gv: ev.gv,
+          homeNorm: normNombre(ev.local.nombre),
+        });
+      } catch {
+        /* un partido sin resumen no aporta resultado */
+      }
+    }
+  }
+  return out;
+}

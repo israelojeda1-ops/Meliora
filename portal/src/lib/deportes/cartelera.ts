@@ -20,6 +20,7 @@ import {
   tsDe,
 } from "./api";
 import { PartidoGuardado, guardarDia, leerEquipo, leerDia } from "./almacen";
+import { ResultadoEspn, resultadosEspn } from "./espn";
 import { buscarPorNombre, normNombre } from "./nombres";
 import { leerDirecto, leerMarcador, leerNba } from "./lectores";
 import {
@@ -28,7 +29,6 @@ import {
   Metricas,
   PartidoHist,
   Proyeccion,
-  Resultado,
   basesPorLiga,
   proyectar,
 } from "./modelo";
@@ -301,51 +301,6 @@ async function historialDeAlmacen(
   return porEquipo;
 }
 
-/**
- * Totales reales (remates, córners, marcador) de los partidos ya terminados de
- * la cartelera, indexados por id. Se piden las estadísticas de esos partidos a
- * la misma API del día, así que la id coincide con la de la cartelera.
- */
-async function resultadosDeFecha(
-  d: Deporte,
-  delDia: PartidoApi[],
-  presupuesto: Presupuesto
-): Promise<Map<number, Resultado>> {
-  const out = new Map<number, Resultado>();
-  const jugados = delDia.filter((p) => terminado(d, p) && idDe(p) !== null && equiposDe(p) !== null);
-  if (!jugados.length) return out;
-
-  const statsPorId = new Map<number, ReturnType<typeof leerDirecto>>();
-  if (d.estrategiaStats === "lote") {
-    const ids = jugados.map(idDe).filter((x): x is number => x !== null);
-    for (const p of await porLote(d, ids, presupuesto)) {
-      const id = idDe(p);
-      if (id !== null) statsPorId.set(id, leerDirecto(d, p));
-    }
-  } else if (d.estrategiaStats === "porPartido") {
-    for (const p of jugados) {
-      const id = idDe(p);
-      const eq = equiposDe(p);
-      if (id === null || !eq) continue;
-      statsPorId.set(id, leerNba(await statsDePartido(d, id, presupuesto), eq.home.id, eq.away.id));
-    }
-  }
-
-  for (const p of jugados) {
-    const id = idDe(p)!;
-    const stats = leerDirecto(d, p) ?? statsPorId.get(id) ?? null;
-    if (!stats) continue;
-    const marcador = leerMarcador(d, p);
-    out.set(id, {
-      a: stats.home.a + stats.away.a,
-      b: stats.home.b + stats.away.b,
-      gl: marcador.home,
-      gv: marcador.away,
-    });
-  }
-  return out;
-}
-
 export async function getCartelera(
   deporteId: string | undefined,
   fecha: string,
@@ -396,16 +351,18 @@ export async function getCartelera(
     (conDatos.has(ligaId) ? cargadas : pendientes).push(nombre);
   }
 
-  // Resultados reales de los partidos ya terminados del día mostrado, para
-  // comparar con la proyección. A diferencia de la cosecha (todo-o-nada, para
-  // guardar el día completo), acá se toma cada partido terminado por separado,
-  // aunque el día aún tenga partidos por jugarse.
-  let resultados = new Map<number, Resultado>();
-  try {
-    resultados = await resultadosDeFecha(d, delDia, presupuesto);
-  } catch (err) {
-    if (!(err instanceof SinCuota)) avisos.push((err as Error).message);
+  // Resultados reales de los partidos ya terminados del día, desde ESPN (gratis;
+  // el plan gratuito de API-Football no da estadísticas). Se cruzan con la
+  // cartelera por el par de equipos normalizado.
+  let resultados = new Map<string, ResultadoEspn>();
+  if (d.id === "futbol") {
+    try {
+      resultados = await resultadosEspn(fecha);
+    } catch (err) {
+      avisos.push((err as Error).message);
+    }
   }
+  const claveDelPar = (h: string, a: string) => [normNombre(h), normNombre(a)].sort().join("|");
 
   const bases = basesPorLiga([...equipos.values()]);
   const partidos: Proyeccion[] = [];
@@ -436,7 +393,17 @@ export async function getCartelera(
 
     const proy = entrada ? proyectar(entrada, bases, d.lineas) : null;
     if (proy) {
-      if (id !== null) proy.resultado = resultados.get(id) ?? null;
+      const rEspn = eq ? resultados.get(claveDelPar(eq.home.name, eq.away.name)) : undefined;
+      if (rEspn && eq) {
+        // orienta el marcador al local de la cartelera
+        const local = rEspn.homeNorm === normNombre(eq.home.name);
+        proy.resultado = {
+          a: rEspn.a,
+          b: rEspn.b,
+          gl: local ? rEspn.gl : rEspn.gv,
+          gv: local ? rEspn.gv : rEspn.gl,
+        };
+      } else proy.resultado = null;
       partidos.push(proy);
     } else if (eq)
       sinDatos.push({
