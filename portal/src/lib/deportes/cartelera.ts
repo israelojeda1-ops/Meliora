@@ -301,6 +301,51 @@ async function historialDeAlmacen(
   return porEquipo;
 }
 
+/**
+ * Totales reales (remates, córners, marcador) de los partidos ya terminados de
+ * la cartelera, indexados por id. Se piden las estadísticas de esos partidos a
+ * la misma API del día, así que la id coincide con la de la cartelera.
+ */
+async function resultadosDeFecha(
+  d: Deporte,
+  delDia: PartidoApi[],
+  presupuesto: Presupuesto
+): Promise<Map<number, Resultado>> {
+  const out = new Map<number, Resultado>();
+  const jugados = delDia.filter((p) => terminado(d, p) && idDe(p) !== null && equiposDe(p) !== null);
+  if (!jugados.length) return out;
+
+  const statsPorId = new Map<number, ReturnType<typeof leerDirecto>>();
+  if (d.estrategiaStats === "lote") {
+    const ids = jugados.map(idDe).filter((x): x is number => x !== null);
+    for (const p of await porLote(d, ids, presupuesto)) {
+      const id = idDe(p);
+      if (id !== null) statsPorId.set(id, leerDirecto(d, p));
+    }
+  } else if (d.estrategiaStats === "porPartido") {
+    for (const p of jugados) {
+      const id = idDe(p);
+      const eq = equiposDe(p);
+      if (id === null || !eq) continue;
+      statsPorId.set(id, leerNba(await statsDePartido(d, id, presupuesto), eq.home.id, eq.away.id));
+    }
+  }
+
+  for (const p of jugados) {
+    const id = idDe(p)!;
+    const stats = leerDirecto(d, p) ?? statsPorId.get(id) ?? null;
+    if (!stats) continue;
+    const marcador = leerMarcador(d, p);
+    out.set(id, {
+      a: stats.home.a + stats.away.a,
+      b: stats.home.b + stats.away.b,
+      gl: marcador.home,
+      gv: marcador.away,
+    });
+  }
+  return out;
+}
+
 export async function getCartelera(
   deporteId: string | undefined,
   fecha: string,
@@ -351,38 +396,15 @@ export async function getCartelera(
     (conDatos.has(ligaId) ? cargadas : pendientes).push(nombre);
   }
 
-  // Resultados reales del día mostrado, si ya se jugó: sirven para comparar la
-  // proyección con lo que de verdad pasó. Salen del mismo almacén (la cosecha
-  // del día guarda remates y córners por partido, con la misma id que la API del
-  // día). Solo para días pasados; hoy aún no hay resultado.
-  const resultados = new Map<number, Resultado>();
-  if (fecha < hoy) {
-    try {
-      let dia = await leerDia(d, fecha, true);
-      if (dia === null) {
-        const cosecha = await cosecharDia(d, fecha, ligaIds, presupuesto, avisos);
-        if (cosecha) {
-          dia = cosecha;
-          try {
-            await guardarDia(d, fecha, cosecha);
-          } catch (err) {
-            avisos.push((err as Error).message);
-          }
-        }
-      }
-      for (const g of dia ?? []) {
-        if (g.stats) {
-          resultados.set(g.fid, {
-            a: g.stats.l.a + g.stats.v.a,
-            b: g.stats.l.b + g.stats.v.b,
-            gl: g.gl,
-            gv: g.gv,
-          });
-        }
-      }
-    } catch (err) {
-      avisos.push((err as Error).message);
-    }
+  // Resultados reales de los partidos ya terminados del día mostrado, para
+  // comparar con la proyección. A diferencia de la cosecha (todo-o-nada, para
+  // guardar el día completo), acá se toma cada partido terminado por separado,
+  // aunque el día aún tenga partidos por jugarse.
+  let resultados = new Map<number, Resultado>();
+  try {
+    resultados = await resultadosDeFecha(d, delDia, presupuesto);
+  } catch (err) {
+    if (!(err instanceof SinCuota)) avisos.push((err as Error).message);
   }
 
   const bases = basesPorLiga([...equipos.values()]);
