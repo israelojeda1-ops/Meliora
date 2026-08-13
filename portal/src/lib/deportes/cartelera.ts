@@ -28,6 +28,7 @@ import {
   Metricas,
   PartidoHist,
   Proyeccion,
+  Resultado,
   basesPorLiga,
   proyectar,
 } from "./modelo";
@@ -350,6 +351,40 @@ export async function getCartelera(
     (conDatos.has(ligaId) ? cargadas : pendientes).push(nombre);
   }
 
+  // Resultados reales del día mostrado, si ya se jugó: sirven para comparar la
+  // proyección con lo que de verdad pasó. Salen del mismo almacén (la cosecha
+  // del día guarda remates y córners por partido, con la misma id que la API del
+  // día). Solo para días pasados; hoy aún no hay resultado.
+  const resultados = new Map<number, Resultado>();
+  if (fecha < hoy) {
+    try {
+      let dia = await leerDia(d, fecha, true);
+      if (dia === null) {
+        const cosecha = await cosecharDia(d, fecha, ligaIds, presupuesto, avisos);
+        if (cosecha) {
+          dia = cosecha;
+          try {
+            await guardarDia(d, fecha, cosecha);
+          } catch (err) {
+            avisos.push((err as Error).message);
+          }
+        }
+      }
+      for (const g of dia ?? []) {
+        if (g.stats) {
+          resultados.set(g.fid, {
+            a: g.stats.l.a + g.stats.v.a,
+            b: g.stats.l.b + g.stats.v.b,
+            gl: g.gl,
+            gv: g.gv,
+          });
+        }
+      }
+    } catch (err) {
+      avisos.push((err as Error).message);
+    }
+  }
+
   const bases = basesPorLiga([...equipos.values()]);
   const partidos: Proyeccion[] = [];
   const sinDatos: Cartelera["sinDatos"] = [];
@@ -378,8 +413,10 @@ export async function getCartelera(
         : null;
 
     const proy = entrada ? proyectar(entrada, bases, d.lineas) : null;
-    if (proy) partidos.push(proy);
-    else if (eq)
+    if (proy) {
+      if (id !== null) proy.resultado = resultados.get(id) ?? null;
+      partidos.push(proy);
+    } else if (eq)
       sinDatos.push({
         local: eq.home.name,
         visita: eq.away.name,
