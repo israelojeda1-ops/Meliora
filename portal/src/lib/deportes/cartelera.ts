@@ -61,6 +61,20 @@ export async function diaAMostrar(fechaParam?: string): Promise<{ fecha: string;
 }
 
 /**
+ * Días que el selector ofrece: ayer, hoy y mañana en hora de Chile. Es el rango
+ * que el plan gratuito de la API sirve para la cartelera del día ("Free plans do
+ * not have access to this date, try from D-1 to D+1").
+ */
+export function diasSelector(): { fecha: string; etiqueta: string }[] {
+  const ahora = Date.now();
+  const mediodiaHoy = aTs(`${fechaChile(ahora)}T12:00`);
+  return [-1, 0, 1].map((delta) => {
+    const t = mediodiaHoy + delta * DIA_MS;
+    return { fecha: fechaChile(t), etiqueta: nombreDia(t, ahora) };
+  });
+}
+
+/**
  * La cartelera de una fecha en hora de Chile. Los partidos de la NBA nocturnos
  * caen en el día UTC siguiente y su API no acepta timezone, así que ahí se
  * consultan dos fechas y se filtra localmente.

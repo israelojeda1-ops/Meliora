@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 import { COOKIE_PRIVADO, verificar } from "@/lib/deportes/sesion";
-import { diaAMostrar, getCartelera } from "@/lib/deportes/cartelera";
+import { diaAMostrar, diasSelector, getCartelera } from "@/lib/deportes/cartelera";
 import { getDeporte } from "@/lib/deportes/catalogo";
 import { Cartelera } from "./Cartelera";
 
@@ -67,6 +67,13 @@ export default async function PrivadoPage({
   }
 
   return (
-    <Cartelera inicial={datos ?? null} deporte={deporte.id} fecha={fecha} titulo={titulo} fallo={fallo} />
+    <Cartelera
+      inicial={datos ?? null}
+      deporte={deporte.id}
+      fecha={fecha}
+      titulo={titulo}
+      dias={diasSelector()}
+      fallo={fallo}
+    />
   );
 }

@@ -350,12 +350,14 @@ export function Cartelera({
   deporte,
   fecha,
   titulo,
+  dias,
   fallo,
 }: {
   inicial: Datos | null;
   deporte: string;
   fecha: string;
   titulo: string;
+  dias: { fecha: string; etiqueta: string }[];
   fallo: string | null;
 }) {
   const [datos, setDatos] = useState<Datos | null>(inicial);
@@ -467,6 +469,20 @@ export function Cartelera({
                 }`}
               >
                 {dep.nombre}
+              </a>
+            ))}
+          </nav>
+          <nav className="mt-2 flex gap-1.5">
+            {dias.map((d) => (
+              <a
+                key={d.fecha}
+                href={`/Privado?deporte=${deporte}&fecha=${d.fecha}`}
+                aria-current={d.fecha === fecha ? "date" : undefined}
+                className={`rounded-full px-3.5 py-1.5 text-xs font-semibold first-letter:uppercase ${
+                  d.fecha === fecha ? "bg-emerald-400 text-slate-950" : "text-slate-400 ring-1 ring-white/10 active:bg-white/5"
+                }`}
+              >
+                {d.etiqueta}
               </a>
             ))}
           </nav>
