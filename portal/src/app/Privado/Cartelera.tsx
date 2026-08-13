@@ -176,6 +176,11 @@ function Partido({ p, m, marcador, ahora }: { p: Proyeccion; m: Metricas; marcad
           </div>
         </div>
       </button>
+      {p.resultado && (
+        <div className="px-3 pb-2">
+          <ResultadoStrip p={p} m={m} />
+        </div>
+      )}
       <div className="flex items-center gap-2 px-3 pb-3">
         {(p.segA || p.segB) && (
           <div className="min-w-0 flex-1">
@@ -222,6 +227,40 @@ function LineaSeguraStrip({ segA, segB, m }: { segA: LineaSegura | null; segB: L
       <span className="font-bold uppercase tracking-wide text-emerald-300/80">Línea segura</span>
       {item(segA, m.a.corto)}
       {item(segB, m.b.corto)}
+    </div>
+  );
+}
+
+/**
+ * Franja de resultado real vs proyección, para partidos ya jugados. El acierto
+ * (✓/✗) se juzga contra la línea segura, que es la recomendación que dio el
+ * modelo: caía si el total real la superaba.
+ */
+function ResultadoStrip({ p, m }: { p: Proyeccion; m: Metricas }) {
+  const r = p.resultado;
+  if (!r) return null;
+  const item = (real: number, proy: number, seg: Proyeccion["segA"], corto: string) => {
+    const acerto = seg ? real > seg.linea : null; // null si no hubo línea segura
+    return (
+      <span className="inline-flex items-baseline gap-1">
+        <span className="font-bold tabular-nums text-white">{real}</span>
+        <span className="text-slate-500">{corto}</span>
+        <span className="text-slate-600 tabular-nums">proy {proy.toFixed(0)}</span>
+        {seg && (
+          <span className={acerto ? "font-bold text-emerald-400" : "font-bold text-rose-400"}>
+            +{seg.linea.toFixed(1)} {acerto ? "✓" : "✗"}
+          </span>
+        )}
+      </span>
+    );
+  };
+  return (
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg bg-sky-400/10 px-3 py-1.5 text-[11px] ring-1 ring-sky-400/20">
+      <span className="font-bold uppercase tracking-wide text-sky-300/80">
+        Resultado {r.gl}–{r.gv}
+      </span>
+      {item(r.a, p.a, p.segA, m.a.corto)}
+      {item(r.b, p.b, p.segB, m.b.corto)}
     </div>
   );
 }

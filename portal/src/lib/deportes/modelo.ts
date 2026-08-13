@@ -62,10 +62,15 @@ export type Proyeccion = {
   segA: LineaSegura | null;
   segB: LineaSegura | null;
   desglose: Desglose;
+  // resultado real del partido si ya se jugó, para comparar con la proyección
+  resultado?: Resultado | null;
   idx: number;
   pjMin: number;
   lados: [Lado, Lado];
 };
+
+/** Totales reales de un partido terminado (remates, córners y marcador). */
+export type Resultado = { a: number; b: number; gl: number; gv: number };
 
 export type { Metricas } from "./catalogo";
 
