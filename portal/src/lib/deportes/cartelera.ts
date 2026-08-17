@@ -20,7 +20,7 @@ import {
   tsDe,
 } from "./api";
 import { PartidoGuardado, guardarDia, leerEquipo, leerDia } from "./almacen";
-import { ResultadoEspn, resultadosEspn } from "./espn";
+import { ResultadoEspn, carteleraEspn, resultadosEspn } from "./espn";
 import { buscarPorNombre, normNombre } from "./nombres";
 import { leerDirecto, leerMarcador, leerNba } from "./lectores";
 import {
@@ -62,14 +62,14 @@ export async function diaAMostrar(fechaParam?: string): Promise<{ fecha: string;
 }
 
 /**
- * Días que el selector ofrece: ayer, hoy y mañana en hora de Chile. Es el rango
- * que el plan gratuito de la API sirve para la cartelera del día ("Free plans do
- * not have access to this date, try from D-1 to D+1").
+ * Días que ofrece el selector, en hora de Chile: varios pasados, hoy y mañana.
+ * ESPN no limita la fecha (a diferencia del viejo API-Football, que solo servía
+ * de ayer a mañana), así que se pueden revisar jornadas anteriores.
  */
 export function diasSelector(): { fecha: string; etiqueta: string }[] {
   const ahora = Date.now();
   const mediodiaHoy = aTs(`${fechaChile(ahora)}T12:00`);
-  return [-1, 0, 1].map((delta) => {
+  return [-4, -3, -2, -1, 0, 1].map((delta) => {
     const t = mediodiaHoy + delta * DIA_MS;
     return { fecha: fechaChile(t), etiqueta: nombreDia(t, ahora) };
   });
@@ -85,6 +85,10 @@ async function carteleraDeFecha(
   fecha: string,
   presupuesto: Presupuesto
 ): Promise<PartidoApi[]> {
+  // Fútbol: la lista del día sale de ESPN (gratis, sin límite de fecha). Antes
+  // era API-Football, pero su plan gratuito quedó suspendido.
+  if (d.id === "futbol") return carteleraEspn(d, fecha);
+
   const fechas = d.usaTimezone ? [fecha] : [fecha, fechaChile(aTs(`${fecha}T12:00`) + DIA_MS)];
   const out: PartidoApi[] = [];
   for (const f of fechas) out.push(...(await partidosDeFecha(d, f, presupuesto)));
@@ -218,10 +222,12 @@ async function historialDeAlmacen(
     })
   );
 
-  // El ayer que aún no está guardado se cosecha ahora y queda guardado.
+  // El ayer que aún no está guardado se cosecha ahora y queda guardado. En
+  // fútbol no aplica: su cosecha usaba API-Football (suspendida) y el historial
+  // se mantiene con los archivos por equipo de ESPN (botón «Poblar»).
   const ayer = fechaChile(aTs(`${hoy}T12:00`) - DIA_MS);
   const iAyer = dias.indexOf(ayer);
-  if (iAyer >= 0 && leidos[iAyer] === null) {
+  if (d.id !== "futbol" && iAyer >= 0 && leidos[iAyer] === null) {
     try {
       const cosecha = await cosecharDia(d, ayer, ligaIds, presupuesto, avisos);
       if (cosecha !== null) {
@@ -238,7 +244,7 @@ async function historialDeAlmacen(
   }
 
   const diasConDatos = leidos.filter((x) => x !== null).length;
-  if (diasConDatos < Math.min(3, d.diasHistorial)) {
+  if (d.id !== "futbol" && diasConDatos < Math.min(3, d.diasHistorial)) {
     avisos.push(
       `El historial se construye día a día (el plan gratuito de la API no entrega el pasado): ` +
         `va ${diasConDatos} de ${d.diasHistorial} días guardados.`
