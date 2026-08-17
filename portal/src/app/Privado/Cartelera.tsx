@@ -426,6 +426,93 @@ function TarjetaOportunidad({ o, m }: { o: Oportunidad; m: Metrica[] }) {
   );
 }
 
+/**
+ * Sube el xG real desde el Excel del usuario (CSV o JSON). ESPN no da el xG por
+ * equipo, así que el historial lo trae estimado; esto lo reemplaza con el real.
+ * Panel plegable para no estorbar: casi siempre está cerrado.
+ */
+function ImportarXg() {
+  const [abierto, setAbierto] = useState(false);
+  const [texto, setTexto] = useState("");
+  const [cargando, empezar] = useTransition();
+  const [msg, setMsg] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const enviar = (contenido: string) =>
+    empezar(async () => {
+      setError(null);
+      setMsg("Importando…");
+      try {
+        const r = await fetch("/Privado/importar", { method: "POST", body: contenido });
+        const j = await r.json();
+        if (!r.ok) throw new Error(j.error ?? `HTTP ${r.status}`);
+        const aviso = (j.avisos ?? []).join(" ");
+        setMsg(`Importadas ${j.filas} filas (${j.guardadas} partidos con xG guardados). ${aviso} Toca Actualizar para verlo.`.trim());
+        setTexto("");
+      } catch (e) {
+        setError((e as Error).message);
+        setMsg(null);
+      }
+    });
+
+  const subirArchivo = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    f.text().then(enviar);
+    e.target.value = "";
+  };
+
+  return (
+    <div className="px-4 pt-2">
+      <button
+        onClick={() => setAbierto((v) => !v)}
+        className="w-full rounded-xl py-2.5 text-xs font-semibold text-slate-400 ring-1 ring-white/10 active:bg-white/5"
+      >
+        {abierto ? "Cerrar importación de xG" : "Importar xG real (Excel)"}
+      </button>
+      {abierto && (
+        <div className="mt-2 space-y-2.5 rounded-xl bg-white/[0.03] p-3.5 ring-1 ring-white/5">
+          <p className="text-[11px] leading-relaxed text-slate-400">
+            Sube tu archivo con una fila por partido. Columnas: <b className="text-slate-300">fecha</b> (2026-08-17),{" "}
+            <b className="text-slate-300">local</b>, <b className="text-slate-300">visita</b>,{" "}
+            <b className="text-slate-300">xG local</b>, <b className="text-slate-300">xG visita</b> (acepta CSV o JSON, y
+            nombres tipo home/away). Reemplaza el xG estimado sin tocar el resto.
+          </p>
+          <label className="block">
+            <span className="mb-1 block text-[11px] font-semibold text-slate-500">Desde archivo (.csv)</span>
+            <input
+              type="file"
+              accept=".csv,.txt,.json,text/csv,application/json"
+              onChange={subirArchivo}
+              disabled={cargando}
+              className="block w-full text-[11px] text-slate-400 file:mr-3 file:rounded-lg file:border-0 file:bg-white/10 file:px-3 file:py-1.5 file:text-[11px] file:font-semibold file:text-slate-200"
+            />
+          </label>
+          <div>
+            <span className="mb-1 block text-[11px] font-semibold text-slate-500">o pega el contenido</span>
+            <textarea
+              value={texto}
+              onChange={(e) => setTexto(e.target.value)}
+              rows={4}
+              placeholder={"fecha,local,visita,xg local,xg visita\n2026-08-17,Inter Miami,Orlando City,1.8,1.1"}
+              className="w-full rounded-lg bg-slate-950/60 p-2.5 font-mono text-[11px] text-slate-200 ring-1 ring-white/10 placeholder:text-slate-600"
+            />
+            <button
+              onClick={() => texto.trim() && enviar(texto)}
+              disabled={cargando || !texto.trim()}
+              className="mt-1.5 w-full rounded-lg bg-emerald-500/15 py-2 text-xs font-semibold text-emerald-300 ring-1 ring-emerald-400/25 active:bg-emerald-500/25 disabled:opacity-40"
+            >
+              {cargando ? "…" : "Importar xG pegado"}
+            </button>
+          </div>
+          {msg && <p className="text-[11px] text-emerald-300/90">{msg}</p>}
+          {error && <p className="text-[11px] text-rose-300">{error}</p>}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function Cartelera({
   inicial,
   deporte,
@@ -661,6 +748,8 @@ export function Cartelera({
             </button>
           </div>
         )}
+
+        {deporte === "futbol" && <ImportarXg />}
 
         {datos && datos.avisos.length > 0 && (
           <section className="mt-5 px-4 text-xs text-slate-500">

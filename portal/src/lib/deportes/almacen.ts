@@ -81,7 +81,7 @@ async function leerRuta(url: string, reciente: boolean, tag: string): Promise<Pa
   return Array.isArray(json) ? (json as PartidoGuardado[]) : null;
 }
 
-async function guardarRuta(url: string, mensaje: string, partidos: PartidoGuardado[]): Promise<void> {
+async function guardarRuta(url: string, mensaje: string, partidos: unknown): Promise<void> {
   const cab = {
     Authorization: `Bearer ${token()}`,
     Accept: "application/vnd.github+json",
@@ -135,3 +135,42 @@ export const leerEquipo = (d: Deporte, clave: string) =>
 /** Guarda el historial profundo de un equipo. */
 export const guardarEquipo = (d: Deporte, clave: string, partidos: PartidoGuardado[]) =>
   guardarRuta(rutaEquipo(d, clave), `Equipo ${d.id} ${clave}`, partidos);
+
+// ESPN no entrega el xG por equipo, así que el historial lo trae estimado desde
+// los remates. Cuando el usuario sube su Excel con el xG real, no se reescriben
+// los partidos guardados (arriesgaría duplicarlos o pisar el marcador): el xG
+// real se guarda aparte, como una capa de correcciones que la lectura aplica
+// encima. Cada corrección es un partido por fecha y equipos, con el xG real de
+// cada lado; se cruza con el historial por nombre normalizado y fecha.
+export type OverrideXg = {
+  fecha: string; // YYYY-MM-DD
+  local: string;
+  visita: string;
+  xgLocal: number | null;
+  xgVisita: number | null;
+};
+
+const rutaXg = (d: Deporte) =>
+  `${HOST()}/repos/${REPO()}/contents/datos-deportes/${d.id}/xg.json`;
+
+/** Las correcciones de xG real subidas, o [] si aún no hay ninguna. */
+export async function leerXg(d: Deporte): Promise<OverrideXg[]> {
+  const rama = RAMA();
+  const res = await fetch(`${rutaXg(d)}${rama ? `?ref=${rama}` : ""}`, {
+    headers: {
+      Authorization: `Bearer ${token()}`,
+      Accept: "application/vnd.github.raw+json",
+      "X-GitHub-Api-Version": "2022-11-28",
+    },
+    cache: "force-cache",
+    next: { revalidate: 900, tags: [TAG_STATS, `xg-${d.id}`] },
+  });
+  if (res.status === 404) return [];
+  if (!res.ok) throw new ApiError(`El almacén respondió HTTP ${res.status} al leer el xG real.`);
+  const json = (await res.json()) as unknown;
+  return Array.isArray(json) ? (json as OverrideXg[]) : [];
+}
+
+/** Reescribe las correcciones de xG real. */
+export const guardarXg = (d: Deporte, lista: OverrideXg[]) =>
+  guardarRuta(rutaXg(d), `xG real ${d.id}`, lista);

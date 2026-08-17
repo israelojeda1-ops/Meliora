@@ -19,7 +19,7 @@ import {
   terminado,
   tsDe,
 } from "./api";
-import { PartidoGuardado, guardarDia, leerEquipo, leerDia, parGuardado } from "./almacen";
+import { PartidoGuardado, guardarDia, leerEquipo, leerDia, leerXg, parGuardado } from "./almacen";
 import { ResultadoEspn, carteleraEspn, resultadosEspn } from "./espn";
 import { buscarPorNombre, normNombre } from "./nombres";
 import { leerDirecto, leerMarcador, leerNba } from "./lectores";
@@ -275,6 +275,34 @@ async function historialDeAlmacen(
     }
   }
 
+  // xG real subido por el usuario: corrige el estimado en el historial. Se
+  // indexa por fecha (chilena, como el resto) y nombre normalizado, y se aplica
+  // sobre la métrica xG del partido. Sin correcciones, el mapa queda vacío y
+  // todo sigue con el xG estimado desde los remates.
+  const iXg = d.metricas.findIndex((m) => m.corto === "xG");
+  const xgReal = new Map<string, number>();
+  if (iXg >= 0) {
+    let overrides: Awaited<ReturnType<typeof leerXg>> = [];
+    try {
+      overrides = await leerXg(d);
+    } catch (err) {
+      avisos.push((err as Error).message);
+    }
+    for (const o of overrides) {
+      if (o.xgLocal != null) xgReal.set(`${o.fecha}|${normNombre(o.local)}`, o.xgLocal);
+      if (o.xgVisita != null) xgReal.set(`${o.fecha}|${normNombre(o.visita)}`, o.xgVisita);
+    }
+  }
+  const conXgReal = (v: (number | null)[], nombre: string, ts: number): (number | null)[] => {
+    if (iXg < 0 || !xgReal.size) return v;
+    const real = xgReal.get(`${fechaChile(ts)}|${normNombre(nombre)}`);
+    if (real == null) return v;
+    const out = v.slice();
+    while (out.length <= iXg) out.push(null);
+    out[iXg] = real;
+    return out;
+  };
+
   // La llave es el nombre normalizado: el historial puede venir de fuentes con
   // ids distintos para el mismo equipo (API-Sports y ESPN).
   const porEquipo = new Map<string, { nombre: string; ligaId: number; hist: PartidoHist[] }>();
@@ -284,9 +312,10 @@ async function historialDeAlmacen(
       const anotar = (eq: { id: number; nombre: string }, enCasa: boolean, rival: string) => {
         const clave = normNombre(eq.nombre);
         const e = porEquipo.get(clave) ?? { nombre: eq.nombre, ligaId: g.ligaId, hist: [] };
-        // stats por métrica, tolerando el formato viejo {a,b}.
-        const mio = parGuardado(enCasa ? g.stats!.l : g.stats!.v);
-        const suyo = parGuardado(enCasa ? g.stats!.v : g.stats!.l);
+        // stats por métrica, tolerando el formato viejo {a,b}; con el xG real
+        // encima si el usuario lo subió para este partido.
+        const mio = conXgReal(parGuardado(enCasa ? g.stats!.l : g.stats!.v), eq.nombre, g.ts);
+        const suyo = conXgReal(parGuardado(enCasa ? g.stats!.v : g.stats!.l), rival, g.ts);
         e.hist.push({
           fid: g.fid,
           ts: g.ts,
