@@ -62,14 +62,16 @@ export async function diaAMostrar(fechaParam?: string): Promise<{ fecha: string;
 }
 
 /**
- * Días que ofrece el selector, en hora de Chile: varios pasados, hoy y mañana.
- * ESPN no limita la fecha (a diferencia del viejo API-Football, que solo servía
- * de ayer a mañana), así que se pueden revisar jornadas anteriores.
+ * Días que ofrece el selector, en hora de Chile. El orden pone primero lo que
+ * más se mira —hoy y mañana— y deja los días pasados detrás, hacia atrás en el
+ * tiempo: así el día por defecto (hoy) queda a la vista sin tener que desplazar
+ * la fila. ESPN no limita la fecha (el viejo API-Football solo servía de ayer a
+ * mañana), por eso se pueden revisar jornadas anteriores.
  */
 export function diasSelector(): { fecha: string; etiqueta: string }[] {
   const ahora = Date.now();
   const mediodiaHoy = aTs(`${fechaChile(ahora)}T12:00`);
-  return [-4, -3, -2, -1, 0, 1].map((delta) => {
+  return [0, 1, -1, -2, -3, -4].map((delta) => {
     const t = mediodiaHoy + delta * DIA_MS;
     return { fecha: fechaChile(t), etiqueta: nombreDia(t, ahora) };
   });
