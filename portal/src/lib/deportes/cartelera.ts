@@ -446,3 +446,49 @@ export async function getCartelera(
     avisos,
   };
 }
+
+export type Oportunidad = {
+  fecha: string;
+  etiqueta: string;
+  partido: Proyeccion;
+  fuerza: number; // 0..1, qué tanto se destaca
+};
+
+/**
+ * Buscador de oportunidades: recorre los próximos días, se queda con los
+ * partidos aún por jugarse y los ordena por cuánto se destacan — la mayor
+ * probabilidad de una métrica contra su línea, con un empujón si es DOBLE.
+ * Devuelve solo los que superan un piso, para que la lista sean oportunidades
+ * reales y no relleno.
+ */
+export async function getOportunidades(
+  deporteId: string | undefined,
+  opciones: { dias?: number; piso?: number; tope?: number } = {}
+): Promise<Oportunidad[]> {
+  const ahora = Date.now();
+  const dias = opciones.dias ?? 3;
+  const piso = opciones.piso ?? 0.6;
+  const tope = opciones.tope ?? 8;
+  const mediodiaHoy = aTs(`${fechaChile(ahora)}T12:00`);
+
+  const out: Oportunidad[] = [];
+  for (let i = 0; i < dias; i++) {
+    const t = mediodiaHoy + i * DIA_MS;
+    const fecha = fechaChile(t);
+    let cartel: Cartelera;
+    try {
+      cartel = await getCartelera(deporteId, fecha, { maxPeticiones: 30 });
+    } catch {
+      continue;
+    }
+    for (const p of cartel.partidos) {
+      // solo partidos que aún no empezaron: se puede apostar
+      if (p.resultado || p.ts <= ahora) continue;
+      const doble = p.pA >= 0.6 && p.pB >= 0.6;
+      const fuerza = Math.min(1, Math.max(p.pA, p.pB) + (doble ? 0.08 : 0));
+      if (fuerza < piso) continue;
+      out.push({ fecha, etiqueta: nombreDia(t, ahora), partido: p, fuerza });
+    }
+  }
+  return out.sort((a, b) => b.fuerza - a.fuerza).slice(0, tope);
+}

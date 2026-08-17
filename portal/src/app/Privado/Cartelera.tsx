@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
-import type { Cartelera as Datos } from "@/lib/deportes/cartelera";
+import type { Cartelera as Datos, Oportunidad } from "@/lib/deportes/cartelera";
 import type { DesgloseMetrica, Lado, LineaSegura, Proyeccion, ResumenSede } from "@/lib/deportes/modelo";
 import type { Metricas } from "@/lib/deportes/catalogo";
 import { DEPORTES_EN_PORTADA } from "@/lib/deportes/catalogo";
@@ -382,6 +382,45 @@ function ModalAnalisis({ p, m, onClose }: { p: Proyeccion; m: Metricas; onClose:
   );
 }
 
+/** Tarjeta compacta de una oportunidad destacada. */
+function TarjetaOportunidad({ o, m }: { o: Oportunidad; m: Metricas }) {
+  const p = o.partido;
+  // la métrica que más se destaca y su línea segura
+  const aEsFuerte = p.pA >= p.pB;
+  const prob = aEsFuerte ? p.pA : p.pB;
+  const seg = aEsFuerte ? p.segA : p.segB;
+  const corto = aEsFuerte ? m.a.corto : m.b.corto;
+  const doble = p.pA >= 0.6 && p.pB >= 0.6;
+  return (
+    <div className="flex items-center gap-3 rounded-xl bg-white/[0.04] p-3 ring-1 ring-white/10">
+      <div className="w-14 shrink-0 text-center">
+        <div className="text-[11px] font-bold uppercase tracking-wide text-slate-400 first-letter:uppercase">
+          {o.etiqueta}
+        </div>
+        <div className="text-sm font-extrabold tabular-nums text-white">{horaChile(p.ts)}</div>
+      </div>
+      <div className="min-w-0 flex-1 border-l border-white/10 pl-3">
+        <div className="truncate text-sm font-bold text-white">{p.local}</div>
+        <div className="truncate text-sm font-medium text-slate-300">{p.visita}</div>
+        <div className="mt-0.5 flex items-center gap-1.5 text-[10px] text-slate-500">
+          {doble && (
+            <span className="rounded bg-emerald-400/15 px-1 py-px font-bold text-emerald-300">DOBLE</span>
+          )}
+          <span className="truncate">{p.liga}</span>
+        </div>
+      </div>
+      <div className="shrink-0 text-right">
+        {seg && (
+          <div className="text-sm font-extrabold tabular-nums text-emerald-300">
+            +{seg.linea.toFixed(1)} <span className="text-[11px] font-semibold text-emerald-400/70">{corto}</span>
+          </div>
+        )}
+        <div className="text-[11px] font-bold tabular-nums text-slate-400">{pct(prob)}</div>
+      </div>
+    </div>
+  );
+}
+
 const METRICAS_VACIAS: Metricas = { a: { nombre: "—", corto: "a" }, b: { nombre: "—", corto: "b" } };
 
 export function Cartelera({
@@ -404,6 +443,19 @@ export function Cartelera({
   const [cargando, empezar] = useTransition();
   const [msg, setMsg] = useState<string | null>(null);
   const [ahora, setAhora] = useState<number | null>(null);
+  const [oportunidades, setOportunidades] = useState<Oportunidad[] | null>(null);
+
+  // El buscador de oportunidades se carga aparte para no frenar la cartelera.
+  useEffect(() => {
+    let vivo = true;
+    fetch(`/Privado/oportunidades?deporte=${deporte}`, { method: "POST" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j) => vivo && j?.oportunidades && setOportunidades(j.oportunidades))
+      .catch(() => {});
+    return () => {
+      vivo = false;
+    };
+  }, [deporte]);
 
   // El reloj es un sistema externo: se suscribe y se avisa a React desde el
   // callback, en vez de fijar el estado en el cuerpo del efecto.
@@ -528,6 +580,24 @@ export function Cartelera({
           {msg && <p className="mt-2 text-xs text-slate-400">{msg}</p>}
           {error && <p className="mt-2 text-xs font-medium text-red-400">{error}</p>}
         </header>
+
+        {oportunidades && oportunidades.length > 0 && (
+          <section className="px-3 pt-3">
+            <div className="rounded-2xl bg-gradient-to-b from-emerald-400/[0.10] to-transparent p-3 ring-1 ring-emerald-400/20">
+              <div className="mb-2 flex items-baseline justify-between px-1">
+                <h2 className="text-xs font-extrabold uppercase tracking-widest text-emerald-300">
+                  🔥 Oportunidades
+                </h2>
+                <span className="text-[10px] text-slate-500">próximos días · las que más destacan</span>
+              </div>
+              <div className="space-y-2">
+                {oportunidades.map((o) => (
+                  <TarjetaOportunidad key={o.partido.fid} o={o} m={m} />
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
 
         {datos && (
           <div className="grid grid-cols-3 gap-2 px-3 pt-3">
