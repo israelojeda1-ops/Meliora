@@ -744,7 +744,7 @@ export function Cartelera({
               disabled={cargando}
               className="w-full rounded-xl py-2.5 text-xs font-semibold text-slate-400 ring-1 ring-white/10 active:bg-white/5 disabled:opacity-40"
             >
-              Poblar historial desde ESPN (últimas 5 semanas)
+              Completar historial desde ESPN (remates · córners · tarjetas · xG)
             </button>
           </div>
         )}
