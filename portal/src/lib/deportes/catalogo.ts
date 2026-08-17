@@ -15,8 +15,8 @@ export type DeporteId = "futbol" | "nba" | "beisbol";
  */
 export type Liga = { id: number; nombre: string; pais: string; espn?: string; activa?: boolean };
 
-/** Los dos números por equipo que la página proyecta y muestra. */
-export type Metricas = { a: { nombre: string; corto: string }; b: { nombre: string; corto: string } };
+/** Una métrica proyectable: nombre visible y abreviatura. */
+export type Metrica = { nombre: string; corto: string; decimal?: boolean };
 
 export type Deporte = {
   id: DeporteId;
@@ -24,7 +24,8 @@ export type Deporte = {
   host: string;
   /** Endpoint de partidos: "fixtures" en fútbol, "games" en NBA y béisbol. */
   recurso: string;
-  metricas: Metricas;
+  // Métricas que proyecta este deporte, alineadas con las líneas.
+  metricas: Metrica[];
   lineas: Lineas;
   ligas: Liga[];
   /** Estados que cuentan como partido terminado. */
@@ -67,8 +68,13 @@ export const DEPORTES: Record<DeporteId, Deporte> = {
     nombre: "Fútbol",
     host: "https://v3.football.api-sports.io",
     recurso: "fixtures",
-    metricas: { a: { nombre: "remates", corto: "rem" }, b: { nombre: "córners", corto: "cor" } },
-    lineas: { total: { a: 24.5, b: 9.5 }, equipo: { a: 16.5, b: 5.5 } },
+    metricas: [
+      { nombre: "remates", corto: "rem" },
+      { nombre: "córners", corto: "cor" },
+      { nombre: "tarjetas", corto: "tar" },
+      { nombre: "xG", corto: "xG", decimal: true },
+    ],
+    lineas: { total: [24.5, 9.5, 4.5, 2.5], equipo: [16.5, 5.5, 2.5, 1.5] },
     terminados: ["FT", "AET", "PEN"],
     noIniciados: ["NS", "TBD", "PST"],
     estrategiaStats: "lote",
@@ -103,9 +109,11 @@ export const DEPORTES: Record<DeporteId, Deporte> = {
     nombre: "NBA",
     host: "https://v2.nba.api-sports.io",
     recurso: "games",
-    metricas: { a: { nombre: "puntos", corto: "pts" }, b: { nombre: "triples", corto: "3pt" } },
-    // Líneas de referencia: total del partido y por equipo.
-    lineas: { total: { a: 224.5, b: 25.5 }, equipo: { a: 112.5, b: 12.5 } },
+    metricas: [
+      { nombre: "puntos", corto: "pts" },
+      { nombre: "triples", corto: "3pt" },
+    ],
+    lineas: { total: [224.5, 25.5], equipo: [112.5, 12.5] },
     // En la API de la NBA el estado corto es un número: 1 programado, 2 en
     // juego, 3 terminado.
     terminados: ["3"],
@@ -130,8 +138,11 @@ export const DEPORTES: Record<DeporteId, Deporte> = {
     nombre: "Béisbol",
     host: "https://v1.baseball.api-sports.io",
     recurso: "games",
-    metricas: { a: { nombre: "carreras", corto: "car" }, b: { nombre: "hits", corto: "hits" } },
-    lineas: { total: { a: 8.5, b: 16.5 }, equipo: { a: 4.5, b: 8.5 } },
+    metricas: [
+      { nombre: "carreras", corto: "car" },
+      { nombre: "hits", corto: "hits" },
+    ],
+    lineas: { total: [8.5, 16.5], equipo: [4.5, 8.5] },
     terminados: ["FT", "AOT"],
     noIniciados: ["NS", "TBD", "PST"],
     estrategiaStats: "enLista",

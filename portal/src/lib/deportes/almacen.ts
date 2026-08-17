@@ -8,7 +8,9 @@ import type { Deporte } from "./catalogo";
 // GitHub, con el GITHUB_TOKEN que ya vive en Vercel. Un archivo por deporte y
 // día; un día ya escrito no cambia nunca.
 
-export type ParGuardado = { a: number; b: number };
+// Un valor por métrica (remates, córners, tarjetas, xG…); null si la fuente no
+// trajo esa métrica en ese partido.
+export type ParGuardado = (number | null)[];
 export type PartidoGuardado = {
   fid: number;
   ts: number;
@@ -17,9 +19,24 @@ export type PartidoGuardado = {
   visita: { id: number; nombre: string };
   gl: number; // marcador local
   gv: number; // marcador visita
-  /** null cuando la API no entregó estadísticas para este partido. */
+  /** null cuando la fuente no entregó estadísticas para este partido. */
   stats: { l: ParGuardado; v: ParGuardado } | null;
 };
+
+/**
+ * Normaliza las stats de un partido guardado al arreglo por métrica. Acepta el
+ * formato viejo `{a, b}` (dos métricas) y el nuevo (arreglo), para leer archivos
+ * escritos antes de sumar tarjetas y xG.
+ */
+export function parGuardado(v: unknown): ParGuardado {
+  if (Array.isArray(v)) return v.map((x) => (typeof x === "number" ? x : null));
+  if (v && typeof v === "object") {
+    const o = v as { a?: unknown; b?: unknown };
+    const num = (x: unknown) => (typeof x === "number" ? x : null);
+    return [num(o.a), num(o.b)];
+  }
+  return [];
+}
 
 /** Permite apuntar a un servidor de prueba; en producción no se define. */
 const HOST = () => process.env.ALMACEN_URL ?? "https://api.github.com";

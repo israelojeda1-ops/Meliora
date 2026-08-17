@@ -80,49 +80,67 @@ async function diaEspn(liga: Liga, fecha: string): Promise<EventoDia[]> {
   return arr(json.events).map(parseEvento).filter((e): e is EventoDia => e !== null);
 }
 
-/** Remates y córners de un partido, por id de equipo de ESPN. */
-async function statsEspn(slug: string, eventoId: number): Promise<Map<number, { a: number; b: number }>> {
+// Métricas de fútbol en el orden del catálogo: remates, córners, tarjetas, xG.
+export type MetricasEquipo = (number | null)[];
+
+/**
+ * Lee las métricas de un equipo del boxscore de ESPN. Remates, córners y
+ * tarjetas (amarillas + rojas) vienen directo; ESPN no da el xG del equipo, así
+ * que se estima desde los remates y los remates al arco — sirve como referencia
+ * hasta cargar el xG real por importación.
+ */
+function metricasDeBoxscore(lado: Obj | null): MetricasEquipo | null {
+  let remates: number | null = null;
+  let corners: number | null = null;
+  let amarillas: number | null = null;
+  let rojas: number | null = null;
+  let alArco: number | null = null;
+  for (const st of arr(lado?.statistics)) {
+    const f = obj(st);
+    const v = num(f?.displayValue ?? f?.value);
+    if (f?.name === "totalShots") remates = v;
+    else if (f?.name === "wonCorners") corners = v;
+    else if (f?.name === "yellowCards") amarillas = v;
+    else if (f?.name === "redCards") rojas = v;
+    else if (f?.name === "shotsOnTarget") alArco = v;
+  }
+  if (remates === null || corners === null) return null;
+  const tarjetas = amarillas === null && rojas === null ? null : (amarillas ?? 0) + (rojas ?? 0);
+  // xG estimado: un remate fuera del arco vale ~0.05 y uno al arco ~0.25.
+  const sot = alArco ?? 0;
+  const xg = remates === null ? null : Math.round((0.05 * (remates - sot) + 0.25 * sot) * 10) / 10;
+  return [remates, corners, tarjetas, xg];
+}
+
+/** Métricas de un partido por id de equipo de ESPN. */
+async function statsEspn(slug: string, eventoId: number): Promise<Map<number, MetricasEquipo>> {
   const json = await espnGet(`/apis/site/v2/sports/soccer/${slug}/summary?event=${eventoId}`);
-  const out = new Map<number, { a: number; b: number }>();
+  const out = new Map<number, MetricasEquipo>();
   for (const t of arr(obj(json.boxscore)?.teams)) {
     const lado = obj(t);
     const tid = num(obj(lado?.team)?.id);
-    if (tid === null) continue;
-    let remates: number | null = null;
-    let corners: number | null = null;
-    for (const st of arr(lado?.statistics)) {
-      const fila = obj(st);
-      if (fila?.name === "totalShots") remates = num(fila.displayValue ?? fila.value);
-      if (fila?.name === "wonCorners") corners = num(fila.displayValue ?? fila.value);
-    }
-    if (remates !== null && corners !== null) out.set(tid, { a: remates, b: corners });
+    const m = metricasDeBoxscore(lado);
+    if (tid !== null && m) out.set(tid, m);
   }
   return out;
 }
 
 /**
- * Remates, córners y marcador de un partido en una sola petición. En el schedule
- * el marcador viene como un `$ref` (un enlace, no el número), así que se toma del
+ * Métricas y marcador de un partido en una sola petición. En el schedule el
+ * marcador viene como un `$ref` (un enlace, no el número), así que se toma del
  * `summary`, que además trae las estadísticas.
  */
 async function resumenEspn(
   slug: string,
   eventoId: number
-): Promise<{ stats: Map<number, { a: number; b: number }>; marcador: Map<number, number> }> {
+): Promise<{ stats: Map<number, MetricasEquipo>; marcador: Map<number, number> }> {
   const json = await espnGet(`/apis/site/v2/sports/soccer/${slug}/summary?event=${eventoId}`);
-  const stats = new Map<number, { a: number; b: number }>();
+  const stats = new Map<number, MetricasEquipo>();
   for (const t of arr(obj(json.boxscore)?.teams)) {
     const lado = obj(t);
     const tid = num(obj(lado?.team)?.id);
-    if (tid === null) continue;
-    let remates: number | null = null;
-    let corners: number | null = null;
-    for (const st of arr(lado?.statistics)) {
-      const fila = obj(st);
-      if (fila?.name === "totalShots") remates = num(fila.displayValue ?? fila.value);
-      if (fila?.name === "wonCorners") corners = num(fila.displayValue ?? fila.value);
-    }
-    if (remates !== null && corners !== null) stats.set(tid, { a: remates, b: corners });
+    const m = metricasDeBoxscore(lado);
+    if (tid !== null && m) stats.set(tid, m);
   }
   const marcador = new Map<number, number>();
   for (const c of arr(obj(arr(obj(json.header)?.competitions)[0])?.competitors)) {
@@ -212,7 +230,7 @@ export async function poblarFutbol(dias: number, ligaId?: number): Promise<Resum
       for (const liga of ligas) {
         for (const ev of await diaEspn(liga, fecha)) {
           if (!ev.terminado) continue;
-          let stats: Map<number, { a: number; b: number }>;
+          let stats: Map<number, MetricasEquipo>;
           try {
             stats = await statsEspn(liga.espn!, ev.id);
           } catch {
@@ -301,7 +319,7 @@ export async function poblarPorEquipo(forzar = false, porEquipo = 12): Promise<R
         const eventos = (await scheduleEquipo(dom.slug, eq.id, temporadas)).slice(0, porEquipo);
         const guardados: PartidoGuardado[] = [];
         for (const ev of eventos) {
-          let stats = new Map<number, { a: number; b: number }>();
+          let stats = new Map<number, MetricasEquipo>();
           let marcador = new Map<number, number>();
           try {
             ({ stats, marcador } = await resumenEspn(dom.slug, ev.id));
@@ -334,7 +352,11 @@ export async function poblarPorEquipo(forzar = false, porEquipo = 12): Promise<R
   return { equiposEscritos, partidos, avisos };
 }
 
-export type ResultadoEspn = { a: number; b: number; gl: number; gv: number; homeNorm: string };
+export type ResultadoEspn = { v: (number | null)[]; gl: number; gv: number; homeNorm: string };
+
+/** Suma por métrica de los dos equipos; null si a alguno le falta esa métrica. */
+const sumaMetricas = (l: MetricasEquipo, v: MetricasEquipo): (number | null)[] =>
+  l.map((x, i) => (x != null && v[i] != null ? x + (v[i] as number) : null));
 
 /** Clave del partido independiente del orden de los equipos. */
 const parClave = (n1: string, n2: string) => [normNombre(n1), normNombre(n2)].sort().join("|");
@@ -364,8 +386,7 @@ export async function resultadosEspn(fecha: string): Promise<Map<string, Resulta
         const v = stats.get(ev.visita.id);
         if (!l || !v) continue;
         out.set(parClave(ev.local.nombre, ev.visita.nombre), {
-          a: l.a + v.a,
-          b: l.b + v.b,
+          v: sumaMetricas(l, v),
           gl: ev.gl,
           gv: ev.gv,
           homeNorm: normNombre(ev.local.nombre),

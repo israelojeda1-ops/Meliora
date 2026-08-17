@@ -1,10 +1,12 @@
 // Modelo de proyección. Sin dependencias ni acceso a red: entra el historial de
 // cada equipo y sale la proyección del partido.
 //
-// El modelo no sabe de qué deporte se trata: trabaja con dos métricas de conteo
-// por equipo, A y B, cada una a favor y en contra. En fútbol son remates y
-// córners; en la NBA, puntos y triples; en béisbol, carreras y hits. Los nombres
-// visibles los pone el catálogo de deportes.
+// El modelo no sabe de qué deporte se trata: trabaja con un vector de métricas
+// de conteo por equipo, a favor y en contra. En fútbol son remates, córners,
+// tarjetas y xG; en la NBA, puntos y triples. Los nombres y las líneas los pone
+// el catálogo. Cada métrica puede faltar en un partido (un dato que la fuente
+// no trajo, como el xG en partidos viejos): se guarda como null y se promedia
+// solo sobre los partidos que sí la tienen.
 
 export type PartidoHist = {
   fid: number;
@@ -13,39 +15,57 @@ export type PartidoHist = {
   rival: string;
   gf: number; // marcador a favor
   gc: number; // marcador en contra
-  af: number; // métrica A a favor
-  ac: number; // métrica A en contra
-  bf: number; // métrica B a favor
-  bc: number; // métrica B en contra
+  mf: (number | null)[]; // métricas a favor (una celda por métrica)
+  mc: (number | null)[]; // métricas en contra
 };
 
-/** Promedios de un equipo restringidos a local o a visita. */
-export type ResumenSede = { pj: number; a: number; aC: number; b: number; bC: number };
+/** Promedios por métrica (a favor y en contra), con el conteo de muestra. */
+export type ResumenSede = { pj: number; f: number[]; c: number[]; n: number[] };
 
 // La id es el nombre normalizado (ver nombres.ts): permite cruzar historial de
 // fuentes distintas que numeran los equipos cada una a su manera.
 export type Equipo = { id: string; nombre: string; ligaId: number; hist: PartidoHist[] };
 
-export type Medias = { pj: number; af: number; ac: number; bf: number; bc: number; sede: boolean; hist: PartidoHist[] };
+export type Medias = { pj: number; f: number[]; c: number[]; n: number[]; sede: boolean; hist: PartidoHist[] };
+
+export type LineaSegura = { linea: number; prob: number };
 
 export type Lado = {
   nombre: string;
   casa: boolean;
   pj: number;
   soloSede: boolean;
-  a: number;
-  b: number;
-  pA: number;
-  pB: number;
-  // línea Over más alta con prob > 80% para este equipo, o null
-  segA: LineaSegura | null;
-  segB: LineaSegura | null;
+  v: number[]; // proyección por métrica
+  p: number[]; // prob de superar la línea del equipo, por métrica
+  seg: (LineaSegura | null)[]; // línea segura por métrica
+  disp: boolean[]; // si la métrica tiene datos para este equipo
   ultimos: PartidoHist[];
   // los dos promedios se muestran siempre, aunque la proyección use solo el
   // que corresponde a la sede en que juega este partido
   promLocal: ResumenSede;
   promVisita: ResumenSede;
 };
+
+export type FactorLado = {
+  nombre: string;
+  ataque: number;
+  defensaRival: number;
+  localia: number;
+  proyeccion: number;
+};
+export type DesgloseMetrica = {
+  base: number;
+  local: FactorLado;
+  visita: FactorLado;
+  total: number;
+  linea: number;
+  prob: number;
+  segura: LineaSegura | null;
+  disp: boolean; // si hay datos para proyectar esta métrica
+};
+
+/** Totales reales de un partido terminado, por métrica (null si falta), + marcador. */
+export type Resultado = { v: (number | null)[]; gl: number; gv: number };
 
 export type Proyeccion = {
   fid: number;
@@ -54,47 +74,20 @@ export type Proyeccion = {
   pais: string;
   local: string;
   visita: string;
-  a: number;
-  b: number;
-  pA: number;
-  pB: number;
-  // línea Over más alta con prob > 80% para el total del partido, o null
-  segA: LineaSegura | null;
-  segB: LineaSegura | null;
-  desglose: Desglose;
-  // resultado real del partido si ya se jugó, para comparar con la proyección
+  v: number[]; // proyección total por métrica
+  p: number[]; // prob de superar la línea total, por métrica
+  seg: (LineaSegura | null)[];
+  disp: boolean[]; // si la métrica pudo proyectarse
+  desglose: DesgloseMetrica[];
   resultado?: Resultado | null;
   idx: number;
   pjMin: number;
   lados: [Lado, Lado];
 };
 
-/** Totales reales de un partido terminado (remates, córners y marcador). */
-export type Resultado = { a: number; b: number; gl: number; gv: number };
+export type { Metrica } from "./catalogo";
 
-export type { Metricas } from "./catalogo";
-
-export type Lineas = { total: { a: number; b: number }; equipo: { a: number; b: number } };
-
-// Desglose de cómo se arma la proyección de una métrica, para el modal de
-// "análisis": cada factor por separado y cómo se multiplican.
-export type FactorLado = {
-  nombre: string;
-  ataque: number; // cuánto genera este equipo vs la media de la liga
-  defensaRival: number; // cuánto concede el rival vs la media de la liga
-  localia: number; // ajuste por jugar de local (>1) o visita (<1)
-  proyeccion: number; // resultado para este lado
-};
-export type DesgloseMetrica = {
-  base: number; // media de la liga por equipo
-  local: FactorLado;
-  visita: FactorLado;
-  total: number;
-  linea: number; // línea del total con la que se compara
-  prob: number; // probabilidad de superar esa línea
-  segura: LineaSegura | null;
-};
-export type Desglose = { a: DesgloseMetrica; b: DesgloseMetrica };
+export type Lineas = { total: number[]; equipo: number[] };
 
 /** P(X >= k) con X ~ Poisson(lam). */
 export function poissonTail(lam: number, k: number): number {
@@ -111,18 +104,14 @@ export function poissonTail(lam: number, k: number): number {
 
 const sobreLinea = (lam: number, linea: number) => poissonTail(lam, Math.floor(linea) + 1);
 
-export type LineaSegura = { linea: number; prob: number };
-
 /**
  * La línea "Más de X.5" más alta cuya probabilidad de superarse sigue por
- * encima del umbral (0.80 por defecto). Es la recomendación conservadora:
- * "Más de 21.5 remates" con ~81% de caer. null si ni "Más de 0.5" llega al
- * umbral (proyección demasiado baja).
+ * encima del umbral (0.80 por defecto). null si ni "Más de 0.5" llega al umbral.
+ * Las métricas con decimales (xG) usan pasos de 0.5 sobre su valor esperado.
  */
 export function lineaSegura(lam: number, umbral = 0.8): LineaSegura | null {
+  if (lam <= 0) return null;
   let mejor: LineaSegura | null = null;
-  // k = mínimo entero que hace ganar el "Más de (k-0.5)"; se sube mientras
-  // la cola siga sobre el umbral.
   for (let k = 1; k <= Math.ceil(lam) + 40; k++) {
     const prob = poissonTail(lam, k);
     if (prob < umbral) break;
@@ -131,68 +120,97 @@ export function lineaSegura(lam: number, umbral = 0.8): LineaSegura | null {
   return mejor;
 }
 
+const promedio = (xs: number[]) => (xs.length ? xs.reduce((s, x) => s + x, 0) / xs.length : 0);
+
 /**
- * Promedios de un equipo. `sede` restringe a partidos de local o de visita, y
- * exige al menos 3 para no proyectar sobre una muestra ridícula.
+ * Promedios de un equipo por métrica. `sede` restringe a local o visita y exige
+ * al menos 3 partidos para no proyectar sobre una muestra ridícula. Cada métrica
+ * se promedia sobre los partidos donde está presente (no-null).
  */
-export function medias(e: Equipo, sede: "casa" | "fuera" | null): Medias | null {
+export function medias(e: Equipo, sede: "casa" | "fuera" | null, k: number): Medias | null {
   const h = sede ? e.hist.filter((x) => (sede === "casa") === x.casa) : e.hist;
   const minimo = sede ? 3 : 1;
   if (h.length < minimo) return null;
-  const m = (k: keyof Pick<PartidoHist, "af" | "ac" | "bf" | "bc">) =>
-    h.reduce((s, x) => s + (Number(x[k]) || 0), 0) / h.length;
-  return { pj: h.length, af: m("af"), ac: m("ac"), bf: m("bf"), bc: m("bc"), sede: sede !== null, hist: h };
+  const f: number[] = [];
+  const c: number[] = [];
+  const n: number[] = [];
+  for (let i = 0; i < k; i++) {
+    const vf = h.map((x) => x.mf[i]).filter((v): v is number => v != null);
+    const vc = h.map((x) => x.mc[i]).filter((v): v is number => v != null);
+    f.push(promedio(vf));
+    c.push(promedio(vc));
+    n.push(Math.min(vf.length, vc.length));
+  }
+  return { pj: h.length, f, c, n, sede: sede !== null, hist: h };
 }
 
-const VACIO: Medias = { pj: 0, af: 0, ac: 0, bf: 0, bc: 0, sede: false, hist: [] };
+const vacio = (k: number): Medias => ({
+  pj: 0,
+  f: Array(k).fill(0),
+  c: Array(k).fill(0),
+  n: Array(k).fill(0),
+  sede: false,
+  hist: [],
+});
 
-/** Promedio de tiros y córners, a favor y en contra, de local o de visita. */
-export function resumenSede(hist: PartidoHist[], casa: boolean): ResumenSede {
+/** Promedios por métrica, de local o de visita. */
+export function resumenSede(hist: PartidoHist[], casa: boolean, k: number): ResumenSede {
   const h = hist.filter((x) => x.casa === casa);
-  if (!h.length) return { pj: 0, a: 0, aC: 0, b: 0, bC: 0 };
-  const m = (k: "af" | "ac" | "bf" | "bc") => h.reduce((s, x) => s + (Number(x[k]) || 0), 0) / h.length;
-  return { pj: h.length, a: m("af"), aC: m("ac"), b: m("bf"), bC: m("bc") };
+  const f: number[] = [];
+  const c: number[] = [];
+  const n: number[] = [];
+  for (let i = 0; i < k; i++) {
+    const vf = h.map((x) => x.mf[i]).filter((v): v is number => v != null);
+    const vc = h.map((x) => x.mc[i]).filter((v): v is number => v != null);
+    f.push(promedio(vf));
+    c.push(promedio(vc));
+    n.push(Math.min(vf.length, vc.length));
+  }
+  return { pj: h.length, f, c, n };
 }
-export const mediasTotales = (e: Equipo): Medias => medias(e, null) ?? VACIO;
 
-export type BaseLiga = { a: number; b: number };
+export const mediasTotales = (e: Equipo, k: number): Medias => medias(e, null, k) ?? vacio(k);
 
 /**
- * Referencia por liga. Una liga con pocos equipos cargados no es una referencia
- * fiable, así que se mezcla con el promedio global hasta tener muestra.
+ * Referencia por liga y por métrica. Una liga con pocos equipos no es fiable, así
+ * que se mezcla con el promedio global hasta tener muestra.
  */
-export function basesPorLiga(equipos: Equipo[]): Map<number, BaseLiga> {
-  const acum = new Map<number, { a: number; b: number; n: number }>();
-  let gA = 0;
-  let gB = 0;
-  let gN = 0;
+export function basesPorLiga(equipos: Equipo[], k: number): Map<number, number[]> {
+  const acum = new Map<number, { s: number[]; n: number[] }>();
+  const gS = Array(k).fill(0);
+  const gN = Array(k).fill(0);
   for (const e of equipos) {
-    const s = mediasTotales(e);
-    if (!s.pj) continue;
-    const acc = acum.get(e.ligaId) ?? { a: 0, b: 0, n: 0 };
-    acc.a += (s.af + s.ac) / 2;
-    acc.b += (s.bf + s.bc) / 2;
-    acc.n += 1;
-    acum.set(e.ligaId, acc);
-    gA += (s.af + s.ac) / 2;
-    gB += (s.bf + s.bc) / 2;
-    gN += 1;
+    const m = mediasTotales(e, k);
+    if (!m.pj) continue;
+    const a = acum.get(e.ligaId) ?? { s: Array(k).fill(0), n: Array(k).fill(0) };
+    for (let i = 0; i < k; i++) {
+      if (m.n[i] > 0) {
+        const media = (m.f[i] + m.c[i]) / 2;
+        a.s[i] += media;
+        a.n[i] += 1;
+        gS[i] += media;
+        gN[i] += 1;
+      }
+    }
+    acum.set(e.ligaId, a);
   }
-  const globalA = gN ? gA / gN : 0;
-  const globalB = gN ? gB / gN : 0;
-  const out = new Map<number, BaseLiga>();
-  for (const [liga, acc] of acum) {
-    const w = acc.n / (acc.n + 3);
-    out.set(liga, {
-      a: w * (acc.a / acc.n) + (1 - w) * globalA,
-      b: w * (acc.b / acc.n) + (1 - w) * globalB,
-    });
+  const global = gS.map((s, i) => (gN[i] ? s / gN[i] : 0));
+  const out = new Map<number, number[]>();
+  for (const [liga, a] of acum) {
+    out.set(
+      liga,
+      a.s.map((s, i) => {
+        if (!a.n[i]) return global[i];
+        const w = a.n[i] / (a.n[i] + 3);
+        return w * (s / a.n[i]) + (1 - w) * global[i];
+      })
+    );
   }
   return out;
 }
 
 /** Fuerza relativa encogida hacia 1 según el tamaño de la muestra. */
-const fuerza = (v: number, base: number, n: number) => (base > 0 ? 1 + (n / (n + 5)) * (v / base - 1) : 1);
+const fuerza = (v: number, base: number, n: number) => (base > 0 && n > 0 ? 1 + (n / (n + 5)) * (v / base - 1) : 1);
 
 export type EntradaPartido = {
   fid: number;
@@ -206,60 +224,77 @@ export type EntradaPartido = {
 
 export function proyectar(
   p: EntradaPartido,
-  bases: Map<number, BaseLiga>,
+  bases: Map<number, number[]>,
   lineas: Lineas,
   ventajaLocal = 1.08
 ): Proyeccion | null {
+  const k = lineas.total.length;
   // el local se juzga por su rendimiento de local y la visita por el suyo de visita
-  const sL = medias(p.local, "casa") ?? mediasTotales(p.local);
-  const sV = medias(p.visita, "fuera") ?? mediasTotales(p.visita);
+  const sL = medias(p.local, "casa", k) ?? mediasTotales(p.local, k);
+  const sV = medias(p.visita, "fuera", k) ?? mediasTotales(p.visita, k);
   if (!sL.pj || !sV.pj) return null;
 
-  const bL = bases.get(p.local.ligaId) ?? { a: 0, b: 0 };
-  const bV = bases.get(p.visita.ligaId) ?? { a: 0, b: 0 };
-  const baseA = (bL.a + bV.a) / 2;
-  const baseB = (bL.b + bV.b) / 2;
-
-  const atkAL = fuerza(sL.af, bL.a, sL.pj);
-  const defAL = fuerza(sL.ac, bL.a, sL.pj);
-  const atkAV = fuerza(sV.af, bV.a, sV.pj);
-  const defAV = fuerza(sV.ac, bV.a, sV.pj);
-  const atkBL = fuerza(sL.bf, bL.b, sL.pj);
-  const defBL = fuerza(sL.bc, bL.b, sL.pj);
-  const atkBV = fuerza(sV.bf, bV.b, sV.pj);
-  const defBV = fuerza(sV.bc, bV.b, sV.pj);
+  const bL = bases.get(p.local.ligaId) ?? Array(k).fill(0);
+  const bV = bases.get(p.visita.ligaId) ?? Array(k).fill(0);
 
   // si la muestra ya es "solo de local", la ventaja de local está dentro:
   // volver a aplicarla la contaría dos veces
   const hL = sL.sede ? 1 : ventajaLocal;
   const hV = sV.sede ? 1 : 1 / ventajaLocal;
 
-  const aL = baseA * atkAL * defAV * hL;
-  const aV = baseA * atkAV * defAL * hV;
-  const bL2 = baseB * atkBL * defBV * hL;
-  const bV2 = baseB * atkBV * defBL * hV;
-  const totalA = aL + aV;
-  const totalB = bL2 + bV2;
+  const vTotal: number[] = [];
+  const vL: number[] = [];
+  const vV: number[] = [];
+  const disp: boolean[] = [];
+  const desglose: DesgloseMetrica[] = [];
 
-  const pA = sobreLinea(totalA, lineas.total.a);
-  const pB = sobreLinea(totalB, lineas.total.b);
+  for (let i = 0; i < k; i++) {
+    const base = (bL[i] + bV[i]) / 2;
+    const dispI = sL.n[i] > 0 && sV.n[i] > 0 && base > 0;
+    const atkL = fuerza(sL.f[i], bL[i], sL.n[i]);
+    const defL = fuerza(sL.c[i], bL[i], sL.n[i]);
+    const atkV = fuerza(sV.f[i], bV[i], sV.n[i]);
+    const defV = fuerza(sV.c[i], bV[i], sV.n[i]);
+    const li = base * atkL * defV * hL;
+    const vi = base * atkV * defL * hV;
+    const total = li + vi;
+    vL.push(li);
+    vV.push(vi);
+    vTotal.push(total);
+    disp.push(dispI);
+    desglose.push({
+      base,
+      local: { nombre: p.local.nombre, ataque: atkL, defensaRival: defV, localia: hL, proyeccion: li },
+      visita: { nombre: p.visita.nombre, ataque: atkV, defensaRival: defL, localia: hV, proyeccion: vi },
+      total,
+      linea: lineas.total[i],
+      prob: sobreLinea(total, lineas.total[i]),
+      segura: dispI ? lineaSegura(total) : null,
+      disp: dispI,
+    });
+  }
 
-  const lado = (eq: Equipo, s: Medias, va: number, vb: number, casa: boolean): Lado => ({
+  if (!disp.some(Boolean)) return null;
+
+  const pTotal = vTotal.map((t, i) => (disp[i] ? sobreLinea(t, lineas.total[i]) : 0));
+  const seg = vTotal.map((t, i) => (disp[i] ? lineaSegura(t) : null));
+
+  const lado = (eq: Equipo, s: Medias, vs: number[], casa: boolean): Lado => ({
     nombre: eq.nombre,
     casa,
     pj: s.pj,
     soloSede: s.sede,
-    a: va,
-    b: vb,
-    pA: sobreLinea(va, lineas.equipo.a),
-    pB: sobreLinea(vb, lineas.equipo.b),
-    segA: lineaSegura(va),
-    segB: lineaSegura(vb),
-    // el listado muestra todo el historial reciente, de local y de visita
+    v: vs,
+    p: vs.map((v, i) => (disp[i] ? sobreLinea(v, lineas.equipo[i]) : 0)),
+    seg: vs.map((v, i) => (disp[i] ? lineaSegura(v) : null)),
+    disp,
     ultimos: [...eq.hist].sort((a, b) => b.ts - a.ts).slice(0, 8),
-    promLocal: resumenSede(eq.hist, true),
-    promVisita: resumenSede(eq.hist, false),
+    promLocal: resumenSede(eq.hist, true, k),
+    promVisita: resumenSede(eq.hist, false, k),
   });
+
+  // índice para ordenar: la mejor probabilidad de una métrica disponible
+  const idx = Math.max(0, ...pTotal.filter((_, i) => disp[i]));
 
   return {
     fid: p.fid,
@@ -268,34 +303,13 @@ export function proyectar(
     pais: p.pais,
     local: p.local.nombre,
     visita: p.visita.nombre,
-    a: totalA,
-    b: totalB,
-    pA,
-    pB,
-    segA: lineaSegura(totalA),
-    segB: lineaSegura(totalB),
-    desglose: {
-      a: {
-        base: baseA,
-        local: { nombre: p.local.nombre, ataque: atkAL, defensaRival: defAV, localia: hL, proyeccion: aL },
-        visita: { nombre: p.visita.nombre, ataque: atkAV, defensaRival: defAL, localia: hV, proyeccion: aV },
-        total: totalA,
-        linea: lineas.total.a,
-        prob: pA,
-        segura: lineaSegura(totalA),
-      },
-      b: {
-        base: baseB,
-        local: { nombre: p.local.nombre, ataque: atkBL, defensaRival: defBV, localia: hL, proyeccion: bL2 },
-        visita: { nombre: p.visita.nombre, ataque: atkBV, defensaRival: defBL, localia: hV, proyeccion: bV2 },
-        total: totalB,
-        linea: lineas.total.b,
-        prob: pB,
-        segura: lineaSegura(totalB),
-      },
-    },
-    idx: (pA + pB) / 2,
+    v: vTotal,
+    p: pTotal,
+    seg,
+    disp,
+    desglose,
+    idx,
     pjMin: Math.min(sL.pj, sV.pj),
-    lados: [lado(p.local, sL, aL, bL2, true), lado(p.visita, sV, aV, bV2, false)],
+    lados: [lado(p.local, sL, vL, true), lado(p.visita, sV, vV, false)],
   };
 }
