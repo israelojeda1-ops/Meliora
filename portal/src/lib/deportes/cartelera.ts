@@ -19,14 +19,14 @@ import {
   terminado,
   tsDe,
 } from "./api";
-import { PartidoGuardado, guardarDia, leerEquipo, leerDia } from "./almacen";
+import { PartidoGuardado, guardarDia, leerEquipo, leerDia, parGuardado } from "./almacen";
 import { ResultadoEspn, carteleraEspn, resultadosEspn } from "./espn";
 import { buscarPorNombre, normNombre } from "./nombres";
 import { leerDirecto, leerMarcador, leerNba } from "./lectores";
 import {
   Equipo,
   EntradaPartido,
-  Metricas,
+  Metrica,
   PartidoHist,
   Proyeccion,
   basesPorLiga,
@@ -36,7 +36,7 @@ import {
 export type Cartelera = {
   deporte: DeporteId;
   nombreDeporte: string;
-  metricas: Metricas;
+  metricas: Metrica[];
   mostrarMarcador: boolean;
   nota?: string;
   fecha: string;
@@ -188,7 +188,7 @@ async function cosecharDia(
       visita: { id: eq.away.id, nombre: eq.away.name },
       gl: marcador.home,
       gv: marcador.away,
-      stats: stats ? { l: stats.home, v: stats.away } : null,
+      stats: stats ? { l: [stats.home.a, stats.home.b], v: [stats.away.a, stats.away.b] } : null,
     };
   });
 }
@@ -284,8 +284,9 @@ async function historialDeAlmacen(
       const anotar = (eq: { id: number; nombre: string }, enCasa: boolean, rival: string) => {
         const clave = normNombre(eq.nombre);
         const e = porEquipo.get(clave) ?? { nombre: eq.nombre, ligaId: g.ligaId, hist: [] };
-        const mio = enCasa ? g.stats!.l : g.stats!.v;
-        const suyo = enCasa ? g.stats!.v : g.stats!.l;
+        // stats por métrica, tolerando el formato viejo {a,b}.
+        const mio = parGuardado(enCasa ? g.stats!.l : g.stats!.v);
+        const suyo = parGuardado(enCasa ? g.stats!.v : g.stats!.l);
         e.hist.push({
           fid: g.fid,
           ts: g.ts,
@@ -293,10 +294,8 @@ async function historialDeAlmacen(
           rival,
           gf: enCasa ? g.gl : g.gv,
           gc: enCasa ? g.gv : g.gl,
-          af: mio.a,
-          ac: suyo.a,
-          bf: mio.b,
-          bc: suyo.b,
+          mf: mio,
+          mc: suyo,
         });
         porEquipo.set(clave, e);
       };
@@ -370,7 +369,7 @@ export async function getCartelera(
   }
   const claveDelPar = (h: string, a: string) => [normNombre(h), normNombre(a)].sort().join("|");
 
-  const bases = basesPorLiga([...equipos.values()]);
+  const bases = basesPorLiga([...equipos.values()], d.metricas.length);
   const partidos: Proyeccion[] = [];
   const sinDatos: Cartelera["sinDatos"] = [];
 
@@ -404,8 +403,7 @@ export async function getCartelera(
         // orienta el marcador al local de la cartelera
         const local = rEspn.homeNorm === normNombre(eq.home.name);
         proy.resultado = {
-          a: rEspn.a,
-          b: rEspn.b,
+          v: rEspn.v,
           gl: local ? rEspn.gl : rEspn.gv,
           gv: local ? rEspn.gv : rEspn.gl,
         };
@@ -484,8 +482,10 @@ export async function getOportunidades(
     for (const p of cartel.partidos) {
       // solo partidos que aún no empezaron: se puede apostar
       if (p.resultado || p.ts <= ahora) continue;
-      const doble = p.pA >= 0.6 && p.pB >= 0.6;
-      const fuerza = Math.min(1, Math.max(p.pA, p.pB) + (doble ? 0.08 : 0));
+      const probs = p.p.filter((_, i) => p.disp[i]);
+      if (!probs.length) continue;
+      const doble = probs.filter((x) => x >= 0.6).length >= 2;
+      const fuerza = Math.min(1, Math.max(...probs) + (doble ? 0.08 : 0));
       if (fuerza < piso) continue;
       out.push({ fecha, etiqueta: nombreDia(t, ahora), partido: p, fuerza });
     }
