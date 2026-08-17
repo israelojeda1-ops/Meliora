@@ -267,13 +267,16 @@ async function historialDeAlmacen(
   );
 
   // Se juntan los partidos de los archivos por día y por equipo, deduplicados
-  // por `fid` (un mismo partido puede estar en ambos lugares); gana la copia con
-  // estadísticas.
+  // por `fid` (un mismo partido puede estar en ambos lugares). Gana la copia más
+  // completa: la que trae más métricas. Así un partido guardado antes con solo
+  // remates y córners (archivo viejo) no le tapa las tarjetas ni el xG a la
+  // copia nueva de otro archivo, sin importar en qué orden se lean.
+  const completitud = (g: PartidoGuardado) => (g.stats ? parGuardado(g.stats.l).length : -1);
   const porFid = new Map<number, PartidoGuardado>();
   for (const lista of [...leidos, ...porEquipoFiles]) {
     for (const g of lista ?? []) {
       const previo = porFid.get(g.fid);
-      if (!previo || (!previo.stats && g.stats)) porFid.set(g.fid, g);
+      if (!previo || completitud(g) > completitud(previo)) porFid.set(g.fid, g);
     }
   }
 

@@ -314,7 +314,18 @@ export async function poblarPorEquipo(forzar = false, porEquipo = 12): Promise<R
       const clave = claveEquipo(eq.nombre);
       if (!clave) continue;
       try {
-        if (!forzar && (await leerEquipo(d, clave)) !== null) continue; // ya poblado
+        // Se salta el equipo solo si su archivo ya está *completo* con todas las
+        // métricas de hoy (remates, córners, tarjetas, xG). Los archivos viejos
+        // que se guardaron con solo 2 métricas se reescriben para sumarles las
+        // nuevas — así tocar el botón varias veces va completando el historial y
+        // termina cuando ya no queda nada incompleto. `forzar` reescribe todo.
+        if (!forzar) {
+          const previo = await leerEquipo(d, clave);
+          const completo =
+            previo !== null &&
+            previo.every((g) => !g.stats || g.stats.l.length >= d.metricas.length);
+          if (completo) continue; // ya poblado con todas las métricas
+        }
 
         const eventos = (await scheduleEquipo(dom.slug, eq.id, temporadas)).slice(0, porEquipo);
         const guardados: PartidoGuardado[] = [];
