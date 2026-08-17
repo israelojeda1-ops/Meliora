@@ -1,7 +1,7 @@
 import "server-only";
-import { ApiError, TAG_STATS, TTL_STATS } from "./api";
+import { ApiError, PartidoApi, TAG_STATS, TTL_STATS } from "./api";
 import { DIA_MS, aTs, fechaChile } from "./fecha";
-import { DEPORTES, Liga, ligasActivas } from "./catalogo";
+import { Deporte, DEPORTES, Liga, ligasActivas } from "./catalogo";
 import { PartidoGuardado, guardarDia, guardarEquipo, leerDia, leerEquipo } from "./almacen";
 import { normNombre } from "./nombres";
 
@@ -372,6 +372,47 @@ export async function resultadosEspn(fecha: string): Promise<Map<string, Resulta
         });
       } catch {
         /* un partido sin resumen no aporta resultado */
+      }
+    }
+  }
+  return out;
+}
+
+/**
+ * La cartelera de una fecha (partidos por jugarse y ya jugados) de las ligas
+ * activas, desde ESPN. Reemplaza a API-Football: el plan gratuito quedó
+ * suspendido y ESPN no cobra ni limita la fecha. Devuelve objetos con la forma
+ * mínima que espera el resto del código (equiposDe, tsDe, idDe, terminado…).
+ */
+export async function carteleraEspn(d: Deporte, fecha: string): Promise<PartidoApi[]> {
+  const centro = aTs(`${fecha}T12:00`);
+  // ESPN agrupa por su propio huso; se barren el día y sus vecinos y se filtra
+  // por fecha chilena para no perder los partidos nocturnos.
+  const fechas = [-1, 0, 1].map((k) => fechaChile(centro + k * DIA_MS));
+  const vistos = new Set<number>();
+  const out: PartidoApi[] = [];
+  for (const liga of ligasActivas(d)) {
+    if (!liga.espn) continue;
+    for (const f of fechas) {
+      let eventos: EventoDia[];
+      try {
+        eventos = await diaEspn(liga, f);
+      } catch {
+        continue;
+      }
+      for (const ev of eventos) {
+        if (vistos.has(ev.id) || fechaChile(ev.ts) !== fecha) continue;
+        vistos.add(ev.id);
+        out.push({
+          id: ev.id,
+          date: new Date(ev.ts).toISOString(),
+          status: { short: ev.terminado ? "FT" : "NS" },
+          teams: {
+            home: { id: ev.local.id, name: ev.local.nombre },
+            away: { id: ev.visita.id, name: ev.visita.nombre },
+          },
+          league: { id: liga.id, name: liga.nombre, country: liga.pais },
+        });
       }
     }
   }
