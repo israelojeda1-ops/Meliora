@@ -270,22 +270,25 @@ export type ResumenEquipos = {
   avisos: string[];
 };
 
-// Ligas domésticas de las que se traen los equipos: dan el historial profundo
-// (temporada actual + anterior) de todos los clubes que juegan MLS y Leagues
-// Cup, incluidos los mexicanos que llegan a la Leagues Cup.
-const DOMESTICAS: { slug: string; ligaId: number }[] = [
-  { slug: "usa.1", ligaId: 253 },
-  { slug: "mex.1", ligaId: 262 },
-];
-
 const claveEquipo = (nombre: string) => normNombre(nombre).replace(/ /g, "-");
+
+// Orden de preferencia de las ligas domésticas como fuente de equipos: dan
+// muchos más partidos por equipo que las copas (una liga entera vs. los pocos
+// de una copa), así un club que juega copa y liga se puebla desde su liga.
+const PRIORIDAD_FUENTE = ["usa.1", "mex.1", "chi.1", "eng.1", "esp.1", "ita.1", "ger.1", "fra.1"];
+const rankFuente = (slug: string) => {
+  const i = PRIORIDAD_FUENTE.indexOf(slug);
+  return i < 0 ? 100 : i; // las copas (Leagues Cup, Libertadores, Champions…) al final
+};
 
 /**
  * Puebla el historial **por equipo** (no por liga/día): recorre los clubes de
- * las ligas domésticas y guarda, para cada uno, sus últimos partidos de la
- * temporada en curso y la anterior con remates y córners, desde ESPN. Es lo que
- * da profundidad real cuando una temporada recién empezó. Se salta los equipos
- * ya guardados, así que corre a tramos y se retoma tocando de nuevo.
+ * las ligas activas y guarda, para cada uno, sus últimos partidos con remates,
+ * córners, tarjetas y xG, desde ESPN. Es lo que da profundidad real cuando una
+ * temporada recién empezó. Las ligas domésticas van primero (más partidos por
+ * equipo); cada club se puebla una sola vez, bajo la primera liga que lo lista,
+ * y ese ligaId fija su base. Se salta los equipos ya completos, así que corre a
+ * tramos y se retoma tocando de nuevo.
  */
 export async function poblarPorEquipo(forzar = false, porEquipo = 12): Promise<ResumenEquipos> {
   const d = DEPORTES.futbol;
@@ -293,16 +296,30 @@ export async function poblarPorEquipo(forzar = false, porEquipo = 12): Promise<R
   let equiposEscritos = 0;
   let partidos = 0;
   const limite = Date.now() + 45_000;
-  // Solo la temporada en curso: refleja el plantel y la forma actual, sin
-  // arrastrar la campaña anterior. `forzar` reescribe los archivos existentes.
-  const temporadas = [new Date().getFullYear()];
+  // Temporada en curso y la anterior: las ligas europeas etiquetan la temporada
+  // por el año de inicio (2025 = 2025/26), así que la "en curso" ahí es el año
+  // pasado; CONMEBOL y MLS van por año calendario. Se piden ambas y luego se
+  // toman los partidos más recientes, así el modelo refleja la forma actual sin
+  // importar cómo numere cada liga su temporada.
+  const anio = new Date().getFullYear();
+  const temporadas = [anio, anio - 1];
 
-  for (const dom of DOMESTICAS) {
+  // Fuentes = ligas activas con código ESPN, domésticas primero.
+  const fuentes = ligasActivas(d)
+    .filter((l): l is Liga & { espn: string } => !!l.espn)
+    .map((l) => ({ slug: l.espn, ligaId: l.id }))
+    .sort((a, b) => rankFuente(a.slug) - rankFuente(b.slug));
+
+  // Un club puede estar en varias ligas activas (su liga y una copa): se puebla
+  // una sola vez, con la fuente de mayor prioridad que lo liste.
+  const vistos = new Set<string>();
+
+  for (const fuente of fuentes) {
     let equipos: { id: number; nombre: string }[];
     try {
-      equipos = await equiposDeLiga(dom.slug);
+      equipos = await equiposDeLiga(fuente.slug);
     } catch (err) {
-      avisos.push(`${dom.slug}: ${(err as Error).message}`);
+      avisos.push(`${fuente.slug}: ${(err as Error).message}`);
       continue;
     }
 
@@ -312,7 +329,8 @@ export async function poblarPorEquipo(forzar = false, porEquipo = 12): Promise<R
         return { equiposEscritos, partidos, avisos };
       }
       const clave = claveEquipo(eq.nombre);
-      if (!clave) continue;
+      if (!clave || vistos.has(clave)) continue;
+      vistos.add(clave); // este club queda atendido por esta fuente
       try {
         // Se salta el equipo solo si su archivo ya está *completo* con todas las
         // métricas de hoy (remates, córners, tarjetas, xG). Los archivos viejos
@@ -327,13 +345,13 @@ export async function poblarPorEquipo(forzar = false, porEquipo = 12): Promise<R
           if (completo) continue; // ya poblado con todas las métricas
         }
 
-        const eventos = (await scheduleEquipo(dom.slug, eq.id, temporadas)).slice(0, porEquipo);
+        const eventos = (await scheduleEquipo(fuente.slug, eq.id, temporadas)).slice(0, porEquipo);
         const guardados: PartidoGuardado[] = [];
         for (const ev of eventos) {
           let stats = new Map<number, MetricasEquipo>();
           let marcador = new Map<number, number>();
           try {
-            ({ stats, marcador } = await resumenEspn(dom.slug, ev.id));
+            ({ stats, marcador } = await resumenEspn(fuente.slug, ev.id));
           } catch {
             /* sin resumen: el partido queda sin stats y se descarta al leer */
           }
@@ -342,7 +360,7 @@ export async function poblarPorEquipo(forzar = false, porEquipo = 12): Promise<R
           guardados.push({
             fid: ev.id,
             ts: ev.ts,
-            ligaId: dom.ligaId,
+            ligaId: fuente.ligaId,
             local: ev.local,
             visita: ev.visita,
             // marcador del summary; si falta, el del schedule (que suele ser 0)
