@@ -98,9 +98,10 @@ export const DEPORTES: Record<DeporteId, Deporte> = {
       { id: 135, nombre: "Serie A", pais: "Italia", espn: "ita.1" },
       { id: 78, nombre: "Bundesliga", pais: "Alemania", espn: "ger.1" },
       { id: 61, nombre: "Ligue 1", pais: "Francia", espn: "fra.1" },
-      { id: 13, nombre: "Copa Libertadores", pais: "Sudamérica", espn: "conmebol.libertadores" },
-      { id: 11, nombre: "Copa Sudamericana", pais: "Sudamérica", espn: "conmebol.sudamericana" },
-      { id: 2, nombre: "Champions League", pais: "Europa", espn: "uefa.champions" },
+      { id: 13, nombre: "Copa Libertadores", pais: "Sudamérica", espn: "conmebol.libertadores", activa: true },
+      { id: 11, nombre: "Copa Sudamericana", pais: "Sudamérica", espn: "conmebol.sudamericana", activa: true },
+      { id: 848, nombre: "Conference League", pais: "Europa", espn: "uefa.europa.conf", activa: true },
+      { id: 2, nombre: "Champions League", pais: "Europa", espn: "uefa.champions", activa: true },
     ],
   },
 
