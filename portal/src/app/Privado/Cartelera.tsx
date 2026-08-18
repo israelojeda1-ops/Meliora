@@ -558,19 +558,34 @@ export function Cartelera({
 
   const poblar = () =>
     empezar(async () => {
-      setMsg("Trayendo historial por equipo desde ESPN… (puede tomar un minuto)");
       setError(null);
-      try {
-        const r = await fetch(`/Privado/poblar?modo=equipo`, { method: "POST" });
-        const j = await r.json();
-        if (!r.ok) throw new Error(j.error ?? `HTTP ${r.status}`);
-        const aviso = (j.avisos ?? []).join(" ");
-        setMsg(`Historial: ${j.equiposEscritos} equipos, ${j.partidos} partidos. ${aviso}`.trim());
-      } catch (e) {
-        setError((e as Error).message);
-        setMsg(null);
-        return;
+      // El poblado corre en tandas cortas en el servidor; acá se encadenan hasta
+      // que ya no queda nada por escribir. Cada tanda vuelve rápido, así el
+      // navegador del celular no la corta ("load failed"). Un fallo de red
+      // puntual reintenta la misma tanda sin abortar todo.
+      let totalEq = 0;
+      let totalP = 0;
+      let fallosSeguidos = 0;
+      for (let ronda = 1; ronda <= 60; ronda++) {
+        setMsg(`Completando historial desde ESPN… tanda ${ronda} · ${totalEq} equipos, ${totalP} partidos`);
+        try {
+          const r = await fetch(`/Privado/poblar?modo=equipo`, { method: "POST" });
+          const j = await r.json();
+          if (!r.ok) throw new Error(j.error ?? `HTTP ${r.status}`);
+          fallosSeguidos = 0;
+          totalEq += j.equiposEscritos ?? 0;
+          totalP += j.partidos ?? 0;
+          if ((j.equiposEscritos ?? 0) === 0) break; // ya no queda nada incompleto
+        } catch {
+          // Reintenta la tanda; si falla varias veces seguidas, corta.
+          if (++fallosSeguidos >= 4) {
+            setError("Se cortó la conexión al completar el historial. Toca el botón para seguir donde quedó.");
+            break;
+          }
+          await new Promise((s) => setTimeout(s, 1500 * fallosSeguidos));
+        }
       }
+      setMsg(`Historial: ${totalEq} equipos, ${totalP} partidos.`);
       await refrescarInterno(false);
     });
 

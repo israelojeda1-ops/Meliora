@@ -22,10 +22,13 @@ const num = (v: unknown): number | null => {
 };
 
 async function espnGet(ruta: string): Promise<Obj> {
-  // Días pasados: inmutables, cacheados como las estadísticas.
+  // Días pasados: inmutables, cacheados como las estadísticas. Con tope de
+  // tiempo por llamada: si ESPN se cuelga, no arrastra a toda la función (el
+  // poblado corre a tandas cortas y una llamada lenta la haría pasarse).
   const res = await fetch(`${HOST()}${ruta}`, {
     cache: "force-cache",
     next: { revalidate: TTL_STATS, tags: [TAG_STATS] },
+    signal: AbortSignal.timeout(9000),
   });
   if (!res.ok) throw new ApiError(`ESPN respondió HTTP ${res.status}.`);
   return (await res.json()) as Obj;
@@ -295,7 +298,9 @@ export async function poblarPorEquipo(forzar = false, porEquipo = 12): Promise<R
   const avisos: string[] = [];
   let equiposEscritos = 0;
   let partidos = 0;
-  const limite = Date.now() + 45_000;
+  // Tanda corta: la respuesta vuelve rápido para que el navegador (sobre todo en
+  // el celular) no la dé por caída. El cliente encadena tandas hasta terminar.
+  const limite = Date.now() + 18_000;
   // Temporada en curso y la anterior: las ligas europeas etiquetan la temporada
   // por el año de inicio (2025 = 2025/26), así que la "en curso" ahí es el año
   // pasado; CONMEBOL y MLS van por año calendario. Se piden ambas y luego se
