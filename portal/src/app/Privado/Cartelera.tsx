@@ -109,7 +109,14 @@ function BloqueEquipo({ l, m, marcador }: { l: Lado; m: Metrica[]; marcador: boo
       )}
 
       {l.ultimos.length ? (
-        <div className="mt-3 overflow-x-auto">
+        <div className="mt-3">
+          <p className="mb-1.5 text-[10px] leading-relaxed text-slate-500">
+            Últimos partidos ·{" "}
+            <span className="font-semibold text-sky-300/80">vs</span> de local ·{" "}
+            <span className="font-semibold text-slate-400">@</span> de visita. En el marcador y en cada métrica, la
+            izquierda es <b className="text-slate-300">{l.nombre}</b> y la derecha el rival.
+          </p>
+          <div className="overflow-x-auto">
           <table className="w-full min-w-[420px] text-[11px] tabular-nums">
             <tbody>
               {l.ultimos.map((u) => (
@@ -137,6 +144,7 @@ function BloqueEquipo({ l, m, marcador }: { l: Lado; m: Metrica[]; marcador: boo
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       ) : (
         <div className="mt-3 text-xs text-slate-500">sin historial todavía</div>
