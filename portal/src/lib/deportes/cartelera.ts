@@ -21,7 +21,7 @@ import {
 } from "./api";
 import { PartidoGuardado, guardarDia, leerEquipo, leerDia, leerXg, parGuardado } from "./almacen";
 import { ResultadoEspn, carteleraEspn, resultadosEspn } from "./espn";
-import { buscarPorNombre, normNombre } from "./nombres";
+import { normNombre } from "./nombres";
 import { leerDirecto, leerMarcador, leerNba } from "./lectores";
 import {
   Equipo,
@@ -308,14 +308,21 @@ async function historialDeAlmacen(
     return out;
   };
 
-  // La llave es el nombre normalizado: el historial puede venir de fuentes con
-  // ids distintos para el mismo equipo (API-Sports y ESPN).
+  // La llave es el id de equipo de ESPN, que es estable y el mismo en todas sus
+  // competencias (liga y copas). Antes se cruzaba por nombre normalizado porque
+  // el historial venía de fuentes que numeraban distinto (API-Football y ESPN);
+  // ahora todo es ESPN, así que el id evita que dos clubes con el mismo nombre
+  // corto (Everton de Inglaterra y Everton de Viña del Mar) se mezclen, y une
+  // bien los partidos de un mismo equipo entre la liga y la copa. Si por algún
+  // dato viejo faltara el id, cae al nombre normalizado.
+  const claveEq = (eq: { id: number; nombre: string }) =>
+    eq.id > 0 ? String(eq.id) : `n:${normNombre(eq.nombre)}`;
   const porEquipo = new Map<string, { nombre: string; ligaId: number; hist: PartidoHist[] }>();
   {
     for (const g of porFid.values()) {
       if (!g.stats) continue;
       const anotar = (eq: { id: number; nombre: string }, enCasa: boolean, rival: string) => {
-        const clave = normNombre(eq.nombre);
+        const clave = claveEq(eq);
         const e = porEquipo.get(clave) ?? { nombre: eq.nombre, ligaId: g.ligaId, hist: [] };
         // stats por métrica, tolerando el formato viejo {a,b}; con el xG real
         // encima si el usuario lo subió para este partido.
@@ -410,8 +417,11 @@ export async function getCartelera(
   for (const p of delDia) {
     const ts = tsDe(p);
     const eq = equiposDe(p);
-    const local = eq ? buscarPorNombre(equipos, eq.home.name) : undefined;
-    const visita = eq ? buscarPorNombre(equipos, eq.away.name) : undefined;
+    // Cruce por id de ESPN: el mismo id que trae la cartelera del día está en el
+    // historial guardado, así que el equipo se encuentra directo, sin depender
+    // del nombre (que varía entre fuentes y colisiona entre clubes homónimos).
+    const local = eq ? equipos.get(String(eq.home.id)) : undefined;
+    const visita = eq ? equipos.get(String(eq.away.id)) : undefined;
     const ligaId = ligaIdDe(d, p);
     const meta = ligaId !== null ? buscarLiga(d, ligaId) : undefined;
     const nombreLiga = meta?.nombre ?? ligaObj(p)?.name ?? d.nombre;
