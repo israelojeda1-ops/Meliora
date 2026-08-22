@@ -40,6 +40,14 @@ export function normNombre(nombre: string): string {
   }
   if (sigla) unidos.push(sigla);
 
+  // Clubes distintos que colapsarían en la misma llave al podar el sufijo
+  // genérico. Se separan por un token distintivo del nombre crudo (antes de
+  // podar). Hoy: el Everton inglés ("Everton") vs el Everton de Viña del Mar de
+  // Chile ("Everton CD" / "Everton de Viña del Mar") — sin esto, "CD" se poda y
+  // ambos quedan en "everton", mezclando sus historiales.
+  const crudos = new Set(unidos);
+  if (crudos.has("everton") && (crudos.has("cd") || crudos.has("vina"))) return "everton vina";
+
   const base = unidos.filter((t) => t.length > 1 && !SUFIJOS.has(t)).join(" ");
   return ALIAS[base] ?? base;
 }
