@@ -93,7 +93,7 @@ export const DEPORTES: Record<DeporteId, Deporte> = {
       { id: 253, nombre: "Major League Soccer", pais: "Estados Unidos", espn: "usa.1", activa: true },
       { id: 262, nombre: "Liga MX", pais: "México", espn: "mex.1", activa: true },
       { id: 265, nombre: "Primera División", pais: "Chile", espn: "chi.1" },
-      { id: 39, nombre: "Premier League", pais: "Inglaterra", espn: "eng.1" },
+      { id: 39, nombre: "Premier League", pais: "Inglaterra", espn: "eng.1", activa: true },
       { id: 140, nombre: "LaLiga", pais: "España", espn: "esp.1" },
       { id: 135, nombre: "Serie A", pais: "Italia", espn: "ita.1" },
       { id: 78, nombre: "Bundesliga", pais: "Alemania", espn: "ger.1" },
