@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { boletaDesdeBruto, boletaDesdeLiquido } from "../lib/remuneraciones/honorarios.ts";
 import { periodoActual } from "../lib/remuneraciones/parametros/index.ts";
@@ -14,30 +14,90 @@ function parseCLP(s: string): number {
   return digits ? parseInt(digits, 10) : 0;
 }
 
+function parseUF(s: string): number {
+  const n = parseFloat(s.replace(/\./g, "").replace(",", "."));
+  return Number.isFinite(n) && n > 0 ? n : 0;
+}
+
+function hoyISO(): string {
+  const d = new Date();
+  const mes = String(d.getMonth() + 1).padStart(2, "0");
+  const dia = String(d.getDate()).padStart(2, "0");
+  return `${d.getFullYear()}-${mes}-${dia}`;
+}
+
 const inputClass =
   "w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald focus:border-emerald bg-white";
 
+type ResultadoUF = { fecha: string; valor: number; oficial: boolean };
+
 export function CalculadoraHonorarios() {
   const [direccion, setDireccion] = useState<"bruto" | "liquido">("bruto");
+  const [moneda, setMoneda] = useState<"clp" | "uf">("clp");
   const [monto, setMonto] = useState("");
+  const [montoUF, setMontoUF] = useState("");
+  const [fechaUF, setFechaUF] = useState(hoyISO());
+  const [uf, setUf] = useState<ResultadoUF | null>(null);
 
   const tasa = periodoActual.retencionHonorarios;
 
+  // Valor oficial de la UF (SII / Banco Central) para la fecha elegida,
+  // vía la API pública mindicador.cl; si falla, se usa la UF del período.
+  useEffect(() => {
+    if (moneda !== "uf" || !fechaUF) return;
+    let vigente = true;
+    const fecha = fechaUF;
+    const [anio, mes, dia] = fecha.split("-");
+    fetch(`https://mindicador.cl/api/uf/${dia}-${mes}-${anio}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (!vigente) return;
+        const valor = data?.serie?.[0]?.valor;
+        if (typeof valor === "number" && valor > 0) {
+          setUf({ fecha, valor, oficial: true });
+        } else {
+          setUf({ fecha, valor: periodoActual.uf, oficial: false });
+        }
+      })
+      .catch(() => {
+        if (vigente) setUf({ fecha, valor: periodoActual.uf, oficial: false });
+      });
+    return () => {
+      vigente = false;
+    };
+  }, [moneda, fechaUF]);
+
+  const ufListo = uf !== null && uf.fecha === fechaUF ? uf : null;
+  const ufValor = ufListo ? ufListo.valor : null;
+
+  const montoPesos = useMemo(() => {
+    if (moneda === "clp") return parseCLP(monto);
+    if (ufValor === null) return 0;
+    return Math.round(parseUF(montoUF) * ufValor);
+  }, [moneda, monto, montoUF, ufValor]);
+
   const boleta = useMemo(() => {
-    const m = parseCLP(monto);
-    if (m <= 0) return null;
+    if (montoPesos <= 0) return null;
     return direccion === "bruto"
-      ? boletaDesdeBruto(m, periodoActual)
-      : boletaDesdeLiquido(m, periodoActual);
-  }, [direccion, monto]);
+      ? boletaDesdeBruto(montoPesos, periodoActual)
+      : boletaDesdeLiquido(montoPesos, periodoActual);
+  }, [direccion, montoPesos]);
+
+  const notaUF =
+    moneda === "uf" && ufValor !== null && parseUF(montoUF) > 0
+      ? `${montoUF} UF × $${ufValor.toLocaleString("es-CL", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (UF al ${fechaUF.split("-").reverse().join("-")})`
+      : "";
 
   const resumenTexto = boleta
     ? [
         `Retención año 2026: ${tasa.toLocaleString("es-CL")}%`,
+        notaUF ? `Monto ingresado: ${notaUF} = ${fmt(montoPesos)}` : "",
         `Monto bruto de la boleta: ${fmt(boleta.bruto)}`,
         `Retención SII: −${fmt(boleta.retencion)}`,
         `Líquido a recibir: ${fmt(boleta.liquido)}`,
-      ].join("\n")
+      ]
+        .filter(Boolean)
+        .join("\n")
     : "";
 
   const imprimir = () => {
@@ -83,22 +143,108 @@ export function CalculadoraHonorarios() {
       </div>
 
       <div className="no-print rounded-2xl border border-slate-200 bg-white p-6 sm:p-8 mb-8">
-        <label
-          htmlFor="hon-monto"
-          className="block text-sm font-medium text-slate-700 mb-1.5"
-        >
-          {direccion === "bruto"
-            ? "Monto bruto de la boleta"
-            : "Monto líquido que quieres recibir"}
-        </label>
-        <input
-          id="hon-monto"
-          inputMode="numeric"
-          className={inputClass}
-          placeholder="$1.000.000"
-          value={monto ? `$${parseCLP(monto).toLocaleString("es-CL")}` : ""}
-          onChange={(e) => setMonto(e.target.value)}
-        />
+        <div className="flex items-center justify-between mb-4">
+          <label
+            htmlFor={moneda === "clp" ? "hon-monto" : "hon-monto-uf"}
+            className="text-sm font-medium text-slate-700"
+          >
+            {direccion === "bruto"
+              ? "Monto bruto de la boleta"
+              : "Monto líquido que quieres recibir"}
+          </label>
+          <div className="inline-flex rounded-lg border border-slate-300 overflow-hidden">
+            {(["clp", "uf"] as const).map((m) => (
+              <button
+                key={m}
+                type="button"
+                onClick={() => setMoneda(m)}
+                className={`px-4 py-1.5 text-xs font-semibold transition-colors ${
+                  moneda === m
+                    ? "bg-emerald text-white"
+                    : "bg-white text-slate-600 hover:text-emerald"
+                }`}
+              >
+                {m === "clp" ? "Pesos" : "UF"}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {moneda === "clp" ? (
+          <input
+            id="hon-monto"
+            inputMode="numeric"
+            className={inputClass}
+            placeholder="$1.000.000"
+            value={monto ? `$${parseCLP(monto).toLocaleString("es-CL")}` : ""}
+            onChange={(e) => setMonto(e.target.value)}
+          />
+        ) : (
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label
+                  htmlFor="hon-monto-uf"
+                  className="block text-xs font-medium text-slate-500 mb-1.5"
+                >
+                  Monto en UF
+                </label>
+                <input
+                  id="hon-monto-uf"
+                  inputMode="decimal"
+                  className={inputClass}
+                  placeholder="10"
+                  value={montoUF}
+                  onChange={(e) => setMontoUF(e.target.value)}
+                />
+              </div>
+              <div>
+                <label
+                  htmlFor="hon-fecha-uf"
+                  className="block text-xs font-medium text-slate-500 mb-1.5"
+                >
+                  Fecha del valor UF
+                </label>
+                <input
+                  id="hon-fecha-uf"
+                  type="date"
+                  className={inputClass}
+                  value={fechaUF}
+                  min="2020-01-01"
+                  onChange={(e) => setFechaUF(e.target.value)}
+                />
+              </div>
+            </div>
+            <p className="mt-3 text-xs text-slate-500">
+              {!ufListo && "Obteniendo el valor oficial de la UF…"}
+              {ufListo && ufListo.oficial && (
+                <>
+                  UF al {fechaUF.split("-").reverse().join("-")}:{" "}
+                  <span className="font-semibold text-navy">
+                    ${ufListo.valor.toLocaleString("es-CL", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </span>{" "}
+                  (valor oficial SII)
+                  {parseUF(montoUF) > 0 && (
+                    <>
+                      {" "}— equivalente:{" "}
+                      <span className="font-semibold text-emerald">
+                        {fmt(montoPesos)}
+                      </span>
+                    </>
+                  )}
+                </>
+              )}
+              {ufListo && !ufListo.oficial && (
+                <>
+                  No se pudo obtener la UF de esa fecha; usando UF de
+                  referencia del período ({periodoActual.etiqueta}): $
+                  {ufListo.valor.toLocaleString("es-CL", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  {parseUF(montoUF) > 0 && <> — equivalente: {fmt(montoPesos)}</>}
+                </>
+              )}
+            </p>
+          </>
+        )}
         <p className="mt-2 text-xs text-slate-400">
           Retención vigente año 2026: {tasa.toLocaleString("es-CL")}% (Ley
           21.133 — sube a 16% en 2027 y 17% en 2028).
@@ -120,6 +266,14 @@ export function CalculadoraHonorarios() {
             <h2 className="text-lg font-bold text-navy mb-4">
               Desglose de tu boleta
             </h2>
+            {notaUF && (
+              <div className="flex items-baseline justify-between py-1.5">
+                <span className="text-sm text-slate-600">{notaUF}</span>
+                <span className="text-sm text-slate-700 tabular-nums">
+                  {fmt(montoPesos)}
+                </span>
+              </div>
+            )}
             <div className="flex items-baseline justify-between py-1.5">
               <span className="text-sm font-semibold text-navy">
                 Monto bruto de la boleta
