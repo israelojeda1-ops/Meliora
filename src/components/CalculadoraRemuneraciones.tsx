@@ -153,6 +153,7 @@ export function CalculadoraRemuneraciones() {
         ...resultado.aportesPension.map(
           (a) => `${a.nombre} (${a.tasa.toLocaleString("es-CL")}%): +${fmt(a.monto)}`
         ),
+        `Total aporte patronal: +${fmt(resultado.totalAportes)}`,
         `COSTO TOTAL DE CONTRATACIÓN: ${fmt(resultado.costoTotal)}`
       );
     }
@@ -557,6 +558,17 @@ export function CalculadoraRemuneraciones() {
                       value={a.monto}
                     />
                   ))}
+                  <div className="border-t border-slate-100 mt-1 pt-1">
+                    <Fila
+                      label={`Total aporte patronal (${(
+                        periodo.cesantia[contrato].empleador +
+                        resultado.mutualTasa +
+                        resultado.aportesPension.reduce((s, a) => s + a.tasa, 0)
+                      ).toLocaleString("es-CL", { maximumFractionDigits: 2 })}%)`}
+                      value={resultado.totalAportes}
+                      bold
+                    />
+                  </div>
 
                   <div className="mt-4 rounded-xl bg-navy px-4 py-3 flex items-baseline justify-between">
                     <span className="text-sm font-bold text-white">
