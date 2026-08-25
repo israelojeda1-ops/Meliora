@@ -27,6 +27,8 @@ export function Footer() {
                 { href: "/servicios", label: "Servicios" },
                 { href: "/nosotros", label: "Nosotros" },
                 { href: "/planes", label: "Planes y Precios" },
+                { href: "/diagnostico", label: "Diagnóstico Financiero" },
+                { href: "/calculadora", label: "Calculadora de Sueldos" },
                 { href: "/contacto", label: "Contacto" },
               ].map((link) => (
                 <li key={link.href}>

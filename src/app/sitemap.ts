@@ -5,7 +5,15 @@ export const dynamic = "force-static";
 const BASE_URL = "https://melioraadvisory.cl";
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const routes = ["", "/servicios", "/nosotros", "/planes", "/contacto"];
+  const routes = [
+    "",
+    "/servicios",
+    "/nosotros",
+    "/planes",
+    "/diagnostico",
+    "/calculadora",
+    "/contacto",
+  ];
 
   return routes.map((route) => ({
     url: `${BASE_URL}${route}`,
