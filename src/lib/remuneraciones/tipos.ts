@@ -47,6 +47,8 @@ export interface ParametrosPeriodo {
    * capitalización individual y 0,9% de rentabilidad protegida.
    */
   aportesPension: { nombre: string; tasa: number }[];
+  /** Retención de boletas de honorarios (Ley 21.133), en % — tasa anual */
+  retencionHonorarios: number;
   tramosImpuesto: TramoImpuesto[];
 }
 

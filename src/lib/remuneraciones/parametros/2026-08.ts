@@ -35,6 +35,7 @@ export const parametros202608: ParametrosPeriodo = {
     { nombre: "Capitalización individual", tasa: 0.1 },
     { nombre: "Rentabilidad protegida", tasa: 0.9 },
   ],
+  retencionHonorarios: 15.25, // año 2026 (Ley 21.133; 16% en 2027, 17% en 2028)
   tramosImpuesto: [
     { hastaUTM: 13.5, factor: 0, rebajaUTM: 0 },
     { hastaUTM: 30, factor: 0.04, rebajaUTM: 0.54 },

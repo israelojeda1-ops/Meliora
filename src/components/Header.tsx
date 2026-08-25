@@ -10,7 +10,8 @@ const navLinks = [
   { href: "/nosotros", label: "Nosotros" },
   { href: "/planes", label: "Planes" },
   { href: "/diagnostico", label: "Diagnóstico" },
-  { href: "/calculadora", label: "Calculadora" },
+  { href: "/calculadora", label: "Calculadora Salarial" },
+  { href: "/calculadora-honorarios", label: "Honorarios" },
   { href: "/contacto", label: "Contacto" },
 ];
 
