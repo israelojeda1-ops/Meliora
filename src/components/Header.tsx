@@ -10,6 +10,7 @@ const navLinks = [
   { href: "/nosotros", label: "Nosotros" },
   { href: "/planes", label: "Planes" },
   { href: "/diagnostico", label: "Diagnóstico" },
+  { href: "/calculadora", label: "Calculadora" },
   { href: "/contacto", label: "Contacto" },
 ];
 
@@ -24,7 +25,7 @@ export function Header() {
             <Logo theme="light" />
           </Link>
 
-          <nav className="hidden md:flex items-center gap-8">
+          <nav className="hidden md:flex items-center gap-5 lg:gap-7">
             {navLinks.map((link) => (
               <Link
                 key={link.href}

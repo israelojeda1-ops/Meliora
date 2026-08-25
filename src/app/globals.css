@@ -24,6 +24,25 @@ html {
   scroll-behavior: smooth;
 }
 
+/* Exportación a PDF del desglose de la calculadora (vía imprimir) */
+.print-only {
+  display: none;
+}
+
+@media print {
+  header,
+  footer,
+  .no-print {
+    display: none !important;
+  }
+  .print-only {
+    display: block;
+  }
+  .print-area {
+    width: 100%;
+  }
+}
+
 body {
   font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
   color: var(--color-slate-800);
