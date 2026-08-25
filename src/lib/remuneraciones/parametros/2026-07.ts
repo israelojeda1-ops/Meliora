@@ -28,9 +28,13 @@ export const parametros202607: ParametrosPeriodo = {
     indefinido: { trabajador: 0.6, empleador: 2.4 },
     plazo_fijo: { trabajador: 0, empleador: 3.0 },
   },
-  sis: 1.62, // vigente desde remuneraciones de abril 2026
-  mutualBase: 0.9,
-  aporteReformaPension: 1.0, // Ley 21.735: 1% entre ago-2025 y jul-2026
+  mutualBase: 0.93, // 0,90% básica ley 16.744 + 0,03% ley SANNA (ISL/mutual)
+  aportesPension: [
+    // Hasta julio 2026 el SIS lo recauda la AFP, aparte del 1% de la reforma
+    { nombre: "SIS (vía AFP)", tasa: 1.62 },
+    { nombre: "Capitalización individual (reforma)", tasa: 0.1 },
+    { nombre: "Expectativa de vida (reforma)", tasa: 0.9 },
+  ],
   tramosImpuesto: [
     { hastaUTM: 13.5, factor: 0, rebajaUTM: 0 },
     { hastaUTM: 30, factor: 0.04, rebajaUTM: 0.54 },

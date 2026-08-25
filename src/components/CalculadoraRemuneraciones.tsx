@@ -149,9 +149,10 @@ export function CalculadoraRemuneraciones() {
     if (modo === "empleador") {
       lineas.push(
         `Cesantía empleador: +${fmt(resultado.cesantiaEmpleador)}`,
-        `SIS (${periodo.sis}%): +${fmt(resultado.sis)}`,
-        `Mutual (${resultado.mutualTasa.toFixed(2)}%): +${fmt(resultado.mutual)}`,
-        `Aporte reforma previsional (${resultado.aporteReformaTasa}%): +${fmt(resultado.aporteReforma)}`,
+        `ISL/Mutual (${resultado.mutualTasa.toLocaleString("es-CL")}%): +${fmt(resultado.mutual)}`,
+        ...resultado.aportesPension.map(
+          (a) => `${a.nombre} (${a.tasa.toLocaleString("es-CL")}%): +${fmt(a.monto)}`
+        ),
         `COSTO TOTAL DE CONTRATACIÓN: ${fmt(resultado.costoTotal)}`
       );
     }
@@ -544,16 +545,18 @@ export function CalculadoraRemuneraciones() {
                     label={`Seguro de cesantía (${periodo.cesantia[contrato].empleador.toLocaleString("es-CL")}%)`}
                     value={resultado.cesantiaEmpleador}
                   />
-                  <Fila label={`SIS (${periodo.sis.toLocaleString("es-CL")}%)`} value={resultado.sis} />
                   <Fila
-                    label={`Mutual (${resultado.mutualTasa.toLocaleString("es-CL", { maximumFractionDigits: 2 })}%)`}
+                    label={`ISL / Mutual (${resultado.mutualTasa.toLocaleString("es-CL", { maximumFractionDigits: 2 })}%)`}
                     value={resultado.mutual}
+                    note="ley 16.744"
                   />
-                  <Fila
-                    label={`Reforma previsional (${resultado.aporteReformaTasa.toLocaleString("es-CL")}%)`}
-                    value={resultado.aporteReforma}
-                    note="Ley 21.735"
-                  />
+                  {resultado.aportesPension.map((a) => (
+                    <Fila
+                      key={a.nombre}
+                      label={`${a.nombre} (${a.tasa.toLocaleString("es-CL")}%)`}
+                      value={a.monto}
+                    />
+                  ))}
 
                   <div className="mt-4 rounded-xl bg-navy px-4 py-3 flex items-baseline justify-between">
                     <span className="text-sm font-bold text-white">
