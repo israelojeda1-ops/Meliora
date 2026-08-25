@@ -1,5 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "github": { "silent": true },
   "crons": [
     { "path": "/Privado/refrescar", "schedule": "0 9 * * *" },
     { "path": "/Privado/refrescar", "schedule": "10 9 * * *" },
