@@ -49,6 +49,22 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
+      # La fuente de Pages del repo está en "Deploy from a branch", lo que
+      # dispara un build Jekyll paralelo en cada push; el deployment que
+      # termina último es el que queda publicado. Esperamos a que ese build
+      # termine para desplegar después y ganar siempre. Si la fuente se
+      # cambia a "GitHub Actions", este paso no encuentra nada y sigue.
+      - name: Wait for legacy Jekyll build to finish
+        run: |
+          for i in $(seq 1 30); do
+            estado=$(curl -s "https://api.github.com/repos/${{ github.repository }}/actions/runs?head_sha=${{ github.sha }}" \
+              | jq -r '[.workflow_runs[] | select(.name == "pages build and deployment") | .status] | first // empty')
+            if [ -z "$estado" ] || [ "$estado" = "completed" ]; then
+              exit 0
+            fi
+            sleep 10
+          done
+
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
