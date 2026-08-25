@@ -247,6 +247,12 @@ export default function HomePage() {
                   </div>
                 ))}
               </div>
+              <Link
+                href="/diagnostico"
+                className="mt-8 inline-flex items-center justify-center rounded-lg bg-emerald px-6 py-3 text-sm font-semibold text-white hover:bg-emerald-dark transition-colors"
+              >
+                Mide tus brechas: diagnóstico gratis en 3 minutos
+              </Link>
             </div>
           </div>
         </div>
@@ -428,6 +434,15 @@ export default function HomePage() {
               Ver planes y precios
             </Link>
           </div>
+          <p className="mt-8 text-sm text-slate-400">
+            ¿No sabes por dónde partir?{" "}
+            <Link
+              href="/diagnostico"
+              className="font-semibold text-emerald hover:text-emerald-light transition-colors"
+            >
+              Hazte el Diagnóstico Financiero Express gratis →
+            </Link>
+          </p>
         </div>
       </section>
     </>
