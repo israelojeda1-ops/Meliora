@@ -8,6 +8,7 @@ import {
   impuestoUnico,
 } from "./motor.ts";
 import { parametros202607 as julio } from "./parametros/2026-07.ts";
+import { parametros202608 as agosto } from "./parametros/2026-08.ts";
 
 let fallas = 0;
 
@@ -68,7 +69,7 @@ console.log("\nCaso obligatorio — liquidación real julio 2026 (isapre en UF)"
 }
 
 // ── Modo empleador sobre el caso obligatorio ──
-console.log("\nModo empleador — caso obligatorio (julio: aporte reforma 1%)");
+console.log("\nModo empleador — caso obligatorio (julio: SIS vía AFP + reforma 1%)");
 {
   const c = calcularEmpleador(
     {
@@ -85,10 +86,36 @@ console.log("\nModo empleador — caso obligatorio (julio: aporte reforma 1%)");
     julio
   );
   eq("Cesantía empleador (2,4%)", c.cesantiaEmpleador, 129124);
-  eq("SIS (1,62%)", c.sis, 59552);
-  eq("Mutual (0,90%)", c.mutual, 33084);
-  eq("Aporte reforma (1%)", c.aporteReforma, 36760);
-  eq("Costo total de contratación", c.costoTotal, 6188682);
+  eq("ISL/Mutual (0,93%)", c.mutual, 34187);
+  eq("SIS vía AFP (1,62%)", c.aportesPension[0].monto, 59552);
+  eq("Capitalización individual (0,1%)", c.aportesPension[1].monto, 3676);
+  eq("Expectativa de vida (0,9%)", c.aportesPension[2].monto, 33084);
+  eq("Costo total de contratación", c.costoTotal, 6189785);
+}
+
+// ── Aporte patronal agosto 2026: replica planilla real (Previred) ──
+console.log("\nAporte patronal agosto 2026 — planilla real, imponible 2.218.375");
+{
+  const c = calcularEmpleador(
+    {
+      sueldoBase: 2218375,
+      modoGratificacion: "ninguna",
+      afpKey: "modelo",
+      salud: "fonasa",
+      contrato: "indefinido",
+    },
+    agosto
+  );
+  eq("Aporte ISL (0,93%)", c.mutual, 20631);
+  eq("Aporte Seg Cesantía (2,4%)", c.cesantiaEmpleador, 53241);
+  eq("Aporte SIS (1,78%)", c.aportesPension[0].monto, 39487);
+  eq("Aporte Expectativa de vida (0,72%)", c.aportesPension[1].monto, 15972);
+  eq("Aporte AFP Adicional (0,10%)", c.aportesPension[2].monto, 2218);
+  eq("Aporte Rentabilidad Protegida (0,90%)", c.aportesPension[3].monto, 19965);
+  eq("Total aportes (6,83%)", c.totalAportes, 151514);
+  // SIS + expectativa de vida deben sumar 2,5%
+  const sisMasExp = agosto.aportesPension[0].tasa + agosto.aportesPension[1].tasa;
+  eq("SIS + Expectativa de vida (×100)", Math.round(sisMasExp * 100), 250);
 }
 
 // ── Sueldo bajo el tope imponible, gratificación legal topeada, Fonasa ──
@@ -135,10 +162,11 @@ console.log("\nPlazo fijo — Fonasa, AFP Uno, sin gratificación");
   eq("Impuesto (exento)", liq.impuesto, 0);
   eq("Líquido", liq.liquido, 660320);
   eq("Cesantía empleador (3%)", c.cesantiaEmpleador, 24000);
-  eq("SIS", c.sis, 12960);
-  eq("Mutual", c.mutual, 7200);
-  eq("Aporte reforma", c.aporteReforma, 8000);
-  eq("Costo total", c.costoTotal, 852160);
+  eq("ISL/Mutual (0,93%)", c.mutual, 7440);
+  eq("SIS vía AFP (1,62%)", c.aportesPension[0].monto, 12960);
+  eq("Capitalización individual (0,1%)", c.aportesPension[1].monto, 800);
+  eq("Expectativa de vida (0,9%)", c.aportesPension[2].monto, 7200);
+  eq("Costo total", c.costoTotal, 852400);
 }
 
 // ── Un caso en cada tramo del impuesto único ──

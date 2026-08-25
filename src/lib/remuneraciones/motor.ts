@@ -134,23 +134,24 @@ export function calcularEmpleador(
   const cesantiaEmpleador = r(
     liq.baseCesantia * (p.cesantia[e.contrato].empleador / 100)
   );
-  const sis = r(liq.baseCotizacion * (p.sis / 100));
   const mutual = r(liq.baseCotizacion * (mutualTasa / 100));
-  const aporteReforma = r(
-    liq.baseCotizacion * (p.aporteReformaPension / 100)
-  );
+  const aportesPension = p.aportesPension.map((a) => ({
+    ...a,
+    monto: r(liq.baseCotizacion * (a.tasa / 100)),
+  }));
 
-  const totalAportes = cesantiaEmpleador + sis + mutual + aporteReforma;
+  const totalAportes =
+    cesantiaEmpleador +
+    mutual +
+    aportesPension.reduce((sum, a) => sum + a.monto, 0);
   const costoTotal = liq.totalImponible + liq.totalNoImponible + totalAportes;
 
   return {
     liquidacion: liq,
     cesantiaEmpleador,
-    sis,
     mutualTasa,
     mutual,
-    aporteReformaTasa: p.aporteReformaPension,
-    aporteReforma,
+    aportesPension,
     totalAportes,
     costoTotal,
     proporcionLiquido: costoTotal > 0 ? liq.liquido / costoTotal : 0,

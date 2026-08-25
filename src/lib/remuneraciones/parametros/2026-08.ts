@@ -25,9 +25,16 @@ export const parametros202608: ParametrosPeriodo = {
     indefinido: { trabajador: 0.6, empleador: 2.4 },
     plazo_fijo: { trabajador: 0, empleador: 3.0 },
   },
-  sis: 1.62,
-  mutualBase: 0.9,
-  aporteReformaPension: 3.5, // Ley 21.735: sube a 3,5% desde remuneraciones de agosto 2026
+  mutualBase: 0.93, // 0,90% básica ley 16.744 + 0,03% ley SANNA (ISL/mutual)
+  aportesPension: [
+    // Previred, agosto 2026: el SIS pasa al Seguro Social Previsional.
+    // SIS + expectativa de vida deben sumar 2,5% — si el SIS cambia,
+    // expectativa de vida se ajusta. Total reforma: 3,5%.
+    { nombre: "SIS (Seguro Social)", tasa: 1.78 },
+    { nombre: "Expectativa de vida", tasa: 0.72 },
+    { nombre: "Capitalización individual", tasa: 0.1 },
+    { nombre: "Rentabilidad protegida", tasa: 0.9 },
+  ],
   tramosImpuesto: [
     { hastaUTM: 13.5, factor: 0, rebajaUTM: 0 },
     { hastaUTM: 30, factor: 0.04, rebajaUTM: 0.54 },

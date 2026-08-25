@@ -33,7 +33,7 @@ const faqs = [
   },
   {
     q: "¿Cuánto cuesta realmente contratar un trabajador en Chile?",
-    a: "Además de la remuneración bruta, el empleador paga su porción del seguro de cesantía (2,4% en contrato indefinido o 3% a plazo fijo), el SIS (1,62%), la mutual de seguridad (desde 0,90% más recargo por riesgo) y la cotización adicional de la reforma previsional de la Ley 21.735 (3,5% desde las remuneraciones de agosto de 2026). En total, el costo de contratación supera la remuneración bruta en un 8% a 10% aproximadamente.",
+    a: "Además de la remuneración bruta, el empleador paga su porción del seguro de cesantía (2,4% en contrato indefinido o 3% a plazo fijo), el seguro de accidentes ISL o mutual (0,93% base más recargo por riesgo) y, desde las remuneraciones de agosto de 2026, el 3,5% al Seguro Social Previsional de la reforma (Ley 21.735): SIS más compensación por expectativa de vida (que juntos suman 2,5%), 0,1% de capitalización individual y 0,9% de rentabilidad protegida. En total, cerca de un 6,8% adicional sobre la remuneración imponible topeada.",
   },
   {
     q: "¿Qué es el tope imponible de 90 UF?",
@@ -45,7 +45,7 @@ const faqs = [
   },
   {
     q: "¿Qué es la cotización adicional del empleador de la reforma previsional?",
-    a: "La Ley 21.735 creó una cotización de cargo del empleador que partió en 1% de la remuneración imponible en agosto de 2025 y subió a 3,5% desde las remuneraciones de agosto de 2026, con aumentos graduales hasta llegar a 8,5%. Es un costo de contratación adicional que no se descuenta al trabajador.",
+    a: "La Ley 21.735 creó una cotización de cargo del empleador que partió en 1% de la remuneración imponible en agosto de 2025 (0,1% capitalización individual + 0,9% expectativa de vida) y subió a 3,5% desde las remuneraciones de agosto de 2026, cuando además el SIS dejó de recaudarse vía AFP y pasó al Seguro Social: SIS + expectativa de vida suman 2,5%, más 0,1% de capitalización individual y 0,9% de rentabilidad protegida. Seguirá subiendo gradualmente hasta 8,5%. Es un costo de contratación adicional que no se descuenta al trabajador.",
   },
 ];
 

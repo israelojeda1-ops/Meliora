@@ -33,12 +33,20 @@ export interface ParametrosPeriodo {
     indefinido: { trabajador: number; empleador: number };
     plazo_fijo: { trabajador: number; empleador: number };
   };
-  /** Tasa SIS de cargo del empleador, en % */
-  sis: number;
-  /** Cotización básica ley 16.744 (mutual), en %; el recargo por riesgo es variable */
+  /**
+   * Cotización base ley 16.744 (ISL/mutual): 0,90% básica + 0,03% ley SANNA.
+   * El recargo por riesgo de la empresa es variable y se ingresa aparte.
+   */
   mutualBase: number;
-  /** Cotización adicional del empleador al sistema de pensiones (Ley 21.735), en % */
-  aporteReformaPension: number;
+  /**
+   * Aportes previsionales de cargo del empleador sobre la base topeada de AFP,
+   * según lo publicado por Previred para el período. Hasta julio 2026: SIS
+   * (recaudado por AFP) + reforma Ley 21.735 (0,1% capitalización individual
+   * + 0,9% expectativa de vida). Desde agosto 2026 el SIS pasa al Seguro
+   * Social: SIS + expectativa de vida deben sumar 2,5%, más 0,1% de
+   * capitalización individual y 0,9% de rentabilidad protegida.
+   */
+  aportesPension: { nombre: string; tasa: number }[];
   tramosImpuesto: TramoImpuesto[];
 }
 
@@ -95,11 +103,9 @@ export interface LiquidacionTrabajador {
 export interface CostoEmpleador {
   liquidacion: LiquidacionTrabajador;
   cesantiaEmpleador: number;
-  sis: number;
   mutualTasa: number;
   mutual: number;
-  aporteReformaTasa: number;
-  aporteReforma: number;
+  aportesPension: { nombre: string; tasa: number; monto: number }[];
   totalAportes: number;
   costoTotal: number;
   /** Fracción del costo total que llega al bolsillo del trabajador (0–1) */
