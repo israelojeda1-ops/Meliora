@@ -35,6 +35,7 @@ export const parametros202607: ParametrosPeriodo = {
     { nombre: "Capitalización individual (reforma)", tasa: 0.1 },
     { nombre: "Expectativa de vida (reforma)", tasa: 0.9 },
   ],
+  retencionHonorarios: 15.25, // año 2026 (Ley 21.133; 16% en 2027, 17% en 2028)
   tramosImpuesto: [
     { hastaUTM: 13.5, factor: 0, rebajaUTM: 0 },
     { hastaUTM: 30, factor: 0.04, rebajaUTM: 0.54 },

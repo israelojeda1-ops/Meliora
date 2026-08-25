@@ -7,6 +7,7 @@ import {
   calcularTrabajador,
   impuestoUnico,
 } from "./motor.ts";
+import { boletaDesdeBruto, boletaDesdeLiquido } from "./honorarios.ts";
 import { parametros202607 as julio } from "./parametros/2026-07.ts";
 import { parametros202608 as agosto } from "./parametros/2026-08.ts";
 
@@ -189,6 +190,21 @@ console.log("\nImpuesto único — un caso por tramo (base en UTM de julio)");
     const esperado = Math.max(0, Math.round(base * factor - rebaja * utm));
     eq(`Tramo hasta ${enUTM} UTM`, impuestoUnico(base, julio), esperado);
   }
+}
+
+// ── Boleta de honorarios 2026 (retención 15,25%) ──
+console.log("\nBoleta de honorarios — ejemplo oficial SII y cálculo inverso");
+{
+  const b = boletaDesdeBruto(1000000, agosto);
+  eq("Retención de boleta $1.000.000", b.retencion, 152500);
+  eq("Líquido de boleta $1.000.000", b.liquido, 847500);
+
+  const inv = boletaDesdeLiquido(1000000, agosto);
+  eq("Bruto para recibir $1.000.000", inv.bruto, 1179941);
+  eq("Líquido resultante", inv.liquido, 1000000);
+
+  const inv2 = boletaDesdeLiquido(847500, agosto);
+  eq("Bruto para recibir $847.500", inv2.bruto, 1000000);
 }
 
 if (fallas > 0) {

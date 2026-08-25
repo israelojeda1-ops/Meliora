@@ -4,7 +4,7 @@ import { CalculadoraRemuneraciones } from "@/components/CalculadoraRemuneracione
 
 export const metadata: Metadata = {
   title:
-    "Calculadora de Sueldo Líquido y Costo de Contratación Chile 2026 — Meliora Advisory",
+    "Calculadora Salarial Chile 2026 — Sueldo Líquido y Costo de Contratación | Meliora Advisory",
   description:
     "Calcula gratis tu sueldo líquido desde el bruto (AFP, salud, isapre en UF, impuesto único) o el costo total de contratar un trabajador en Chile: cesantía, SIS, mutual y aporte de la reforma previsional. Indicadores actualizados.",
   keywords: [
@@ -19,7 +19,7 @@ export const metadata: Metadata = {
     "aporte empleador reforma previsional",
   ],
   openGraph: {
-    title: "Calculadora de Sueldo Líquido y Costo de Contratación — Chile 2026",
+    title: "Calculadora Salarial — Chile 2026",
     description:
       "De bruto a líquido con desglose completo, y el costo real de contratar para tu pyme: cesantía, SIS, mutual y reforma previsional.",
     url: "https://melioraadvisory.cl/calculadora",
@@ -53,7 +53,7 @@ const jsonLd = [
   {
     "@context": "https://schema.org",
     "@type": "WebApplication",
-    name: "Calculadora de Sueldo Líquido y Costo de Contratación",
+    name: "Calculadora Salarial",
     url: "https://melioraadvisory.cl/calculadora",
     applicationCategory: "FinanceApplication",
     operatingSystem: "Web",
@@ -88,7 +88,7 @@ export default function CalculadoraPage() {
             Herramienta gratuita
           </p>
           <h1 className="text-3xl sm:text-4xl font-bold text-white max-w-3xl">
-            Calculadora de sueldo líquido y costo de contratación
+            Calculadora Salarial: sueldo líquido y costo de contratación
           </h1>
           <p className="mt-6 text-lg text-slate-300 max-w-2xl">
             De bruto a líquido con desglose línea por línea — AFP, salud, isapre
@@ -101,6 +101,17 @@ export default function CalculadoraPage() {
 
       <section className="py-12 sm:py-16 bg-slate-50">
         <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+          <div className="no-print flex justify-center gap-2 mb-10">
+            <span className="rounded-full bg-emerald px-5 py-2 text-sm font-semibold text-white">
+              Calculadora Salarial
+            </span>
+            <Link
+              href="/calculadora-honorarios"
+              className="rounded-full border border-slate-300 px-5 py-2 text-sm font-semibold text-slate-600 hover:border-emerald hover:text-emerald transition-colors"
+            >
+              Boleta de Honorarios
+            </Link>
+          </div>
           <CalculadoraRemuneraciones />
         </div>
       </section>
