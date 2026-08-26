@@ -81,7 +81,8 @@ export default function ServiciosPage() {
             Tres líneas de servicio, un solo equipo que entiende tu negocio
           </h1>
           <p className="mt-6 text-lg text-slate-300 max-w-2xl">
-            Contabilidad, remuneraciones y finanzas que sí conversan entre sí.
+            Contabilidad, remuneraciones y finanzas que sí conversan entre sí,
+            con acompañamiento cercano y revisión continua de tus procesos.
           </p>
         </div>
       </section>
