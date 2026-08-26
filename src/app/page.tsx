@@ -118,8 +118,9 @@ export default function HomePage() {
               contratar tres proveedores.
             </h1>
             <p className="mt-6 text-lg text-slate-300 leading-relaxed max-w-2xl">
-              Contabilidad, remuneraciones y finanzas que sí conversan entre sí.
-              Un solo equipo, tu mismo sistema, indicadores reales cada mes.
+              Contabilidad, remuneraciones y finanzas que sí conversan entre
+              sí, con un equipo que te acompaña mes a mes: tu mismo sistema,
+              indicadores reales y revisión de procesos junto a ti.
             </p>
             <div className="mt-10 flex flex-col sm:flex-row gap-4">
               <Link
@@ -227,16 +228,16 @@ export default function HomePage() {
                 Meliora resuelve las cuatro brechas
               </h3>
               <p className="text-slate-300 text-sm leading-relaxed mb-6">
-                Integramos contabilidad, remuneraciones y reportería gerencial en
-                un solo servicio. Trabajamos en tu sistema, entregamos indicadores
-                mensuales y armamos tu presupuesto y forecast, a un precio que
+                Integramos contabilidad, remuneraciones y reportería gerencial
+                en un solo servicio, y te acompañamos mes a mes en la revisión
+                de resultados y procesos. Todo en tu sistema, a un precio que
                 tiene sentido para una PyME.
               </p>
               <div className="space-y-3">
                 {[
                   "Un interlocutor para todo lo financiero",
                   "Indicadores mensuales listos para decidir",
-                  "Presupuesto y Rolling Forecast",
+                  "Acompañamiento mensual, no solo informes",
                   "Precio ajustado al tamaño de tu empresa",
                 ].map((item) => (
                   <div key={item} className="flex items-start gap-3">
@@ -362,9 +363,9 @@ export default function HomePage() {
                 ),
               },
               {
-                title: "Asesoría personalizada",
+                title: "Acompañamiento cercano",
                 description:
-                  "Acompañamiento directo y revisión de procesos junto a ti. Cada sesión se ajusta a tu negocio.",
+                  "No entregamos informes y desaparecemos: revisamos contigo los números y los procesos, mes a mes.",
                 icon: (
                   <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
