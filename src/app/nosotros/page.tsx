@@ -86,8 +86,8 @@ export default function NosotrosPage() {
                 </p>
                 <p>
                   Por eso Meliora se especializa en reportería en tiempo y
-                  forma, hecha a la medida de cada negocio y sobre el sistema
-                  que el cliente ya usa. Y no se queda en los números: incluye
+                  forma, hecha a la medida de cada negocio, sobre el sistema
+                  del cliente o el nuestro. Y no se queda en los números: incluye
                   un acompañamiento cercano y la revisión continua de los
                   procesos, para que el orden se sostenga en el tiempo.
                 </p>
