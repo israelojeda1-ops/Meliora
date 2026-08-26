@@ -85,13 +85,11 @@ export default function NosotrosPage() {
                   limita a cumplir con el SII.
                 </p>
                 <p>
-                  Por eso en Meliora la contabilidad, las remuneraciones y la
-                  reportería salen del mismo lugar y cierran entre sí, con
-                  dashboards en Power BI, SQL Server o Looker Studio sobre el
-                  sistema que cada cliente ya usa. Y el servicio no se queda en
-                  los números: incluye un acompañamiento cercano y la revisión
-                  continua de los procesos, para que el orden se sostenga en el
-                  tiempo.
+                  Por eso Meliora integra contabilidad, remuneraciones y
+                  reportería en un solo servicio, trabajando sobre el sistema
+                  que cada cliente ya usa. Y no se queda en los números:
+                  incluye un acompañamiento cercano y la revisión continua de
+                  los procesos, para que el orden se sostenga en el tiempo.
                 </p>
               </div>
             </div>
