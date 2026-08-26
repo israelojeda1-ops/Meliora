@@ -101,7 +101,7 @@ export default function CalculadoraPage() {
 
       <section className="py-12 sm:py-16 bg-slate-50">
         <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
-          <div className="no-print flex justify-center gap-2 mb-10">
+          <div className="no-print flex flex-wrap justify-center gap-2 mb-10">
             <span className="rounded-full bg-emerald px-5 py-2 text-sm font-semibold text-white">
               Calculadora Salarial
             </span>
@@ -110,6 +110,12 @@ export default function CalculadoraPage() {
               className="rounded-full border border-slate-300 px-5 py-2 text-sm font-semibold text-slate-600 hover:border-emerald hover:text-emerald transition-colors"
             >
               Boleta de Honorarios
+            </Link>
+            <Link
+              href="/calculadora-finiquito"
+              className="rounded-full border border-slate-300 px-5 py-2 text-sm font-semibold text-slate-600 hover:border-emerald hover:text-emerald transition-colors"
+            >
+              Finiquito
             </Link>
           </div>
           <CalculadoraRemuneraciones />

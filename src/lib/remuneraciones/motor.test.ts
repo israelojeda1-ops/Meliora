@@ -8,6 +8,7 @@ import {
   impuestoUnico,
 } from "./motor.ts";
 import { boletaDesdeBruto, boletaDesdeLiquido } from "./honorarios.ts";
+import { calcularFiniquito } from "./finiquito.ts";
 import { parametros202607 as julio } from "./parametros/2026-07.ts";
 import { parametros202608 as agosto } from "./parametros/2026-08.ts";
 
@@ -205,6 +206,65 @@ console.log("\nBoleta de honorarios — ejemplo oficial SII y cálculo inverso")
 
   const inv2 = boletaDesdeLiquido(847500, agosto);
   eq("Bruto para recibir $847.500", inv2.bruto, 1000000);
+}
+
+// ── Finiquito ──
+console.log("\nFiniquito — necesidades de la empresa, sin aviso previo");
+{
+  const f = calcularFiniquito(
+    {
+      remuneracion: 1500000,
+      fechaInicio: "2020-03-01",
+      fechaTermino: "2026-08-31",
+      causal: "necesidades_empresa",
+      avisoPrevio: false,
+    },
+    agosto
+  );
+  eq("Años computables", f.aniosComputables, 6);
+  eq("Indemnización años de servicio", f.indemnizacionAnios, 9000000);
+  eq("Indemnización aviso previo", f.indemnizacionAviso, 1500000);
+  eq("Feriado días hábiles (×100)", Math.round(f.feriadoDiasHabiles * 100), 754);
+  eq("Feriado días corridos (×100)", Math.round(f.feriadoDiasCorridos * 100), 954);
+  eq("Feriado proporcional", f.feriadoMonto, 477000);
+  eq("Total finiquito", f.total, 10977000);
+}
+
+console.log("\nFiniquito — renuncia voluntaria (solo feriado)");
+{
+  const f = calcularFiniquito(
+    {
+      remuneracion: 1500000,
+      fechaInicio: "2020-03-01",
+      fechaTermino: "2026-08-31",
+      causal: "renuncia",
+    },
+    agosto
+  );
+  eq("Indemnización años (renuncia)", f.indemnizacionAnios, 0);
+  eq("Indemnización aviso (renuncia)", f.indemnizacionAviso, 0);
+  eq("Total = solo feriado", f.total, 477000);
+}
+
+console.log("\nFiniquito — topes: 90 UF de base y 11 años");
+{
+  const f = calcularFiniquito(
+    {
+      remuneracion: 5000000,
+      fechaInicio: "2010-01-01",
+      fechaTermino: "2026-06-30",
+      causal: "necesidades_empresa",
+      avisoPrevio: true,
+    },
+    agosto
+  );
+  eq("Años de servicio reales", f.aniosServicio, 16);
+  eq("Años computables (tope 11)", f.aniosComputables, 11);
+  eq("Base topeada (90 UF)", f.baseIndemnizacion, 3678639);
+  eq("Indemnización años", f.indemnizacionAnios, 40465029);
+  eq("Aviso previo dado (sin pago)", f.indemnizacionAviso, 0);
+  eq("Feriado proporcional", f.feriadoMonto, 1583333);
+  eq("Total finiquito", f.total, 42048362);
 }
 
 if (fallas > 0) {

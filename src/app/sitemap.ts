@@ -13,6 +13,14 @@ export default function sitemap(): MetadataRoute.Sitemap {
     "/diagnostico",
     "/calculadora",
     "/calculadora-honorarios",
+    "/calculadora-finiquito",
+    "/indicadores",
+    "/recursos",
+    "/recursos/cuanto-cuesta-contratar-trabajador-chile",
+    "/recursos/boleta-o-contrato-cuando-conviene",
+    "/recursos/reforma-previsional-2026-empleadores",
+    "/recursos/como-proyectar-flujo-de-caja-pyme",
+    "/recursos/indicadores-que-toda-pyme-deberia-mirar",
     "/contacto",
   ];
 

@@ -27,9 +27,12 @@ export function Footer() {
                 { href: "/servicios", label: "Servicios" },
                 { href: "/nosotros", label: "Nosotros" },
                 { href: "/planes", label: "Planes y Precios" },
+                { href: "/recursos", label: "Recursos" },
                 { href: "/diagnostico", label: "Diagnóstico Financiero" },
                 { href: "/calculadora", label: "Calculadora Salarial" },
                 { href: "/calculadora-honorarios", label: "Calculadora de Honorarios" },
+                { href: "/calculadora-finiquito", label: "Calculadora de Finiquito" },
+                { href: "/indicadores", label: "Indicadores de hoy" },
                 { href: "/contacto", label: "Contacto" },
               ].map((link) => (
                 <li key={link.href}>
