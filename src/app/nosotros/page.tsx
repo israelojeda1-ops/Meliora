@@ -65,9 +65,9 @@ export default function NosotrosPage() {
               </h2>
               <div className="space-y-4 text-sm text-slate-600 leading-relaxed">
                 <p>
-                  Me llamo <strong className="text-navy">Israel Ojeda Millán</strong>.
-                  Soy <strong className="text-navy">Contador Auditor y MBA de
-                  la Universidad de Chile</strong>, y pasé más de 12 años
+                  Soy <strong className="text-navy">Israel Ojeda Millán</strong>,{" "}
+                  <strong className="text-navy">Contador Auditor y MBA de la
+                  Universidad de Chile</strong>. Pasé más de 12 años
                   liderando áreas de finanzas, contabilidad IFRS, tesorería y
                   control de gestión en empresas de las industrias
                   farmacéutica, retail, construcción, inmobiliaria y minería,
