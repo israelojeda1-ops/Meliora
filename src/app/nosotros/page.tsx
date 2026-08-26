@@ -4,7 +4,7 @@ import Link from "next/link";
 export const metadata: Metadata = {
   title: "Nosotros — Meliora Advisory",
   description:
-    "Firma fundada por un Gerente de Administración y Finanzas con más de 12 años en la industria. Contador Auditor y MBA Universidad de Chile.",
+    "Meliora Advisory fue fundada por Israel Ojeda, Contador Auditor y MBA de la Universidad de Chile, con más de 12 años liderando áreas de finanzas.",
 };
 
 const sectores = [
@@ -65,31 +65,32 @@ export default function NosotrosPage() {
               </h2>
               <div className="space-y-4 text-sm text-slate-600 leading-relaxed">
                 <p>
-                  Meliora Advisory fue fundada por un Gerente de Administración y
-                  Finanzas — <strong className="text-navy">Contador Auditor y MBA de la
-                  Universidad de Chile</strong> — con más de 12 años liderando áreas de
-                  finanzas, contabilidad IFRS, tesorería y control de gestión.
+                  Me llamo <strong className="text-navy">Israel Ojeda</strong>.
+                  Soy <strong className="text-navy">Contador Auditor y MBA de
+                  la Universidad de Chile</strong>, y pasé más de 12 años
+                  liderando áreas de finanzas, contabilidad IFRS, tesorería y
+                  control de gestión en empresas de las industrias
+                  farmacéutica, retail, construcción, inmobiliaria y minería,
+                  reportando cada mes en inglés a casas matrices
+                  internacionales.
                 </p>
                 <p>
-                  Su trayectoria incluye posiciones de liderazgo en industrias
-                  farmacéutica, retail, construcción, inmobiliaria y minería, con
-                  responsabilidad directa sobre reportería mensual en inglés a
-                  casas matrices internacionales.
+                  Meliora nace de algo que vi durante años: las pymes chilenas
+                  reciben de su contador lo justo para cumplir con el SII, y
+                  casi nunca los números que de verdad sirven para decidir.
+                  Margen por línea, cobranza, caja proyectada: eso en una
+                  empresa grande lo produce una gerencia completa. En una pyme,
+                  nadie.
                 </p>
                 <p>
-                  Domina herramientas de automatización como{" "}
+                  Por eso armé un servicio donde contabilidad, remuneraciones y
+                  reportería salen del mismo lugar y cierran entre sí, con
+                  dashboards en{" "}
                   <strong className="text-navy">
                     Power BI, SQL Server y Looker Studio
-                  </strong>
-                  , aplicadas a la generación de reportería gerencial y control
-                  de gestión en empresas de distintos tamaños y complejidades.
-                </p>
-                <p>
-                  Esa experiencia corporativa es exactamente lo que Meliora lleva
-                  a las PyMEs: no un servicio contable básico, sino la misma
-                  profundidad analítica y rigor de una gerencia de finanzas
-                  interna — a un precio que tiene sentido para empresas en
-                  crecimiento.
+                  </strong>{" "}
+                  sobre el sistema que ya uses. Y el análisis lo hago yo, no un
+                  pool de analistas junior.
                 </p>
               </div>
             </div>

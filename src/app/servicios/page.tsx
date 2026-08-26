@@ -16,7 +16,7 @@ const servicios = [
     subtitle:
       "La dirección financiera que tu PyME necesita, sin el costo de un CFO de planta.",
     description:
-      "Asumimos la función de dirección financiera de tu empresa. Entregamos reportería gerencial mensual, KPIs de margen y cobranza, flujo de caja, presupuesto anual y forecast rolling de 8 a 12 semanas. Incluye una sesión mensual de análisis con el fundador o gerente general para revisar resultados, proyecciones y decisiones clave. Construimos dashboards y reportes ad hoc conectados directo a tu base de datos — Softland (incluido Softland Cloud), Odoo, Nubox, Defontana u otro ERP —, sujeto a la factibilidad técnica del sistema.",
+      "Asumimos la función de dirección financiera de tu empresa. Entregamos reportería gerencial mensual, KPIs de margen y cobranza, flujo de caja, presupuesto anual y forecast rolling de 8 a 12 semanas. Incluye una sesión mensual de análisis con el fundador o gerente general para revisar resultados, proyecciones y decisiones clave. Construimos dashboards y reportes ad hoc conectados directo a tu base de datos (Softland, Softland Cloud, Odoo, Nubox, Defontana u otro ERP), sujeto a la factibilidad técnica del sistema.",
     items: [
       "Reportes gerenciales mensuales con análisis de variaciones",
       "KPIs: margen por producto/línea, DSO, estado de cobranza",
@@ -36,7 +36,7 @@ const servicios = [
     subtitle:
       "Cumplimiento tributario y laboral completo, integrado con tu sistema.",
     description:
-      "Nos hacemos cargo de toda la operación contable y de remuneraciones. Trabajamos dentro del ERP que ya usas — Softland, Odoo, Nubox, Defontana — o te lo implementamos. No obligamos a migrar: nos adaptamos a tu sistema para que el cambio sea cero fricción.",
+      "Nos hacemos cargo de toda la operación contable y de remuneraciones. Trabajamos dentro del ERP que ya usas (Softland, Odoo, Nubox, Defontana) o te lo implementamos. No obligamos a migrar: nos adaptamos a tu sistema para que el cambio sea cero fricción.",
     items: [
       "Contabilidad mensual completa",
       "Declaración de IVA / F29",
@@ -159,8 +159,8 @@ export default function ServiciosPage() {
                     ¿Qué incluye tu contabilidad?
                   </h3>
                   <p className="mt-2 text-sm text-slate-500 max-w-xl mx-auto">
-                    Del Libro de Compras y Ventas del SII al informe ejecutivo
-                    — un solo flujo, siempre al día. Compatible con Softland,
+                    Del Libro de Compras y Ventas del SII al informe ejecutivo:
+                    un solo flujo, siempre al día. Compatible con Softland,
                     Softland Cloud y otros ERP.
                   </p>
                 </div>
