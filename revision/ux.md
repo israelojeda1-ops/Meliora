@@ -1,41 +1,83 @@
-# Auditoría UX — /Privado (cartelera deportiva móvil)
+# Auditoría de UX — Sitio público melioraadvisory.cl
 
-## Resumen
+Fecha: 2026-08-26. Foco pedido por el dueño: **"se ve muy IA generada — ¿qué
+podríamos hacer?"**. La auditoría del portal del 2026-08-08 queda en el
+historial git.
 
-La app está bien pensada para su dueño: tema oscuro coherente, hora de Chile
-explícita, protección contra doble toque, pie con trazabilidad. Los problemas
-graves se concentran en tres puntos: "Poblar historial" **descarta los avisos**
-del backend (incluido el del corte a 45 s, con lo que el mensaje de éxito puede
-mentir), la **sesión expirada deja atascado** al usuario con "No autorizado." sin
-salida, y **no existe control de fecha** pese a que el backend ya lo soporta. El
-resto son fricciones de legibilidad, semántica sin leyenda y accesibilidad.
+## Diagnóstico: por qué se ve "generado"
 
-## Hallazgos
+La percepción es correcta y tiene causas concretas y medibles. No es un
+problema de fealdad — el sitio es limpio y consistente — sino de **ausencia de
+evidencia humana**. Todo lo que se ve podría existir sin que la empresa
+exista.
 
-**Defectos**
+### D1 — Cero imágenes reales (el hallazgo principal)
+En todo el sitio no hay **ni una fotografía ni una captura de pantalla**: solo
+íconos de librería (Heroicons) y un diagrama SVG. No hay foto del fundador, ni
+del portal de clientes funcionando, ni de un dashboard real. Los sitios
+armados con plantilla o IA se ven exactamente así: hero + íconos + tarjetas.
+Es la señal #1 y la más barata de corregir.
 
-1. **"Poblar historial" descarta avisos y puede reportar éxito falso.** `poblarFutbol` devuelve el aviso del corte a 45 s (`src/lib/deportes/espn.ts:128`), pero la UI solo muestra `diasEscritos`/`partidos` (`Cartelera.tsx:227`, ahora ~207). *Fix:* anexar `j.avisos` al mensaje y, si hubo corte, dejar el botón como "Continuar".
-2. **Sesión expirada a mitad de uso deja la app atascada.** 401 solo pinta "No autorizado." sin re-login salvo recarga manual. *Fix:* en `r.status === 401`, `location.reload()`.
-3. **No se puede ver mañana aunque el backend lo permite.** `diaAMostrar` acepta `?fecha=` y `nombreDia` rotula "Mañana", pero no hay control. *Fix:* chips "Hoy / Mañana".
-4. **El punto ámbar de "muestra corta" es ilegible en móvil.** Círculo de 4 px cuya única pista es un `title` que no existe en táctil. *Fix:* mini-chip de texto ámbar.
-5. **No hay leyenda de chips ni del badge DOBLE.** La explicación proyección-vs-línea vive dentro del acordeón abierto. *Fix:* línea fija de leyenda bajo los tiles.
-6. **Primer uso: la acción clave (Poblar) está al fondo, desconectada del vacío.** El estado vacío no dice qué hacer. *Fix:* mover el botón dentro del estado vacío con una frase de contexto.
-7. **Contraste insuficiente en textos pequeños.** `slate-600`/`slate-500` a 10–11 px sobre `slate-950` cae bajo AA. *Fix:* subir todo texto ≤12 px a `slate-400` mínimo.
-8. **Progreso de "Poblar" opaco ~45 s.** Mensaje fijo, botón solo baja opacidad. *Fix:* etiqueta "Poblando…" mientras carga.
-9. **Acordeón sin semántica accesible (leve).** Falta `aria-expanded`/`aria-controls`. *Fix:* `aria-expanded={abierto}`.
+### D2 — El fundador es anónimo
+`/nosotros` habla de "un Gerente de Administración y Finanzas, Contador
+Auditor y MBA" **sin nombre ni rostro**. Para una boutique cuyo pitch es
+"trato directo con quien hace el análisis", el anonimato contradice la
+promesa central y dispara la sospecha de sitio fabricado. Nombre + foto +
+LinkedIn convierten la página más débil del sitio en la más fuerte.
 
-**Preferencias**
+### D3 — Métricas sin atribución
+Los "resultados reales" (40%, 30%, 20%, 25%) aparecen dos veces (home y
+nosotros) sin cliente, rubro ni contexto verificable. Números redondos sin
+dueño se leen como inventados — aunque sean ciertos. Con una línea de
+contexto cada uno ("distribuidora farmacéutica, 60 personas") pasan de
+sospechosos a creíbles. Y no hay ningún testimonio ni logo de cliente en todo
+el sitio.
 
-10. Avisos técnicos del almacén (HTTP, env vars) mezclados con avisos de usuario → agrupar bajo `<details>`.
-11. Rival del historial capado a `max-w-[110px]` nunca se lee completo → quitar el cap (la tabla ya tiene scroll).
-12. Áreas táctiles bajo 44 px en nav de deportes y botones del header → `min-h-[44px]`.
+### D4 — Monotonía estructural
+Todas las páginas repiten el mismo esqueleto: banda navy con eyebrow verde en
+mayúsculas → H1 → grillas de tarjetas `rounded-2xl` con ícono → banda CTA
+navy. Medido: 31 usos del mismo patrón de tarjeta en 8 archivos. La
+consistencia es buena; la uniformidad total es lo que huele a plantilla.
+Basta romperla 2–3 veces con secciones de otra naturaleza (una foto a sangre,
+una captura del producto, una cita grande).
 
-## Lo que está bien
+### D5 — Tics de redacción de IA
+El copy tiene los patrones reconocibles: **43 guiones largos (—)** en las
+páginas, tríadas constantes ("Contabilidad, remuneraciones y finanzas"),
+preguntas retóricas como títulos ("¿Te suena familiar?"), y CTAs con la misma
+fórmula en cada página. Ningún párrafo tiene voz personal (anécdota, opinión,
+primera persona singular).
 
-- **Doble toque resuelto** con una sola `useTransition` para Actualizar y Poblar.
-- **Countdown sin desfase de hidratación**: `relativo()` solo tras montar, tick 30 s, "en juego" en verde.
-- **Zona horaria explícita y consistente**, con manejo correcto de horario de verano en `fecha.ts`.
-- **Tablas de historial**: scroll del contenedor, no de la página; convención "vs/@" con color clara.
-- **Trazabilidad**: pie "Actualizado · N peticiones" y tiles (partidos / dobles / ligas).
-- **Avisos operativos bien escritos**: incluyen la acción a tomar y explican por qué el historial crece día a día.
-- **Login**: `autoFocus`, errores de clave y de config diferenciados, redirect limpio, comparación de clave en tiempo constante.
+### D6 — Tipografía genérica
+Inter en todo. Es la tipografía por defecto de la era IA. Un solo cambio — una
+serif o display con carácter para los títulos — desmarca el sitio del 90% de
+las landing generadas.
+
+## Defectos menores (no relacionados al foco)
+
+- El menú "Herramientas" del header se abre por hover/clic pero no cierra con
+  tecla Escape ni al navegar con teclado (accesibilidad).
+- En móvil, las tablas de desglose de las calculadoras quedan apretadas bajo
+  360px de ancho.
+- `/contacto/gracias` no ofrece siguiente paso (enlace a recursos o
+  calculadoras) — página muerta tras la conversión.
+
+## Preferencias (no defectos)
+
+- El verde `emerald` sobre navy tiene contraste justo en textos pequeños;
+  subir un paso de luminosidad ayudaría, pero pasa.
+- Los artículos de recursos podrían llevar fecha visible de publicación.
+
+## Qué haría, en orden de impacto sobre esfuerzo
+
+1. **Nombre y foto del fundador en `/nosotros`** + una línea en primera
+   persona. (Requiere: 1 foto y la decisión de firmar.)
+2. **2–3 capturas reales del portal/dashboards** en home y `/servicios` — el
+   producto existe, mostrarlo. (Requiere: sacar screenshots, difuminar datos.)
+3. **Anclar las 4 métricas** con rubro y tamaño de empresa, o reducirlas a las
+   2 defendibles. 1–2 testimonios aunque sean anónimos con cargo.
+4. **Pasada de copy anti-plantilla**: reducir guiones largos a la mitad,
+   variar los CTAs, agregar 2–3 frases con voz propia por página.
+5. **Tipografía display para títulos** (una fuente con carácter, manteniendo
+   Inter para texto).
+6. Romper el patrón de tarjetas en home con una sección visualmente distinta.

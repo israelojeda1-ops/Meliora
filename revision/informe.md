@@ -1,73 +1,77 @@
-# Informe consolidado — Portal Meliora / zona /Privado
+# Informe consolidado — Sitio público melioraadvisory.cl
 
-Fecha: 2026-08-08. Tres auditorías (seguridad, UX, datos) sobre el portal, con
-foco en la cartelera deportiva nueva. Diagnóstico, sin cambios de código.
+Fecha: 2026-08-26. Tres auditorías (seguridad, UX, datos) sobre el sitio
+público y sus calculadoras, con foco pedido por el dueño: *"se ve muy IA
+generada, ¿qué podríamos hacer?"*. Diagnóstico, sin cambios de código. (El
+informe anterior, 2026-08-08, cubría el portal y queda en el historial git.)
 
 ## 1. Estado general
 
-El portal está sólido en lo estructural: autenticación con JWT firmado y
-algoritmo fijado, cookies con flags correctos, render sin XSS, proxies sin SSRF,
-y un almacén de datos que hoy —verificado sobre 124 partidos reales— está limpio,
-sin duplicados ni fechas corridas. La debilidad principal no es de la cartelera
-sino de un endpoint viejo, `/demo/access`, público y sin límite. Nada impide
-operar `/Privado` con datos reales hoy; ya está en producción y funcionando.
+La ingeniería está sólida: motor de cálculo validado contra liquidaciones y
+planillas reales con 72 aserciones, sin secretos en el repo, deploy
+autoestable y un embudo completo (tráfico → herramientas → leads). La
+debilidad principal es exactamente la que intuye el dueño: el sitio no
+muestra **ninguna evidencia humana** — cero fotos, fundador anónimo, métricas
+sin dueño — y eso lo hace indistinguible de un sitio fabricado. Nada impide
+operar hoy; lo que está en juego es conversión y credibilidad, no
+funcionamiento.
 
 ## 2. Bloqueantes
 
-**No hay bloqueantes para la zona `/Privado`.** Opera con datos reales sin riesgo
-de corrupción ni de fuga. El único hallazgo que conviene resolver antes de dejar
-el portal desatendido es de seguridad y ajeno a la cartelera:
+**No hay bloqueantes técnicos.** Dos asuntos deben resolverse pronto aunque
+no detienen la operación:
 
-- **`/demo/access` público** (seguridad M1): permite a un anónimo generar commits,
-  gatillar correos e inyectar fórmulas en un CSV. No toca datos de clientes ni de
-  `/Privado`, pero es la única puerta abierta del portal. Cerrarla (rate-limit +
-  saneo CSV) es lo que yo haría antes de considerarlo "entregado".
+- **Log de demo con datos personales en repo público** (seguridad M1): dejar
+  de escribirlo aquí y sacar el archivo.
+- **Captura de leads sin política de privacidad** (seguridad M2): publicar
+  `/privacidad` antes de invertir en atraer más tráfico.
 
 ## 3. Hallazgos por área
 
-- **Seguridad** → [`seguridad.md`](seguridad.md). Sin críticas ni altas. 4 medias
-  (demo público, proxies que reenvían la cookie de sesión, XSS de DOM en el widget
-  de banco, token del almacén compartido) y 6 bajas de endurecimiento.
-- **UX** → [`ux.md`](ux.md). 9 defectos de flujo/legibilidad (avisos de "Poblar"
-  descartados, sesión expirada sin salida, fecha oculta, señales sin leyenda,
-  contraste bajo) y 3 preferencias. Nada rompe el uso; sí lo confunden.
-- **Datos** → [`datos.md`](datos.md). El almacén real está sano. 2 riesgos medios
-  latentes (doble conteo por bordes de medianoche entre fuentes; liga del equipo
-  fijada por el primer registro) y detalles menores. Ninguna promesa de la UI
-  carece de respaldo en el modelo.
+- **Seguridad** → [`seguridad.md`](seguridad.md). Sin críticas ni altas. 2
+  medias (PII en repo público; sin política de privacidad) y 3 bajas (correo
+  personal como endpoint, dependencia de mindicador, sin cabeceras en Pages).
+- **UX** → [`ux.md`](ux.md). El foco del dueño, confirmado con evidencia: 0
+  imágenes reales en el sitio, fundador sin nombre, 31 repeticiones del mismo
+  patrón de tarjeta, 43 guiones largos, tipografía por defecto. 6 causas
+  identificadas, cada una con su corrección.
+- **Datos** → [`datos.md`](datos.md). Motor validado; el riesgo es de
+  **vigencia**: falta el rito mensual de actualizar parámetros. 1 media y 3
+  bajas.
 
 ## 4. Plan priorizado
 
-Máximo 8, por impacto sobre esfuerzo.
+1. **Nombre + foto del fundador en `/nosotros`** — el mayor golpe de
+   credibilidad por el menor esfuerzo. *Necesita del dueño: 1 foto y firmar
+   con nombre.* (½ día)
+2. **Capturas reales del portal/dashboards en home y servicios** — mostrar el
+   producto que ya existe. *Necesita: screenshots con datos difuminados.* (½ día)
+3. **Política de privacidad `/privacidad`** enlazada desde footer y
+   formularios. (½ día)
+4. **Anclar o podar las métricas 40/30/20/25%** + 1–2 testimonios aunque sean
+   anónimos con cargo y rubro. *Necesita del dueño: los casos.* (½ día)
+5. **Pasada de copy anti-plantilla**: mitad de los guiones largos, CTAs
+   variados, 2–3 frases con voz propia por página. (1 día)
+6. **Sacar el log de demo del repo público** y cerrar `/demo/access`
+   (pendiente desde la auditoría anterior). (½ día)
+7. **Tipografía display para títulos** + romper el patrón de tarjetas en una
+   sección de la home. (1 día)
+8. **Rito mensual de parámetros**: checklist de 10 minutos con los valores de
+   Previred + tests. Agendarlo, no confiar en la memoria. (1 hora + hábito)
 
-| # | Acción | Área | Esfuerzo |
-|---|--------|------|----------|
-| 1 | Mostrar `avisos` en el resultado de "Poblar" y renombrar el botón a "Poblando…/Continuar" | UX 1,8 | 15 min |
-| 2 | En 401 de Actualizar/Poblar, recargar para volver al login | UX 2 | 10 min |
-| 3 | Cerrar `/demo/access`: rate-limit + saneo de fórmulas CSV | Seg M1 | 45 min |
-| 4 | No reenviar `Cookie`/`Authorization` en los proxies catch-all | Seg M2 | 20 min |
-| 5 | Chips de fecha "Hoy / Mañana" + leyenda fija de chips y DOBLE | UX 3,5 | 40 min |
-| 6 | Subir a `slate-400` los textos ≤12 px; chip de texto para "muestra corta"; `aria-expanded` | UX 4,7,9 | 30 min |
-| 7 | Dedupe de historial por `(nombre, día chileno)` y bases por liga del partido | Datos | 40 min |
-| 8 | Exigir `ALMACEN_TOKEN` sin fallback a `GITHUB_TOKEN`; escapar HTML en widget de banco | Seg M3,M4 | 30 min |
+Los puntos 1, 2 y 4 son los que atacan directamente el "se ve IA generada";
+requieren material que solo el dueño puede aportar. El resto es ejecutable de
+inmediato.
 
-Los puntos 1, 2 y 5–6 son la cara visible para el dueño; 3 y 4 son la higiene de
-seguridad; 7 y 8 son robustez a futuro. Todo cabe en una tarde.
+## 5. Lo que está bien (no tocar)
 
-## 5. Lo que está bien (no rehacer)
-
-- **Autenticación y sesiones**: JWT HS256 fijo, cookies `httpOnly/secure/sameSite`,
-  payloads de cliente y de `/Privado` disjuntos, `/Privado` con comparación de
-  clave en tiempo constante.
-- **Render seguro**: React auto-escapa nombres de equipos/ligas; sin
-  `dangerouslySetInnerHTML` en la cartelera.
-- **Almacén y cosecha**: todo-o-nada por día, solo días con partidos terminados,
-  poblado que no pisa lo existente, lectores tolerantes que degradan a "sin datos".
-- **Cruce por nombre**: exige 2 tokens comunes; evita unir equipos homónimos.
-- **Tiempo y zona horaria**: todo en hora de Chile, horario de verano correcto,
-  countdown sin desfase de hidratación.
-- **Trazabilidad**: pie con hora de actualización y peticiones usadas; avisos
-  operativos que dicen la acción a tomar.
-
-Estos puntos son resultado de rondas previas de trabajo; una revisión posterior
-no debería volver sobre ellos.
+- El motor de remuneraciones y sus tests: validados contra evidencia real;
+  cualquier cambio debe pasar por `npm run test:remuneraciones`.
+- La arquitectura de parámetros por período: es el diseño correcto, solo
+  falta el hábito de alimentarla.
+- El embudo (indicadores/recursos → calculadoras → diagnóstico → contacto) y
+  el SEO técnico (metadata, JSON-LD, sitemap): completos y coherentes.
+- El pipeline de deploy autoestable (espera al build legacy) y el silencio de
+  Vercel en PRs que no tocan el portal.
+- La paleta navy/emerald y la consistencia visual: el problema es la falta de
+  evidencia humana, no el sistema de diseño.
