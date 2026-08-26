@@ -87,12 +87,11 @@ export default function NosotrosPage() {
                 <p>
                   Por eso en Meliora la contabilidad, las remuneraciones y la
                   reportería salen del mismo lugar y cierran entre sí, con
-                  dashboards en{" "}
-                  <strong className="text-navy">
-                    Power BI, SQL Server y Looker Studio
-                  </strong>{" "}
-                  sobre el sistema que cada cliente ya usa. El análisis lo hace
-                  Israel directamente, no un pool de analistas junior.
+                  dashboards en Power BI, SQL Server o Looker Studio sobre el
+                  sistema que cada cliente ya usa. Y el servicio no se queda en
+                  los números: incluye un acompañamiento cercano y la revisión
+                  continua de los procesos, para que el orden se sostenga en el
+                  tiempo.
                 </p>
               </div>
             </div>
