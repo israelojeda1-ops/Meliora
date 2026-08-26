@@ -11,9 +11,9 @@ export function Footer() {
               <Logo theme="dark" />
             </div>
             <p className="text-sm leading-relaxed max-w-md">
-              Todo lo financiero de tu PyME, en un solo lugar, y siempre a la
-              vista. Contabilidad, remuneraciones y finanzas que sí conversan
-              entre sí.
+              Reportería gerencial en tiempo y forma, personalizada y con
+              acompañamiento mes a mes. Todo lo financiero de tu PyME, siempre
+              a la vista.
             </p>
           </div>
 
