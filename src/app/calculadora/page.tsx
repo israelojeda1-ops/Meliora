@@ -45,7 +45,7 @@ const faqs = [
   },
   {
     q: "¿Qué es la cotización adicional del empleador de la reforma previsional?",
-    a: "La Ley 21.735 creó una cotización de cargo del empleador que partió en 1% de la remuneración imponible en agosto de 2025 (0,1% capitalización individual + 0,9% expectativa de vida) y subió a 3,5% desde las remuneraciones de agosto de 2026, cuando además el SIS dejó de recaudarse vía AFP y pasó al Seguro Social: SIS + expectativa de vida suman 2,5%, más 0,1% de capitalización individual y 0,9% de rentabilidad protegida. Seguirá subiendo gradualmente hasta 8,5%. Es un costo de contratación adicional que no se descuenta al trabajador.",
+    a: "La Ley 21.735 creó una cotización de cargo del empleador que partió en 1% de la remuneración imponible en agosto de 2025 (0,1% capitalización individual + 0,9% expectativa de vida). Desde las remuneraciones de agosto de 2026 el aporte al Seguro Social es de 3,5%: SIS + expectativa de vida suman 2,5%, más 0,1% de capitalización individual y 0,9% de rentabilidad protegida. Como ese 3,5% incluye el SIS que antes se pagaba aparte vía AFP, el aumento efectivo de agosto 2026 es de cerca de 0,9 puntos. El aporte total seguirá subiendo gradualmente hasta 8,5%. Es un costo de contratación adicional que no se descuenta al trabajador.",
   },
 ];
 
