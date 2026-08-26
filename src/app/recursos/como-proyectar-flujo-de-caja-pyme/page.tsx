@@ -85,8 +85,8 @@ export default function Page() {
       <p>
         Hacerlo una vez y abandonarlo. La proyección de caja no es un
         entregable, es un <strong>hábito semanal</strong> de 30 minutos. Las
-        empresas que lo mantienen dejan de vivir apagando incendios y empiezan
-        a negociar desde una posición de anticipación.
+        empresas que lo mantienen dejan de vivir apagando incendios: negocian con los problemas
+        todavía lejos.
       </p>
       <p>
         ¿No sabes si tu pyme necesita esto con urgencia? Nuestro{" "}

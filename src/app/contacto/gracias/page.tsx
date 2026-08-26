@@ -44,6 +44,23 @@ export default function GraciasPage() {
             Volver al inicio
           </Link>
         </div>
+        <p className="mt-8 text-sm text-slate-400">
+          Mientras tanto, quizás te sirvan nuestras{" "}
+          <Link
+            href="/recursos"
+            className="font-semibold text-emerald hover:text-emerald-light transition-colors"
+          >
+            guías para pymes
+          </Link>{" "}
+          o las{" "}
+          <Link
+            href="/calculadora"
+            className="font-semibold text-emerald hover:text-emerald-light transition-colors"
+          >
+            calculadoras gratuitas
+          </Link>
+          .
+        </p>
       </div>
     </section>
   );

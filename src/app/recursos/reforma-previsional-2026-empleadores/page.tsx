@@ -18,7 +18,7 @@ export default function Page() {
       <p>
         La Ley 21.735 creó, por primera vez en décadas, una cotización
         previsional relevante <strong>de cargo del empleador</strong>. Partió
-        discreta — 1% desde agosto de 2025 — pero desde las remuneraciones de{" "}
+        discreta, con un 1% desde agosto de 2025, pero desde las remuneraciones de{" "}
         <strong>agosto de 2026 saltó a 3,5%</strong>, y su calendario la lleva
         gradualmente hasta 8,5%. Para muchas pymes será el aumento de costo
         laboral más importante de la década.
@@ -52,7 +52,7 @@ export default function Page() {
       <h2>Cuánto significa en plata</h2>
       <p>
         Para una pyme con 10 trabajadores y remuneración imponible promedio de
-        $900.000, el 3,5% son <strong>$315.000 mensuales</strong> — casi $3,8
+        $900.000, el 3,5% son <strong>$315.000 mensuales</strong>: casi $3,8
         millones al año que en julio de 2026 no existían con esta magnitud.
         Cuando la tasa llegue a 8,5%, esa misma nómina costará más de $9
         millones anuales adicionales. Puedes ver el impacto exacto en tu caso
@@ -64,7 +64,7 @@ export default function Page() {
       <ul>
         <li>
           El aporte se declara en la planilla del{" "}
-          <strong>Seguro Social Previsional</strong>, no en la de AFP — el SIS
+          <strong>Seguro Social Previsional</strong>, no en la de AFP; el SIS
           cambió de planilla en agosto 2026.
         </li>
         <li>
@@ -91,7 +91,7 @@ export default function Page() {
           tienes diferencias que regularizar.
         </li>
         <li>
-          <strong>Recalcula el costo de tus próximas contrataciones</strong> —
+          <strong>Recalcula el costo de tus próximas contrataciones</strong>:
           el costo empresa ya no es el de 2024.
         </li>
       </ol>

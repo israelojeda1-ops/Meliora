@@ -19,7 +19,7 @@ export default function Page() {
         Cuando un dueño de pyme piensa en contratar, suele pensar en el sueldo.
         Pero el sueldo bruto es solo una parte del costo real: sobre la
         remuneración imponible el empleador paga una serie de cotizaciones que
-        hoy suman <strong>cerca de un 7% adicional</strong> — y que seguirán
+        hoy suman <strong>cerca de un 7% adicional</strong>, y que seguirán
         subiendo con la reforma previsional.
       </p>
 
@@ -48,7 +48,7 @@ export default function Page() {
         En total, para un contrato indefinido de riesgo bajo:{" "}
         <strong>6,83% sobre la remuneración imponible topeada</strong>. Para un
         sueldo imponible de $1.000.000, son unos $68.300 al mes que no ve el
-        trabajador — y que sí salen de tu caja.
+        trabajador, aunque sí salen de tu caja.
       </p>
 
       <h2>No olvides la gratificación legal</h2>
@@ -75,8 +75,8 @@ export default function Page() {
       <p>
         Y de ese costo, al bolsillo del trabajador llega bastante menos una vez
         descontadas sus propias cotizaciones e impuesto. Puedes ver el desglose
-        exacto para cualquier sueldo — incluyendo el líquido que recibe el
-        trabajador — en nuestra{" "}
+        exacto para cualquier sueldo, incluido el líquido que recibe el
+        trabajador, en nuestra{" "}
         <Link href="/calculadora">Calculadora Salarial</Link>.
       </p>
 
@@ -85,8 +85,8 @@ export default function Page() {
         La Ley 21.735 contempla que el aporte del empleador siga aumentando
         gradualmente desde el 3,5% actual hasta <strong>8,5%</strong> en los
         próximos años. Si tu dotación es relevante en tu estructura de costos,
-        conviene proyectar ese aumento en tu presupuesto anual desde ya — no
-        descubrirlo en la liquidación de cada agosto.
+        conviene proyectar ese aumento en tu presupuesto anual desde ya, en
+        vez de descubrirlo en la liquidación de cada agosto.
       </p>
 
       <h2>La conclusión práctica</h2>

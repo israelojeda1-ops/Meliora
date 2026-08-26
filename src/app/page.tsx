@@ -19,7 +19,7 @@ const pillars = [
     ),
     title: "Cero fricción de sistema",
     description:
-      "Trabajamos dentro del ERP que ya usas — Softland (incluido Softland Cloud), Odoo, Nubox, Defontana — o te lo implementamos. Nunca se obliga a migrar.",
+      "Trabajamos dentro del ERP que ya usas (Softland, Softland Cloud, Odoo, Nubox, Defontana) o te lo implementamos. Nunca se obliga a migrar.",
     items: [
       "Dashboards y reportes ad hoc para cualquier ERP, sujeto a factibilidad técnica",
       "Portal web con tus indicadores actualizados en cada cierre",
@@ -147,7 +147,7 @@ export default function HomePage() {
               Todo lo financiero de tu PyME, en un solo lugar
             </h2>
             <p className="mt-4 text-slate-500">
-              — y siempre a la vista.
+              Y siempre a la vista.
             </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -229,7 +229,7 @@ export default function HomePage() {
               <p className="text-slate-300 text-sm leading-relaxed mb-6">
                 Integramos contabilidad, remuneraciones y reportería gerencial en
                 un solo servicio. Trabajamos en tu sistema, entregamos indicadores
-                mensuales y armamos tu presupuesto y forecast — a un precio que
+                mensuales y armamos tu presupuesto y forecast, a un precio que
                 tiene sentido para una PyME.
               </p>
               <div className="space-y-3">

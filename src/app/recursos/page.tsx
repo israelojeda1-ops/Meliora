@@ -41,7 +41,7 @@ export default function RecursosPage() {
               className="block rounded-2xl bg-white border border-slate-200 p-6 sm:p-8 hover:border-emerald/40 hover:shadow-lg transition-all"
             >
               <p className="text-xs font-semibold text-emerald uppercase tracking-wider mb-2">
-                {a.tag} · {a.lectura}
+                {a.tag}
               </p>
               <h2 className="text-lg sm:text-xl font-bold text-navy mb-2">
                 {a.titulo}

@@ -18,7 +18,7 @@ export default function Page() {
       <p>
         La mayoría de los dueños de pyme administra mirando dos números: la
         cuenta corriente y las ventas. Son necesarios, pero no cuentan la
-        historia completa — y suelen avisar tarde. Estos cinco indicadores,
+        historia completa, y suelen avisar tarde. Estos cinco indicadores,
         revisados una vez al mes, cubren el 80% de lo que necesitas saber para
         decidir con datos.
       </p>
@@ -32,12 +32,12 @@ export default function Page() {
         ciegas dónde crecer y dónde cortar.
       </p>
 
-      <h2>2. DSO — días de cobro</h2>
+      <h2>2. DSO: días de cobro</h2>
       <p>
         El DSO (Days Sales Outstanding) mide cuántos días demoras, en
         promedio, en convertir una venta en caja: cuentas por cobrar dividido
         por venta promedio diaria. Si vendes a 30 días pero tu DSO es 55, tus
-        clientes te están usando de banco — y ese financiamiento lo pagas tú.
+        clientes te están usando de banco, y ese financiamiento lo pagas tú.
         Mirarlo cada mes convierte la cobranza en gestión, no en emergencia.
       </p>
 
@@ -45,7 +45,7 @@ export default function Page() {
       <p>
         El saldo de hoy dice poco; lo que importa es el saldo de las próximas
         semanas, con los cruces de remuneraciones, IVA y proveedores a la
-        vista. Es el indicador que evita las sorpresas de fin de mes — le
+        vista. Es el indicador que evita las sorpresas de fin de mes; le
         dedicamos una{" "}
         <Link href="/recursos/como-proyectar-flujo-de-caja-pyme">
           guía completa con el método paso a paso
@@ -57,7 +57,7 @@ export default function Page() {
       <p>
         Cuánto tienes que vender en el mes para no perder plata: costos fijos
         divididos por el margen de contribución porcentual. Conocerlo cambia
-        la conversación — sabes desde qué día del mes estás «trabajando para
+        la conversación: sabes desde qué día del mes estás «trabajando para
         ti», y qué pasa con la última línea si las ventas caen 15%.
       </p>
 
@@ -66,7 +66,7 @@ export default function Page() {
         El resultado operacional antes de intereses, impuestos, depreciación y
         amortización. Es la medida más limpia de si <strong>el negocio en sí
         genera valor</strong>, separado de cómo está financiado. Es además el
-        número que mirará cualquier banco o comprador — conviene conocerlo
+        número que mirará cualquier banco o comprador, y conviene conocerlo
         antes de que te lo pregunten.
       </p>
 

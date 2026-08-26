@@ -37,7 +37,7 @@ export function ArticuloLayout({
       <section className="bg-navy py-16 sm:py-20">
         <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
           <p className="text-emerald font-semibold text-sm tracking-wide uppercase mb-4">
-            {articulo.tag} · {articulo.lectura} de lectura
+            {articulo.tag}
           </p>
           <h1 className="text-3xl sm:text-4xl font-bold text-white leading-tight">
             {articulo.titulo}

@@ -21,6 +21,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     "/recursos/reforma-previsional-2026-empleadores",
     "/recursos/como-proyectar-flujo-de-caja-pyme",
     "/recursos/indicadores-que-toda-pyme-deberia-mirar",
+    "/privacidad",
     "/contacto",
   ];
 

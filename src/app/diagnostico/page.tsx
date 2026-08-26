@@ -25,8 +25,8 @@ export default function DiagnosticoPage() {
             Diagnóstico Financiero Express de tu PyME
           </h1>
           <p className="mt-6 text-lg text-slate-300 max-w-2xl">
-            10 preguntas, 3 minutos. Mide qué tan a ciegas — o qué tan en
-            control — estás administrando las finanzas de tu empresa, y
+            10 preguntas, 3 minutos. Mide qué tan a ciegas (o qué tan en
+            control) estás administrando las finanzas de tu empresa, y
             descubre por dónde partir a cerrar las brechas.
           </p>
         </div>
