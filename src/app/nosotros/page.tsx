@@ -5,7 +5,7 @@ import Link from "next/link";
 export const metadata: Metadata = {
   title: "Nosotros — Meliora Advisory",
   description:
-    "Meliora Advisory fue fundada por Israel Ojeda Millán, Contador Auditor y MBA de la Universidad de Chile, con más de 12 años liderando áreas de finanzas.",
+    "Meliora Advisory fue fundada por Israel Ojeda, Contador Auditor, MBA y Magíster en Business Intelligence, con más de 12 años liderando áreas de finanzas.",
 };
 
 const sectores = [
@@ -66,28 +66,26 @@ export default function NosotrosPage() {
               </h2>
               <div className="space-y-4 text-sm text-slate-600 leading-relaxed">
                 <p>
-                  Después de más de 12 años liderando gerencias de
-                  administración y finanzas en las industrias farmacéutica,
-                  retail, construcción, inmobiliaria y minería,{" "}
-                  <strong className="text-navy">Israel Ojeda Millán</strong>{" "}
-                  fundó Meliora con una convicción simple: las pymes chilenas
-                  merecen la misma calidad de información financiera que una
-                  empresa grande.
+                  <strong className="text-navy">Israel Ojeda</strong> es{" "}
+                  <strong className="text-navy">
+                    Contador Auditor, MBA y Magíster en Business Intelligence
+                  </strong>
+                  , con más de 12 años liderando gerencias de administración y
+                  finanzas en las industrias farmacéutica, retail,
+                  construcción, inmobiliaria y minería.
                 </p>
                 <p>
-                  <strong className="text-navy">Contador Auditor y MBA de la
-                  Universidad de Chile</strong>, pasó esos años a cargo de
-                  contabilidad IFRS, tesorería y control de gestión,
-                  reportando cada mes en inglés a casas matrices
-                  internacionales. Y al otro lado veía siempre lo mismo:
-                  empresas medianas que reciben de su contador lo justo para
-                  cumplir con el SII, y casi nunca los números que sirven para
-                  decidir.
+                  Meliora nació con una idea concreta: acercar los procesos de
+                  las empresas más grandes a las pymes. Cierres mensuales
+                  ordenados, reportería gerencial, proyección de caja y
+                  control de gestión son rutina en una corporación, pero casi
+                  nunca llegan a una pyme, donde el contador tradicional se
+                  limita a cumplir con el SII.
                 </p>
                 <p>
-                  Meliora es la respuesta a esa brecha: contabilidad,
-                  remuneraciones y reportería que salen del mismo lugar y
-                  cierran entre sí, con dashboards en{" "}
+                  Por eso en Meliora la contabilidad, las remuneraciones y la
+                  reportería salen del mismo lugar y cierran entre sí, con
+                  dashboards en{" "}
                   <strong className="text-navy">
                     Power BI, SQL Server y Looker Studio
                   </strong>{" "}
@@ -101,14 +99,14 @@ export default function NosotrosPage() {
               <div className="rounded-2xl bg-slate-50 p-8 flex items-center gap-5">
                 <Image
                   src="/israel-ojeda.jpg"
-                  alt="Israel Ojeda Millán, fundador de Meliora Advisory"
+                  alt="Israel Ojeda, fundador de Meliora Advisory"
                   width={200}
                   height={200}
                   className="h-24 w-24 rounded-full object-cover ring-2 ring-emerald/30 flex-shrink-0"
                 />
                 <div>
                   <p className="text-base font-semibold text-navy">
-                    Israel Ojeda Millán
+                    Israel Ojeda
                   </p>
                   <p className="text-sm text-slate-500">
                     Fundador de Meliora Advisory
@@ -143,6 +141,11 @@ export default function NosotrosPage() {
                     </p>
                     <p className="text-sm text-slate-500">
                       Universidad de Chile
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-navy">
+                      Magíster en Business Intelligence
                     </p>
                   </div>
                 </div>
