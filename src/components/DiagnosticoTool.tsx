@@ -95,7 +95,7 @@ const questions: Question[] = [
   },
   {
     area: "procesos",
-    text: "¿Contabilidad, remuneraciones y finanzas conversan entre sí?",
+    text: "¿Tu información financiera está integrada, o vive en proveedores y planillas separadas?",
     options: [
       { label: "Sí, es un servicio integrado", points: 2 },
       { label: "Parcialmente, con planillas de por medio", points: 1 },

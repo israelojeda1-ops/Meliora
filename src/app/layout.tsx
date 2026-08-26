@@ -23,7 +23,7 @@ const fraunces = Fraunces({
 export const metadata: Metadata = {
   title: "Meliora Advisory — Asesoría financiera, contable y de gestión para PyMEs",
   description:
-    "El orden financiero que tu PyME necesita, sin cambiar de sistema ni contratar tres proveedores. Contabilidad, remuneraciones, dashboards y reportes ad hoc sobre Softland, Softland Cloud o cualquier otro sistema.",
+    "El orden financiero que tu PyME necesita, sin cambiar de sistema. Reportería gerencial especializada, en tiempo y forma y con acompañamiento mes a mes, sobre Softland, Softland Cloud o cualquier otro sistema.",
   keywords: [
     "asesoría financiera PyME",
     "contabilidad Chile",
@@ -62,7 +62,7 @@ const jsonLd = {
   "@type": "ProfessionalService",
   name: "Meliora Advisory",
   description:
-    "Asesoría financiera, contable y de gestión para PyMEs: contabilidad, remuneraciones, CFO externo y dashboards de reportería gerencial (incluyendo reportes ad hoc) sobre Softland, Softland Cloud o cualquier otro sistema.",
+    "Asesoría financiera, contable y de gestión para PyMEs: reportería gerencial especializada en tiempo y forma, CFO externo y dashboards (incluyendo reportes ad hoc) sobre Softland, Softland Cloud o cualquier otro sistema, con acompañamiento mes a mes.",
   url: "https://melioraadvisory.cl",
   image: "https://melioraadvisory.cl/og-image.png",
   areaServed: "CL",
