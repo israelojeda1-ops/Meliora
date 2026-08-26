@@ -145,8 +145,8 @@ export default function CalculadoraPage() {
           </h2>
           <p className="text-slate-300 max-w-xl mx-auto mb-8">
             Es el nuestro. Nos encargamos de tus remuneraciones y te entregamos
-            reportería en tiempo y forma, con acompañamiento mes a mes y en tu
-            propio sistema, desde 8 UF al mes.
+            reportería en tiempo y forma, con acompañamiento mes a mes, en tu
+            sistema o el nuestro, desde 8 UF al mes.
           </p>
           <div className="flex flex-col sm:flex-row justify-center gap-4">
             <Link

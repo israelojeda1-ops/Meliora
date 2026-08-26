@@ -120,7 +120,7 @@ export default function HomePage() {
             <p className="mt-6 text-lg text-slate-300 leading-relaxed max-w-2xl">
               Reportería gerencial especializada, en tiempo y forma y hecha
               para tu negocio, con un equipo que te acompaña mes a mes en los
-              números y los procesos. Todo sobre tu mismo sistema.
+              números y los procesos. Todo sobre tu sistema, o el nuestro.
             </p>
             <div className="mt-10 flex flex-col sm:flex-row gap-4">
               <Link
