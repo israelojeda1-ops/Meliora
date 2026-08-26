@@ -80,22 +80,22 @@ const results = [
   {
     value: "40%",
     label: "Reducción en tiempos de reportería financiera",
-    detail: "Automatización con Power BI",
+    detail: "Power BI · sector retail",
   },
   {
     value: "30%",
     label: "Reducción en tiempos de cierre contable",
-    detail: "Optimización de procesos",
+    detail: "Cierre mensual · sector retail",
   },
   {
     value: "20%",
     label: "Mejora en flujo de caja disponible",
-    detail: "Reestructuración de deuda",
+    detail: "Reestructuración de deuda · retail",
   },
   {
     value: "25%",
     label: "Reducción en tiempos de análisis financiero",
-    detail: "Automatización de reportes",
+    detail: "Excel avanzado + ERP · construcción",
   },
 ];
 
