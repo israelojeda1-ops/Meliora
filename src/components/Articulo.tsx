@@ -58,8 +58,9 @@ export function ArticuloLayout({
             ¿Quieres estos números resueltos para tu pyme?
           </h2>
           <p className="text-sm text-slate-500 max-w-xl mx-auto mb-8">
-            Contabilidad, remuneraciones y reportería gerencial integradas, con
-            asesoría directa. Parte midiendo gratis dónde está tu empresa.
+            Reportería gerencial en tiempo y forma, personalizada y con
+            acompañamiento mes a mes. Parte midiendo gratis dónde está tu
+            empresa.
           </p>
           <div className="flex flex-col sm:flex-row justify-center gap-3">
             <Link
