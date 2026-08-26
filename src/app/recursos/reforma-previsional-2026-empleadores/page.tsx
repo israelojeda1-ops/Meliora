@@ -18,10 +18,14 @@ export default function Page() {
       <p>
         La Ley 21.735 creó, por primera vez en décadas, una cotización
         previsional relevante <strong>de cargo del empleador</strong>. Partió
-        discreta, con un 1% desde agosto de 2025, pero desde las remuneraciones de{" "}
-        <strong>agosto de 2026 saltó a 3,5%</strong>, y su calendario la lleva
-        gradualmente hasta 8,5%. Para muchas pymes será el aumento de costo
-        laboral más importante de la década.
+        con un 1% adicional en agosto de 2025, y desde las remuneraciones de{" "}
+        <strong>agosto de 2026 el aporte al Seguro Social Previsional es de
+        3,5%</strong>. Ojo con la cifra: ese 3,5% ahora incluye el SIS que el
+        empleador ya pagaba por separado vía AFP, así que{" "}
+        <strong>el aumento efectivo de agosto es de cerca de 0,9 puntos</strong>{" "}
+        (la nueva cotización de rentabilidad protegida). Aun así, el calendario
+        lleva el aporte gradualmente hasta 8,5%: para muchas pymes será el
+        aumento de costo laboral más importante de la década.
       </p>
 
       <h2>Qué se paga exactamente desde agosto 2026</h2>
@@ -32,7 +36,8 @@ export default function Page() {
           Seguro de Invalidez y Sobrevivencia dejó de recaudarse vía AFP y
           pasó al nuevo Seguro Social Previsional; su tasa varía (hoy 1,78%) y
           la compensación por expectativa de vida se ajusta para que juntos
-          sumen siempre 2,5%.
+          sumen siempre 2,5%. El SIS no es costo nuevo: el empleador ya lo
+          pagaba, solo cambió de planilla.
         </li>
         <li>
           <strong>Capitalización individual: 0,1%</strong>, que va directo a la
@@ -51,12 +56,16 @@ export default function Page() {
 
       <h2>Cuánto significa en plata</h2>
       <p>
-        Para una pyme con 10 trabajadores y remuneración imponible promedio de
-        $900.000, el 3,5% son <strong>$315.000 mensuales</strong>: casi $3,8
-        millones al año que en julio de 2026 no existían con esta magnitud.
-        Cuando la tasa llegue a 8,5%, esa misma nómina costará más de $9
-        millones anuales adicionales. Puedes ver el impacto exacto en tu caso
-        con el modo empleador de la{" "}
+        Tomemos una pyme con 10 trabajadores y remuneración imponible promedio
+        de $900.000 (nómina de $9 millones). En julio de 2026 su costo
+        previsional de cargo del empleador era de unos $236.000 mensuales (SIS
+        1,62% vía AFP más el 1% de la reforma). Desde agosto paga{" "}
+        <strong>$315.000 mensuales</strong> (el 3,5% completo): unos{" "}
+        <strong>$79.000 más al mes</strong>, cerca de $950.000 al año. Y el
+        calendario sigue subiendo: la rentabilidad protegida pasa a 1,5% en
+        agosto de 2027, y cuando el aporte total llegue a 8,5%, esa misma
+        nómina significará $765.000 mensuales. Puedes ver el impacto exacto en
+        tu caso con el modo empleador de la{" "}
         <Link href="/calculadora">Calculadora Salarial</Link>.
       </p>
 
