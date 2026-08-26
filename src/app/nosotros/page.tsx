@@ -66,32 +66,33 @@ export default function NosotrosPage() {
               </h2>
               <div className="space-y-4 text-sm text-slate-600 leading-relaxed">
                 <p>
-                  Soy <strong className="text-navy">Israel Ojeda Millán</strong>,{" "}
+                  Después de más de 12 años liderando gerencias de
+                  administración y finanzas en las industrias farmacéutica,
+                  retail, construcción, inmobiliaria y minería,{" "}
+                  <strong className="text-navy">Israel Ojeda Millán</strong>{" "}
+                  fundó Meliora con una convicción simple: las pymes chilenas
+                  merecen la misma calidad de información financiera que una
+                  empresa grande.
+                </p>
+                <p>
                   <strong className="text-navy">Contador Auditor y MBA de la
-                  Universidad de Chile</strong>. Pasé más de 12 años
-                  liderando áreas de finanzas, contabilidad IFRS, tesorería y
-                  control de gestión en empresas de las industrias
-                  farmacéutica, retail, construcción, inmobiliaria y minería,
+                  Universidad de Chile</strong>, pasó esos años a cargo de
+                  contabilidad IFRS, tesorería y control de gestión,
                   reportando cada mes en inglés a casas matrices
-                  internacionales.
+                  internacionales. Y al otro lado veía siempre lo mismo:
+                  empresas medianas que reciben de su contador lo justo para
+                  cumplir con el SII, y casi nunca los números que sirven para
+                  decidir.
                 </p>
                 <p>
-                  Meliora nace de algo que vi durante años: las pymes chilenas
-                  reciben de su contador lo justo para cumplir con el SII, y
-                  casi nunca los números que de verdad sirven para decidir.
-                  Margen por línea, cobranza, caja proyectada: eso en una
-                  empresa grande lo produce una gerencia completa. En una pyme,
-                  nadie.
-                </p>
-                <p>
-                  Por eso armé un servicio donde contabilidad, remuneraciones y
-                  reportería salen del mismo lugar y cierran entre sí, con
-                  dashboards en{" "}
+                  Meliora es la respuesta a esa brecha: contabilidad,
+                  remuneraciones y reportería que salen del mismo lugar y
+                  cierran entre sí, con dashboards en{" "}
                   <strong className="text-navy">
                     Power BI, SQL Server y Looker Studio
                   </strong>{" "}
-                  sobre el sistema que ya uses. Y el análisis lo hago yo, no un
-                  pool de analistas junior.
+                  sobre el sistema que cada cliente ya usa. El análisis lo hace
+                  Israel directamente, no un pool de analistas junior.
                 </p>
               </div>
             </div>
