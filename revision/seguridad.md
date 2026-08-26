@@ -1,64 +1,61 @@
-# Auditoría de seguridad — Portal Meliora
+# Auditoría de seguridad — Sitio público melioraadvisory.cl
 
-Alcance: `/workspace/meliora/portal` completo, con foco en la zona nueva
-`/Privado`. Solo lectura.
+Fecha: 2026-08-26. Alcance: sitio principal (Next.js estático en GitHub Pages),
+calculadoras y captura de leads. La auditoría del portal del 2026-08-08 sigue
+vigente y queda en el historial git de este archivo.
 
 ## Resumen
 
-El portal está, en lo esencial, bien construido: los JWT se firman/verifican con
-`jose` fijando `alg: HS256` (sin confusión de algoritmos), las cookies de sesión
-llevan `httpOnly/secure/sameSite`, el render de la cartelera usa React
-(auto-escape) frente a datos hostiles de API-Sports/ESPN, las zonas privadas
-están `noindex`, y los parámetros externos que arman rutas (`fecha`, `deporte`,
-`dias`) están validados o en lista blanca. `src/proxy.ts` es middleware activo
-(Next.js 16 renombró `middleware`→`proxy`), así que la puerta por slug funciona.
+Sin hallazgos críticos ni altos. El sitio es estático (sin backend propio que
+atacar), sin secretos en el repositorio, con honeypot en los formularios. Los
+hallazgos son de privacidad y de higiene, no de intrusión.
 
-No hay vulnerabilidades críticas ni altas. Los hallazgos son media/baja.
+## Hallazgos
 
-## Hallazgos por severidad
+### M1 — Datos personales en repositorio público
+`data/demo_access_log.csv` acumula nombre, correo e IP de quienes piden acceso
+a la demo del portal, y **el repositorio es público**: cualquier persona puede
+leer ese archivo y su historial completo. Hoy tiene 3 registros (2 son del
+propio dueño), pero el mecanismo seguirá acumulando datos de terceros en un
+lugar expuesto. Se cruza con el hallazgo M1 de la auditoría del portal
+(`/demo/access` público y sin límite).
+**Acción:** dejar de escribir el log en este repo (moverlo a un repo privado o
+a otro almacenamiento), borrar el archivo y, dado que el historial git lo
+conserva, evaluar hacer privado el repositorio o reescribir el historial.
 
-### Media
+### M2 — Captura de leads sin política de privacidad
+El sitio recolecta nombre, correo, teléfono, empresa y respuestas de
+diagnóstico (FormSubmit + Google Analytics), y no existe página de política de
+privacidad ni aviso de tratamiento de datos. Con la nueva ley chilena de
+protección de datos (21.719, en vigencia gradual) y siendo una firma de
+asesoría, es una brecha de cumplimiento y de imagen profesional.
+**Acción:** publicar `/privacidad` (qué se recolecta, para qué, cómo pedir
+eliminación) y enlazarla desde el footer y los formularios.
 
-**M1 — `/demo/access` público: escribe en GitHub y dispara correos sin rate-limit ni sanitización.**
-`src/app/demo/access/route.ts:52`. El gate de la demo es solo `localStorage`. Un
-bot puede generar commits en el repo privado, bombardear correo vía
-`formsubmit.co`, e inyectar fórmulas CSV (`nombre/correo/empresa` sin neutralizar
-`= + - @`; `toCSVField` en `src/lib/csv.ts:63` solo entrecomilla por coma). IP de
-`x-forwarded-for` cruda y persistida. *Arreglo:* token/origin check + rate-limit,
-y prefijar `'` a celdas que empiecen por `= + - @`.
+### B1 — Correo personal expuesto como endpoint de formularios
+Los cuatro formularios apuntan a `formsubmit.co/israelojeda1@gmail.com`, con el
+correo personal visible en el HTML. FormSubmit permite usar un alias aleatorio
+(se genera tras la primera confirmación) que oculta la dirección real y reduce
+spam. Ideal: migrar a `contacto@melioraadvisory.cl` cuando exista (Email
+Routing de Cloudflare pendiente) y usar el alias.
 
-**M2 — Los proxies catch-all reenvían `Cookie` y `Authorization` a orígenes externos.**
-`src/app/condores/[[...path]]/route.ts:33`, `src/app/nuprotecV2/[[...path]]/route.ts:33`.
-La cookie de sesión del portal (JWT de 30 días) viaja íntegra a las apps
-externas. *Arreglo:* quitar `cookie` y `authorization` antes del fetch upstream.
+### B2 — Dependencia de terceros en el navegador
+Las calculadoras e indicadores consultan `mindicador.cl` desde el cliente. Si
+ese servicio cae o es comprometido, el impacto es de disponibilidad/exactitud,
+no de intrusión (solo se leen números). La calculadora de honorarios tiene
+fallback al valor del período; la página de indicadores muestra error honesto.
+Riesgo aceptado y documentado; no requiere acción.
 
-**M3 — XSS de DOM en el widget de importación de banco.**
-`src/lib/banco-import-widget.ts:98-100,118`. `fecha/rut/banco` de la planilla se
-concatenan sin escapar en `innerHTML`. Mayormente self-XSS (lo sube el cliente
-autenticado), de ahí media. *Arreglo:* escapar HTML o usar `textContent`.
+### B3 — Sin cabeceras de seguridad
+GitHub Pages no permite configurar CSP, X-Frame-Options ni HSTS preload. Para
+un sitio estático informativo el riesgo es bajo. Si algún día se migra de
+hosting, agregarlas.
 
-**M4 — `GITHUB_TOKEN` reutilizado como token del almacén deportivo.**
-`src/lib/deportes/almacen.ts:33`: `ALMACEN_TOKEN ?? GITHUB_TOKEN`. Si falta
-`ALMACEN_TOKEN`, `/Privado` opera con un PAT que alcanza los repos de clientes.
-*Arreglo:* exigir `ALMACEN_TOKEN` dedicado (fine-grained, solo `datos-deportes`)
-y no caer nunca a `GITHUB_TOKEN`. **Ya resuelto en operación**: el usuario
-configuró un token acotado; falta cerrar el fallback en código.
+## Lo que está bien
 
-### Baja
-
-- **B1 — Login de cliente sin comparación de tiempo constante.** `src/lib/auth-actions.ts:23`. `/Privado` sí la usa. *Arreglo:* `timingSafeEqual`.
-- **B2 — JWT sin revocación; logout solo borra la cookie.** Token capturado vale 30 días. *Arreglo:* acortar expiración / id de sesión revocable.
-- **B3 — Errores reflejan el cuerpo crudo de la API de GitHub.** `nuprotec/regenerate/route.ts:46` y `banco/*`. No filtra el token pero expone estructura del repo. *Arreglo:* log en servidor, mensaje genérico al cliente.
-- **B4 — Prefijos públicos del middleware sin límite de segmento.** `src/proxy.ts:9,14`: `startsWith` deja pasar `/Privado-x`. *Arreglo:* comparar por segmento (`===` o `+ "/"`).
-- **B5 — CSRF de logout en `/Privado/salir`; mutaciones dependen solo de SameSite.** *Arreglo:* token anti-CSRF o verificación de `Origin`.
-- **B6 — Sin rate-limit en `/Privado/refrescar` (forzar=1 gasta cuota) ni `/Privado/poblar` (escribe a GitHub).** El abusador ya tendría la clave; conviene limitar igual.
-
-## Áreas revisadas sin hallazgos
-
-Confinamiento de algoritmo JWT (HS256 fijo); imposible reusar token de cliente en
-`/Privado` y viceversa (formas de payload disjuntas); flags de cookie correctos;
-sin XSS en la cartelera (React auto-escape, sin `dangerouslySetInnerHTML`); sin
-SSRF en proxies (host destino fijo); sin inyección de path en el almacén (`d.id`
-de catálogo, `fecha` validada, `dias` acotado 1–45); `CRON_SECRET` ausente no
-abre acceso (cae a verificación por cookie); ningún secreto se serializa al
-cliente; sin open redirect; zonas privadas `noindex`; parsers CSV/JSON robustos.
+- Repositorio sin secretos (verificado por barrido); `.env.example` solo con
+  plantillas.
+- Formularios con honeypot anti-spam.
+- Sin `dangerouslySetInnerHTML` con datos de usuario (solo JSON-LD generado de
+  constantes propias).
+- Enlaces externos con `rel="noopener noreferrer"`.
