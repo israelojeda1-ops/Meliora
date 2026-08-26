@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 
 export const metadata: Metadata = {
@@ -96,6 +97,32 @@ export default function NosotrosPage() {
             </div>
 
             <div className="space-y-6">
+              <div className="rounded-2xl bg-slate-50 p-8 flex items-center gap-5">
+                <Image
+                  src="/israel-ojeda.jpg"
+                  alt="Israel Ojeda Millán, fundador de Meliora Advisory"
+                  width={200}
+                  height={200}
+                  className="h-24 w-24 rounded-full object-cover ring-2 ring-emerald/30 flex-shrink-0"
+                />
+                <div>
+                  <p className="text-base font-semibold text-navy">
+                    Israel Ojeda Millán
+                  </p>
+                  <p className="text-sm text-slate-500">
+                    Fundador de Meliora Advisory
+                  </p>
+                  <a
+                    href="https://www.linkedin.com/in/israelojedamillan"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-1 inline-block text-sm font-semibold text-emerald hover:text-emerald-dark transition-colors"
+                  >
+                    Ver perfil en LinkedIn
+                  </a>
+                </div>
+              </div>
+
               <div className="rounded-2xl bg-slate-50 p-8">
                 <h3 className="text-sm font-semibold text-navy uppercase tracking-wider mb-4">
                   Formación
