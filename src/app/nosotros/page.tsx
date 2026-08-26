@@ -21,25 +21,25 @@ const logros = [
     value: "40%",
     title: "Reducción en tiempos de reportería financiera",
     description:
-      "Automatización de reportería gerencial con Power BI, eliminando procesos manuales en Excel.",
+      "Automatización de reportería gerencial con Power BI en empresa del sector retail, liderando un equipo de 10 personas.",
   },
   {
     value: "30%",
     title: "Reducción en tiempos de cierre contable mensual",
     description:
-      "Optimización de procesos de cierre mediante estandarización y automatización de conciliaciones.",
+      "Estandarización y automatización de conciliaciones del cierre mensual, en la misma operación de retail.",
   },
   {
     value: "20%",
     title: "Mejora en flujo de caja disponible",
     description:
-      "Reestructuración de deuda y optimización de capital de trabajo en empresa del sector construcción.",
+      "Reestructuración de deuda y optimización de capital de trabajo en empresa del sector retail.",
   },
   {
     value: "25%",
     title: "Reducción en tiempos de análisis financiero",
     description:
-      "Automatización de reportes de control de costos en proyectos de construcción con SQL Server y Power BI.",
+      "Automatización de reportes de control de costos con Excel avanzado y datos del ERP, en holding de empresas constructoras.",
   },
 ];
 
@@ -68,9 +68,10 @@ export default function NosotrosPage() {
                 <p>
                   <strong className="text-navy">Israel Ojeda</strong> es{" "}
                   <strong className="text-navy">
-                    Contador Auditor, MBA y Magíster en Business Intelligence
+                    Contador Auditor y MBA de la Universidad de Chile
                   </strong>
-                  . Suma más de 15 años de experiencia en finanzas en rubros
+                  , y actualmente cursa un Magíster en Business Intelligence y
+                  Big Data Analytics. Suma más de 15 años de experiencia en finanzas en rubros
                   tan distintos como el farmacéutico, retail, construcción,
                   inmobiliario y minería, los últimos 8 como gerente de
                   administración y finanzas.
@@ -141,12 +142,16 @@ export default function NosotrosPage() {
                       Contador Auditor
                     </p>
                     <p className="text-sm text-slate-500">
-                      Universidad de Chile
+                      Universidad Tecnológica de Chile, INACAP
                     </p>
                   </div>
                   <div>
                     <p className="text-sm font-semibold text-navy">
-                      Magíster en Business Intelligence
+                      Magíster en Business Intelligence y Big Data Analytics
+                      (en curso)
+                    </p>
+                    <p className="text-sm text-slate-500">
+                      CEUPE Business School, Madrid
                     </p>
                   </div>
                 </div>
@@ -181,6 +186,9 @@ export default function NosotrosPage() {
                     "Odoo",
                     "Nubox",
                     "Defontana",
+                    "SAP",
+                    "Flexline",
+                    "Fin700",
                     "Excel avanzado",
                   ].map((t) => (
                     <span
