@@ -30,7 +30,7 @@ const faqs = [
   },
   {
     q: "¿Puedo combinar servicios?",
-    a: "Sí. De hecho, el mayor valor de Meliora es la integración. Puedes partir con contabilidad y remuneraciones, y sumar reportería gerencial o CFO externo cuando lo necesites.",
+    a: "Sí. Puedes partir con contabilidad y remuneraciones, y sumar la reportería gerencial o el CFO externo cuando lo necesites: ahí está el mayor valor de Meliora.",
   },
   {
     q: "¿Cuál es el plazo de compromiso?",

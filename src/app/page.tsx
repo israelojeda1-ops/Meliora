@@ -7,9 +7,9 @@ const pillars = [
         <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 16.875h3.375m0 0h3.375m-3.375 0V13.5m0 3.375v3.375M6 10.5h2.25a2.25 2.25 0 002.25-2.25V6a2.25 2.25 0 00-2.25-2.25H6A2.25 2.25 0 003.75 6v2.25A2.25 2.25 0 006 10.5zm0 9.75h2.25A2.25 2.25 0 0010.5 18v-2.25a2.25 2.25 0 00-2.25-2.25H6a2.25 2.25 0 00-2.25 2.25V18A2.25 2.25 0 006 20.25zm9.75-9.75H18a2.25 2.25 0 002.25-2.25V6A2.25 2.25 0 0018 3.75h-2.25A2.25 2.25 0 0013.5 6v2.25a2.25 2.25 0 002.25 2.25z" />
       </svg>
     ),
-    title: "Todo integrado",
+    title: "Reportería en tiempo y forma",
     description:
-      "Contabilidad, remuneraciones y reportería gerencial en un mismo servicio y el mismo interlocutor. Sin coordinar tres proveedores.",
+      "Tus reportes gerenciales llegan con cada cierre mensual, no cuando sobra tiempo: puntuales, especializados y listos para decidir.",
   },
   {
     icon: (
@@ -31,12 +31,12 @@ const pillars = [
         <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
       </svg>
     ),
-    title: "Indicadores que hoy no tienes",
+    title: "Personalización y acompañamiento",
     description:
-      "Margen por producto/línea, cobranza y DSO, entregados cada mes de forma simple. Decisiones con datos, no intuición.",
+      "Nada genérico: margen por línea, cobranza, DSO y caja proyectada, diseñados para tu negocio y revisados contigo.",
     items: [
-      "Reporte gerencial continuo: monitoreo mensual de resultados y proyecciones",
-      "Sesión de asesoría personalizada mensual",
+      "Sesión mensual de análisis, contigo y sobre tus números",
+      "Revisión continua de procesos, mes a mes",
     ],
   },
 ];
@@ -118,9 +118,9 @@ export default function HomePage() {
               contratar tres proveedores.
             </h1>
             <p className="mt-6 text-lg text-slate-300 leading-relaxed max-w-2xl">
-              Contabilidad, remuneraciones y finanzas que sí conversan entre
-              sí, con un equipo que te acompaña mes a mes: tu mismo sistema,
-              indicadores reales y revisión de procesos junto a ti.
+              Reportería gerencial especializada, en tiempo y forma y hecha
+              para tu negocio, con un equipo que te acompaña mes a mes en los
+              números y los procesos. Todo sobre tu mismo sistema.
             </p>
             <div className="mt-10 flex flex-col sm:flex-row gap-4">
               <Link
@@ -228,14 +228,14 @@ export default function HomePage() {
                 Meliora resuelve las cuatro brechas
               </h3>
               <p className="text-slate-300 text-sm leading-relaxed mb-6">
-                Integramos contabilidad, remuneraciones y reportería gerencial
-                en un solo servicio, y te acompañamos mes a mes en la revisión
-                de resultados y procesos. Todo en tu sistema, a un precio que
-                tiene sentido para una PyME.
+                Te entregamos la reportería que tu contador no te da: en
+                tiempo y forma, especializada y diseñada para tu negocio, con
+                acompañamiento mes a mes en resultados y procesos. Todo en tu
+                sistema, a un precio que tiene sentido para una PyME.
               </p>
               <div className="space-y-3">
                 {[
-                  "Un interlocutor para todo lo financiero",
+                  "Reportería especializada, en tiempo y forma",
                   "Indicadores mensuales listos para decidir",
                   "Acompañamiento mensual, no solo informes",
                   "Precio ajustado al tamaño de tu empresa",
