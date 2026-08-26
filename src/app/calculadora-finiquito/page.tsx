@@ -83,14 +83,14 @@ export default function CalculadoraFiniquitoPage() {
       <section className="no-print bg-navy py-16 sm:py-20">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <p className="text-emerald font-semibold text-sm tracking-wide uppercase mb-4">
-            Herramienta gratuita
+            Para empleadores
           </p>
           <h1 className="text-3xl sm:text-4xl font-bold text-white max-w-3xl">
             Calculadora de Finiquito
           </h1>
           <p className="mt-6 text-lg text-slate-300 max-w-2xl">
             Indemnización por años de servicio, aviso previo y feriado
-            proporcional según la causal de término — con los topes legales de
+            proporcional según la causal de término, con los topes legales de
             11 años y 90 UF.
           </p>
         </div>

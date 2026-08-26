@@ -83,7 +83,7 @@ export default function CalculadoraHonorariosPage() {
       <section className="no-print bg-navy py-16 sm:py-20">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <p className="text-emerald font-semibold text-sm tracking-wide uppercase mb-4">
-            Herramienta gratuita
+            Para independientes y quienes les pagan
           </p>
           <h1 className="text-3xl sm:text-4xl font-bold text-white max-w-3xl">
             Calculadora de Boleta de Honorarios 2026

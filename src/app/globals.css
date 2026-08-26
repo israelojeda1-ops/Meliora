@@ -48,3 +48,10 @@ body {
   color: var(--color-slate-800);
   background: #ffffff;
 }
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-fraunces), Georgia, serif;
+  letter-spacing: -0.015em;
+}

@@ -29,8 +29,8 @@ export default function Page() {
         $847.500 líquidos. Esa retención no se pierde: financia las
         cotizaciones previsionales obligatorias del independiente (salud, AFP,
         SIS, seguro de accidentes) y el saldo se ajusta contra su impuesto en
-        la Operación Renta de abril. Puedes simular cualquier monto — en pesos
-        o en UF — con nuestra{" "}
+        la Operación Renta de abril. Puedes simular cualquier monto, en pesos
+        o en UF, con nuestra{" "}
         <Link href="/calculadora-honorarios">
           calculadora de boleta de honorarios
         </Link>
@@ -44,8 +44,8 @@ export default function Page() {
         trabaja con tus herramientas, hay <strong>subordinación y
         dependencia</strong>: corresponde contrato de trabajo, aunque ambas
         partes prefieran la boleta. Una fiscalización o una demanda posterior
-        puede transformar años de boletas en deuda previsional con recargos —
-        el riesgo lo asume la empresa, no el trabajador.
+        puede transformar años de boletas en deuda previsional con recargos.
+        El riesgo lo asume la empresa, no el trabajador.
       </p>
 
       <h2>Los números, lado a lado</h2>
@@ -64,7 +64,7 @@ export default function Page() {
       <p>
         Con la retención subiendo cada año, la brecha de costo entre ambas
         modalidades se sigue achicando. En servicios permanentes y de jornada
-        completa, el contrato suele terminar siendo más eficiente — y siempre
+        completa, el contrato suele terminar siendo más eficiente, y siempre
         es más seguro.
       </p>
 
@@ -77,7 +77,7 @@ export default function Page() {
         </li>
         <li>
           <strong>Contrato:</strong> funciones permanentes del giro, con
-          horario, supervisión directa o presencia continua — aunque sea
+          horario, supervisión directa o presencia continua, aunque sea
           part-time.
         </li>
       </ul>

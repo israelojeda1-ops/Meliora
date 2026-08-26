@@ -11,7 +11,7 @@ export function Footer() {
               <Logo theme="dark" />
             </div>
             <p className="text-sm leading-relaxed max-w-md">
-              Todo lo financiero de tu PyME, en un solo lugar — y siempre a la
+              Todo lo financiero de tu PyME, en un solo lugar, y siempre a la
               vista. Contabilidad, remuneraciones y finanzas que sí conversan
               entre sí.
             </p>
@@ -85,7 +85,15 @@ export function Footer() {
             &copy; {new Date().getFullYear()} Meliora Advisory SpA. Todos los
             derechos reservados.
           </p>
-          <p className="text-xs text-slate-400">Santiago, Chile</p>
+          <div className="flex items-center gap-4">
+            <Link
+              href="/privacidad"
+              className="text-xs text-slate-400 hover:text-white transition-colors"
+            >
+              Privacidad
+            </Link>
+            <p className="text-xs text-slate-400">Santiago, Chile</p>
+          </div>
         </div>
       </div>
     </footer>

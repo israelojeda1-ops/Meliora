@@ -85,13 +85,13 @@ export default function CalculadoraPage() {
       <section className="no-print bg-navy py-16 sm:py-20">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <p className="text-emerald font-semibold text-sm tracking-wide uppercase mb-4">
-            Herramienta gratuita
+            Para trabajadores y empleadores
           </p>
           <h1 className="text-3xl sm:text-4xl font-bold text-white max-w-3xl">
             Calculadora Salarial: sueldo líquido y costo de contratación
           </h1>
           <p className="mt-6 text-lg text-slate-300 max-w-2xl">
-            De bruto a líquido con desglose línea por línea — AFP, salud, isapre
+            De bruto a líquido con desglose línea por línea: AFP, salud, isapre
             en UF, cesantía e impuesto único. Y si eres empleador: el costo
             total real de contratar, incluyendo el aporte de la reforma
             previsional.
