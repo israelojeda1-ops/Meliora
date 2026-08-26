@@ -5,7 +5,7 @@ import Link from "next/link";
 export const metadata: Metadata = {
   title: "Nosotros — Meliora Advisory",
   description:
-    "Meliora Advisory fue fundada por Israel Ojeda, Contador Auditor, MBA y Magíster en Business Intelligence, con más de 12 años liderando áreas de finanzas.",
+    "Meliora Advisory fue fundada por Israel Ojeda, Contador Auditor, MBA y Magíster en Business Intelligence, con más de 15 años de experiencia en finanzas.",
 };
 
 const sectores = [
@@ -70,9 +70,10 @@ export default function NosotrosPage() {
                   <strong className="text-navy">
                     Contador Auditor, MBA y Magíster en Business Intelligence
                   </strong>
-                  , con más de 12 años liderando gerencias de administración y
-                  finanzas en las industrias farmacéutica, retail,
-                  construcción, inmobiliaria y minería.
+                  . Suma más de 15 años de experiencia en finanzas en rubros
+                  tan distintos como el farmacéutico, retail, construcción,
+                  inmobiliario y minería, los últimos 8 como gerente de
+                  administración y finanzas.
                 </p>
                 <p>
                   Meliora nació con una idea concreta: acercar los procesos de
