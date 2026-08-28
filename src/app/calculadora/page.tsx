@@ -153,7 +153,7 @@ export default function CalculadoraPage() {
               href="/planes"
               className="inline-flex items-center justify-center rounded-lg bg-emerald px-8 py-3.5 text-base font-semibold text-white hover:bg-emerald-dark transition-colors"
             >
-              Ver planes y precios
+              Conocer los planes
             </Link>
             <Link
               href="/diagnostico"

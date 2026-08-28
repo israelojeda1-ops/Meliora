@@ -432,7 +432,7 @@ export default function HomePage() {
               href="/planes"
               className="inline-flex items-center justify-center rounded-lg border border-white/20 px-8 py-3.5 text-base font-semibold text-white hover:bg-white/10 transition-colors"
             >
-              Ver planes y precios
+              Conocer los planes
             </Link>
           </div>
           <p className="mt-8 text-sm text-slate-400">

@@ -2,19 +2,19 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "Planes y Precios — Meliora Advisory",
+  title: "Planes — Servicio Integral Meliora | Meliora Advisory",
   description:
-    "Planes mensuales de asesoría financiera y contable para PyMEs en Chile. Desde 8 UF. Todos incluyen portal de cliente con dashboards de reportería, compatibles con Softland, Softland Cloud u otro ERP.",
+    "Un servicio modular y escalable para PyMEs en Chile: contabilidad, remuneraciones y reportería en tiempo y forma, con acompañamiento mes a mes, sobre tu sistema o el nuestro. Desde 8 UF al mes, sin permanencia mínima.",
 };
 
 const faqs = [
   {
-    q: "¿Por qué los precios parten con \"desde\" y no son un valor fijo?",
-    a: "Porque el precio final depende de dos factores: si trabajamos en tu propio sistema (ERP) o en el nuestro, y el volumen de movimientos y trabajadores de tu empresa. Los planes en sistema Meliora son más económicos porque estandarizamos el proceso; trabajar en tu ERP tiene un costo mayor de integración. Cotizamos después de entender tu operación para darte un precio justo.",
+    q: "¿Cuánto cuesta el servicio?",
+    a: "Los planes parten desde 8 UF mensuales y el valor final se cotiza a la medida, después de un diagnóstico gratuito de tu operación. Depende de dos factores: si trabajamos sobre tu propio sistema o sobre el nuestro, y el volumen de movimientos y trabajadores de tu empresa. Así pagas por lo que tu operación realmente necesita, ni más ni menos.",
   },
   {
     q: "¿Necesito cambiar mi sistema contable o ERP?",
-    a: "No. Puedes elegir el plan \"Sistema del cliente\" y trabajamos dentro del ERP que ya usas: Softland, Odoo, Nubox, Defontana u otro. Nunca obligamos a migrar.",
+    a: "No. Podemos trabajar dentro del ERP que ya usas: Softland, Odoo, Nubox, Defontana u otro. La implementación inicial en ese caso es una puesta a punto de tu sistema, no una migración. Y si no tienes sistema o prefieres el nuestro, implementamos el sistema Meliora.",
   },
   {
     q: "¿Hacen reportes y dashboards para empresas que usan Softland o Softland Cloud?",
@@ -29,8 +29,8 @@ const faqs = [
     a: "Un espacio donde puedes ver tus números actualizados en cada cierre mensual: estados financieros, KPIs, flujo de caja y reportería gerencial. Acceso 24/7.",
   },
   {
-    q: "¿Puedo combinar servicios?",
-    a: "Sí. Puedes partir con contabilidad y remuneraciones, y sumar la reportería gerencial o el CFO externo cuando lo necesites: ahí está el mayor valor de Meliora.",
+    q: "¿Puedo contratar solo una parte del servicio?",
+    a: "Sí, el servicio es modular. Puedes partir con lo que tu empresa necesita hoy y sumar el resto cuando tenga sentido: la reportería, el plan avanzado de CFO externo o los complementos. La idea es que el servicio crezca contigo, no al revés.",
   },
   {
     q: "¿Cuál es el plazo de compromiso?",
@@ -48,99 +48,48 @@ const faqJsonLd = {
   })),
 };
 
-const planes = [
+const caminos = [
   {
-    name: "Contable — Sistema Meliora",
-    price: "Desde 8 UF",
-    period: "/mes",
+    name: "Puesta a Punto de tu Sistema",
+    tag: "Si ya usas un ERP",
     description:
-      "Hasta 100 movimientos al mes, en nuestro sistema estandarizado: la opción más eficiente.",
-    features: [
-      "Contabilidad mensual",
-      "Declaración IVA / F29",
-      "Estados Financieros",
-      "Declaración de Renta",
-      "Portal de cliente",
+      "Trabajamos sobre el sistema que ya tienes: Softland, Odoo, Nubox, Defontana u otro.",
+    items: [
+      "Auditoría del ERP y de la contabilidad",
+      "Diseño de la reportería a la medida",
+      "Conexión del portal de cliente",
     ],
+  },
+  {
+    name: "Implementación Sistema Meliora",
+    tag: "Si no tienes sistema o prefieres el nuestro",
+    description:
+      "Dejamos tu operación funcionando sobre nuestro sistema, estandarizado y listo para crecer.",
+    items: [
+      "Setup contable y de remuneraciones",
+      "Carga de saldos y maestros",
+      "Portal de cliente operativo",
+    ],
+  },
+];
+
+const base = [
+  {
+    name: "Contabilidad y Cumplimiento",
+    description: "Cierre mensual al día · IVA / F29 · respaldo ante el SII",
     highlighted: false,
   },
   {
-    name: "Contable — Sistema del cliente",
-    price: "Desde 10 UF",
-    period: "/mes",
+    name: "Remuneraciones",
     description:
-      "Hasta 100 movimientos al mes, trabajando dentro del ERP que ya usas.",
-    features: [
-      "Contabilidad mensual",
-      "Declaración IVA / F29",
-      "Estados Financieros",
-      "Declaración de Renta",
-      "Portal de cliente",
-    ],
+      "Liquidaciones · Previred y Seguro Social · contratos y finiquitos",
     highlighted: false,
   },
   {
-    name: "Contable + Remuneraciones — Sistema Meliora",
-    price: "Desde 10 UF",
-    period: "/mes",
-    description: "Hasta 100 movimientos y 15 trabajadores, en nuestro sistema.",
-    features: [
-      "Todo del plan Contable",
-      "Liquidaciones de sueldo",
-      "Cálculo y pago Previred",
-      "Contratos de trabajo",
-      "Finiquitos",
-      "Portal de cliente",
-    ],
+    name: "Reportería en Tiempo y Forma",
+    description:
+      "Informes gerenciales en cada cierre · portal de cliente 24/7",
     highlighted: true,
-  },
-  {
-    name: "Contable + Remuneraciones — Sistema del cliente",
-    price: "Desde 12 UF",
-    period: "/mes",
-    description: "Hasta 100 movimientos y 15 trabajadores, en tu propio ERP.",
-    features: [
-      "Todo del plan Contable",
-      "Liquidaciones de sueldo",
-      "Cálculo y pago Previred",
-      "Contratos de trabajo",
-      "Finiquitos",
-      "Portal de cliente",
-    ],
-    highlighted: false,
-  },
-  {
-    name: "Finanzas",
-    price: "Desde 20 UF",
-    period: "/mes",
-    description:
-      "Asesoría gerencial y revisión de los informes que tu empresa ya prepara: KPIs de margen, cobranza y flujo de caja.",
-    features: [
-      "Revisión y análisis de informes existentes",
-      "KPIs de margen y cobranza",
-      "Análisis de DSO",
-      "Flujo de caja proyectado",
-      "Sesión mensual de análisis",
-      "Portal de cliente",
-    ],
-    highlighted: false,
-  },
-  {
-    name: "CFO Externo / Dirección de Finanzas",
-    price: "Desde 32 UF",
-    period: "/mes",
-    description:
-      "Elaboración y emisión completa de tus informes gerenciales — no los revisamos, los construimos desde cero.",
-    features: [
-      "Elaboración de reportes gerenciales completos",
-      "Presupuesto anual",
-      "Forecast rolling 8–12 semanas",
-      "Análisis de variaciones",
-      "Reporting en inglés (si aplica)",
-      "Sesión estratégica mensual",
-      "Portal de cliente",
-    ],
-    highlighted: false,
   },
 ];
 
@@ -150,15 +99,20 @@ export default function PlanesPage() {
       <section className="bg-navy py-20 sm:py-24">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <p className="text-emerald font-semibold text-sm tracking-wide uppercase mb-4">
-            Planes y precios
+            Planes
           </p>
           <h1 className="text-3xl sm:text-4xl font-bold text-white max-w-2xl">
-            Honorarios ajustados al tamaño real de tu empresa
+            Servicio Integral Meliora
           </h1>
           <p className="mt-6 text-lg text-slate-300 max-w-2xl">
-            Todos los planes incluyen acceso al portal de cliente con tus
-            números actualizados en cada cierre mensual. El precio final se
-            ajusta según el sistema que uses y el volumen de movimientos.
+            Un servicio modular y escalable centrado en reportería en tiempo y
+            forma, personalización y acompañamiento mes a mes, sobre tu sistema
+            o el nuestro. Partes con lo que necesitas hoy y sumas el resto
+            cuando tenga sentido.
+          </p>
+          <p className="mt-4 text-sm font-semibold text-emerald">
+            Desde 8 UF/mes · sin permanencia mínima · cotización a la medida
+            tras el diagnóstico
           </p>
           <a
             href="https://portal.melioraadvisory.cl/demo"
@@ -176,34 +130,37 @@ export default function PlanesPage() {
 
       <section className="py-20 sm:py-24 bg-white">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
-            {planes.map((plan) => (
+          <div className="max-w-2xl mb-12">
+            <p className="text-emerald font-semibold text-sm tracking-wide uppercase mb-3">
+              Paso 1 · Una sola vez
+            </p>
+            <h2 className="text-2xl sm:text-3xl font-bold text-navy mb-4">
+              Implementación inicial: dos caminos
+            </h2>
+            <p className="text-sm text-slate-500 leading-relaxed">
+              Antes de operar mes a mes, dejamos la base ordenada. El camino
+              depende de una sola pregunta: ¿trabajamos sobre tu sistema o
+              sobre el nuestro?
+            </p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {caminos.map((camino) => (
               <div
-                key={plan.name}
-                className={`rounded-2xl border p-8 flex flex-col ${
-                  plan.highlighted
-                    ? "border-emerald bg-emerald/5 ring-1 ring-emerald/20"
-                    : "border-slate-200"
-                }`}
+                key={camino.name}
+                className="rounded-2xl border border-slate-200 p-8"
               >
-                {plan.highlighted && (
-                  <span className="inline-block self-start text-xs font-semibold text-emerald uppercase tracking-wider mb-3">
-                    Más popular
-                  </span>
-                )}
-                <h3 className="text-lg font-bold text-navy">{plan.name}</h3>
-                <div className="mt-4 mb-2">
-                  <span className="text-2xl font-bold text-navy">
-                    {plan.price}
-                  </span>
-                  <span className="text-sm text-slate-500">{plan.period}</span>
-                </div>
-                <p className="text-sm text-slate-500 mb-6">
-                  {plan.description}
+                <p className="text-xs font-semibold text-emerald uppercase tracking-wider mb-3">
+                  {camino.tag}
                 </p>
-                <ul className="space-y-3 mb-8 flex-1">
-                  {plan.features.map((f) => (
-                    <li key={f} className="flex items-start gap-2">
+                <h3 className="text-lg font-bold text-navy mb-2">
+                  {camino.name}
+                </h3>
+                <p className="text-sm text-slate-500 mb-6">
+                  {camino.description}
+                </p>
+                <ul className="space-y-3">
+                  {camino.items.map((item) => (
+                    <li key={item} className="flex items-start gap-2">
                       <svg
                         className="h-4 w-4 text-emerald flex-shrink-0 mt-0.5"
                         fill="none"
@@ -217,45 +174,201 @@ export default function PlanesPage() {
                           d="M4.5 12.75l6 6 9-13.5"
                         />
                       </svg>
-                      <span className="text-sm text-slate-600">{f}</span>
+                      <span className="text-sm text-slate-600">{item}</span>
                     </li>
                   ))}
                 </ul>
-                <Link
-                  href="/contacto"
-                  className={`inline-flex items-center justify-center rounded-lg px-6 py-3 text-sm font-semibold transition-colors ${
-                    plan.highlighted
-                      ? "bg-emerald text-white hover:bg-emerald-dark"
-                      : "bg-navy text-white hover:bg-navy-light"
-                  }`}
-                >
-                  Consultar
-                </Link>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
 
+      <section className="py-20 sm:py-24 bg-slate-50">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="max-w-2xl mb-12">
+            <p className="text-emerald font-semibold text-sm tracking-wide uppercase mb-3">
+              Paso 2 · Mensual
+            </p>
+            <h2 className="text-2xl sm:text-3xl font-bold text-navy mb-4">
+              Servicio base: la operación recurrente
+            </h2>
+            <p className="text-sm text-slate-500 leading-relaxed">
+              Los módulos que mantienen tu empresa al día todos los meses.
+              Puedes contratarlos juntos o partir solo con los que necesitas.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {base.map((mod) => (
+              <div
+                key={mod.name}
+                className={`rounded-2xl p-8 ${
+                  mod.highlighted
+                    ? "bg-navy text-white ring-2 ring-emerald"
+                    : "bg-white border border-slate-200"
+                }`}
+              >
+                {mod.highlighted && (
+                  <span className="inline-block text-xs font-semibold text-emerald uppercase tracking-wider mb-3">
+                    El corazón del servicio
+                  </span>
+                )}
+                <h3
+                  className={`text-lg font-bold mb-3 ${
+                    mod.highlighted ? "text-white" : "text-navy"
+                  }`}
+                >
+                  {mod.name}
+                </h3>
+                <p
+                  className={`text-sm leading-relaxed ${
+                    mod.highlighted ? "text-slate-300" : "text-slate-500"
+                  }`}
+                >
+                  {mod.description}
+                </p>
+              </div>
+            ))}
           </div>
 
-          <div className="mt-6 rounded-2xl bg-navy p-8 md:p-12">
+          <div className="mt-6 rounded-2xl bg-amber-50 border border-amber-200/60 px-8 py-5 text-center">
+            <p className="text-sm text-navy">
+              <span className="font-bold uppercase tracking-wider text-xs mr-2">
+                Anual, incluido:
+              </span>
+              Estados Financieros · Declaración de Renta · Declaraciones
+              Juradas
+            </p>
+          </div>
+
+          <div className="mt-6 rounded-2xl bg-emerald/10 border border-emerald/20 p-8 text-center">
+            <p className="text-lg font-bold text-emerald-dark mb-1">
+              Acompañamiento cercano, siempre incluido
+            </p>
+            <p className="text-sm text-slate-600">
+              Sesión mensual sobre tus números · revisión continua de procesos
+              · trato directo con Israel
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section className="py-20 sm:py-24 bg-white">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="max-w-2xl mb-12">
+            <p className="text-emerald font-semibold text-sm tracking-wide uppercase mb-3">
+              Paso 3 · Cuando tu empresa lo pida
+            </p>
+            <h2 className="text-2xl sm:text-3xl font-bold text-navy mb-4">
+              Plan avanzado y complementos
+            </h2>
+            <p className="text-sm text-slate-500 leading-relaxed">
+              Sobre el servicio base puedes sumar una dirección de finanzas
+              completa o módulos puntuales para tu operación.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="rounded-2xl border-2 border-amber-400/70 p-8">
+              <p className="text-xs font-semibold text-amber-600 uppercase tracking-wider mb-3">
+                Plan avanzado
+              </p>
+              <h3 className="text-lg font-bold text-navy mb-2">
+                CFO Externo / Dirección de Finanzas
+              </h3>
+              <p className="text-sm text-slate-500 mb-6">
+                No revisamos tus informes gerenciales: los construimos desde
+                cero y los defendemos contigo en cada sesión.
+              </p>
+              <ul className="space-y-3">
+                {[
+                  "Elaboración de reportes gerenciales completos",
+                  "Presupuesto anual",
+                  "Forecast rolling 8–12 semanas",
+                  "Sesión estratégica mensual",
+                  "Reporting en inglés (si aplica)",
+                ].map((item) => (
+                  <li key={item} className="flex items-start gap-2">
+                    <svg
+                      className="h-4 w-4 text-amber-500 flex-shrink-0 mt-0.5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={2.5}
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M4.5 12.75l6 6 9-13.5"
+                      />
+                    </svg>
+                    <span className="text-sm text-slate-600">{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div className="rounded-2xl border border-slate-200 p-8">
+              <p className="text-xs font-semibold text-emerald uppercase tracking-wider mb-3">
+                Complementos
+              </p>
+              <h3 className="text-lg font-bold text-navy mb-2">
+                Módulos para tu operación
+              </h3>
+              <p className="text-sm text-slate-500 mb-6">
+                Se suman a cualquier plan, de forma permanente o por proyecto.
+              </p>
+              <ul className="space-y-3">
+                {[
+                  "Dashboards ad hoc sobre tu ERP",
+                  "Automatización de procesos",
+                  "Costeo de importaciones",
+                  "Apoyo en auditorías externas",
+                ].map((item) => (
+                  <li key={item} className="flex items-start gap-2">
+                    <svg
+                      className="h-4 w-4 text-emerald flex-shrink-0 mt-0.5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={2.5}
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M4.5 12.75l6 6 9-13.5"
+                      />
+                    </svg>
+                    <span className="text-sm text-slate-600">{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+
+          <div className="mt-12 rounded-2xl bg-navy p-8 md:p-12">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
               <div>
                 <h3 className="text-xl font-bold text-white mb-2">
-                  Empresas de alto volumen o complejidad
+                  ¿Y el precio?
                 </h3>
                 <p className="text-sm text-slate-300 leading-relaxed">
-                  100+ movimientos al mes, multimoneda, múltiples centros de
-                  costo, importaciones.
+                  Los planes parten desde 8 UF al mes, sin permanencia mínima.
+                  El valor final se cotiza a la medida según tu sistema, tu
+                  volumen de movimientos y los módulos que elijas, después de
+                  un diagnóstico gratuito.
                 </p>
               </div>
-              <div className="md:text-right">
-                <p className="text-xl font-bold text-white mb-4">
-                  Cotización personalizada
-                </p>
+              <div className="flex flex-col sm:flex-row md:justify-end gap-4">
                 <Link
                   href="/contacto"
                   className="inline-flex items-center justify-center rounded-lg bg-emerald px-6 py-3 text-sm font-semibold text-white hover:bg-emerald-dark transition-colors"
                 >
-                  Cotización personalizada
+                  Pedir mi cotización
+                </Link>
+                <Link
+                  href="/diagnostico"
+                  className="inline-flex items-center justify-center rounded-lg border border-white/30 px-6 py-3 text-sm font-semibold text-white hover:bg-white/10 transition-colors"
+                >
+                  Partir por el diagnóstico
                 </Link>
               </div>
             </div>
@@ -294,7 +407,7 @@ export default function PlanesPage() {
           </h2>
           <p className="text-slate-300 max-w-lg mx-auto mb-8">
             Agenda una reunión gratuita. Revisamos tu operación y te proponemos
-            el plan que mejor se ajusta a tu empresa.
+            los módulos que mejor se ajustan a tu empresa.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link

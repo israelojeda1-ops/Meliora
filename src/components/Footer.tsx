@@ -26,7 +26,7 @@ export function Footer() {
                 { href: "/", label: "Inicio" },
                 { href: "/servicios", label: "Servicios" },
                 { href: "/nosotros", label: "Nosotros" },
-                { href: "/planes", label: "Planes y Precios" },
+                { href: "/planes", label: "Planes" },
                 { href: "/recursos", label: "Recursos" },
                 { href: "/diagnostico", label: "Diagnóstico Financiero" },
                 { href: "/calculadora", label: "Calculadora Salarial" },
