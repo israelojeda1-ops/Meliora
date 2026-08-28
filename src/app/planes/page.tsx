@@ -4,13 +4,13 @@ import Link from "next/link";
 export const metadata: Metadata = {
   title: "Planes — Servicio Integral Meliora | Meliora Advisory",
   description:
-    "Un servicio modular y escalable para PyMEs en Chile: contabilidad, remuneraciones y reportería en tiempo y forma, con acompañamiento mes a mes, sobre tu sistema o el nuestro. Desde 8 UF al mes, sin permanencia mínima.",
+    "Un servicio modular y escalable para PyMEs en Chile: contabilidad, remuneraciones y reportería en tiempo y forma, con acompañamiento mes a mes, sobre tu sistema o el nuestro. Sin permanencia mínima y cotización a la medida.",
 };
 
 const faqs = [
   {
     q: "¿Cuánto cuesta el servicio?",
-    a: "Los planes parten desde 8 UF mensuales y el valor final se cotiza a la medida, después de un diagnóstico gratuito de tu operación. Depende de dos factores: si trabajamos sobre tu propio sistema o sobre el nuestro, y el volumen de movimientos y trabajadores de tu empresa. Así pagas por lo que tu operación realmente necesita, ni más ni menos.",
+    a: "El valor se cotiza a la medida, después de un diagnóstico gratuito de tu operación. Depende de dos factores: si trabajamos sobre tu propio sistema o sobre el nuestro, y el volumen de movimientos y trabajadores de tu empresa. Así pagas por lo que tu operación realmente necesita, ni más ni menos.",
   },
   {
     q: "¿Necesito cambiar mi sistema contable o ERP?",
@@ -111,8 +111,7 @@ export default function PlanesPage() {
             cuando tenga sentido.
           </p>
           <p className="mt-4 text-sm font-semibold text-emerald">
-            Desde 8 UF/mes · sin permanencia mínima · cotización a la medida
-            tras el diagnóstico
+            Sin permanencia mínima · cotización a la medida tras el diagnóstico
           </p>
           <a
             href="https://portal.melioraadvisory.cl/demo"
@@ -351,10 +350,9 @@ export default function PlanesPage() {
                   ¿Y el precio?
                 </h3>
                 <p className="text-sm text-slate-300 leading-relaxed">
-                  Los planes parten desde 8 UF al mes, sin permanencia mínima.
-                  El valor final se cotiza a la medida según tu sistema, tu
-                  volumen de movimientos y los módulos que elijas, después de
-                  un diagnóstico gratuito.
+                  Sin permanencia mínima. El valor se cotiza a la medida
+                  según tu sistema, tu volumen de movimientos y los módulos
+                  que elijas, después de un diagnóstico gratuito.
                 </p>
               </div>
               <div className="flex flex-col sm:flex-row md:justify-end gap-4">
