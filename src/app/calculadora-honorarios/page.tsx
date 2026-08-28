@@ -142,7 +142,7 @@ export default function CalculadoraHonorariosPage() {
           </h2>
           <p className="text-slate-300 max-w-xl mx-auto mb-8">
             Nosotros lo hacemos por ti, con reportería en tiempo y forma y
-            acompañamiento mes a mes, desde 8 UF al mes.
+            acompañamiento mes a mes.
           </p>
           <div className="flex flex-col sm:flex-row justify-center gap-4">
             <Link

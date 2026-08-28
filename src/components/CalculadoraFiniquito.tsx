@@ -310,7 +310,7 @@ export function CalculadoraFiniquito() {
                   href="/planes"
                   className="inline-flex items-center justify-center rounded-lg bg-emerald px-6 py-3 text-sm font-semibold text-white hover:bg-emerald-dark transition-colors"
                 >
-                  Ver planes desde 8 UF
+                  Conocer los planes
                 </Link>
                 <Link
                   href="/diagnostico"
