@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import type { Cartelera as Datos, Oportunidad } from "@/lib/deportes/cartelera";
 import type { DesgloseMetrica, Lado, LineaSegura, Proyeccion, ResumenSede } from "@/lib/deportes/modelo";
 import type { Metrica } from "@/lib/deportes/catalogo";
@@ -434,6 +434,250 @@ function TarjetaOportunidad({ o, m }: { o: Oportunidad; m: Metrica[] }) {
   );
 }
 
+// ── Combinada 2.5 ────────────────────────────────────────────────────────────
+// El desafío: llegar a una cuota combinada de 2.5 por día. No tenemos cuotas
+// reales (ESPN no las da; Betano/Sofascore bloquean), así que el modelo arma el
+// combo con su cuota justa (1/prob) y el usuario pega la cuota real de su casa.
+// Estrategia: varias patas seguras (líneas Over ≥80%), una por partido para no
+// combinar mercados correlacionados; si con una por partido no se llega a 2.5,
+// se suma una segunda del mismo partido, marcada como correlacionada.
+
+type Pata = {
+  clave: string;
+  fid: number;
+  partido: string;
+  mercado: string; // "Over 8.5 córners"
+  ambito: string; // "partido" o el nombre del equipo
+  prob: number;
+  cuota: number; // cuota justa = 1/prob
+  correl: boolean; // segunda pata del mismo partido (correlacionada)
+};
+
+const OBJETIVO_COMBI = 2.5;
+
+function candidatosDePartido(p: Proyeccion, m: Metrica[]): Pata[] {
+  const part = `${p.local} vs ${p.visita}`;
+  const out: Pata[] = [];
+  const agregar = (i: number, seg: LineaSegura | null, disp: boolean, ambito: string) => {
+    if (!disp || !seg) return;
+    out.push({
+      clave: `${p.fid}:${ambito}:${i}`,
+      fid: p.fid,
+      partido: part,
+      mercado: `Over ${seg.linea} ${m[i]?.nombre ?? ""}`.trim(),
+      ambito,
+      prob: seg.prob,
+      cuota: 1 / seg.prob,
+      correl: false,
+    });
+  };
+  p.disp.forEach((ok, i) => {
+    agregar(i, p.seg[i], ok, "partido");
+    p.lados.forEach((l) => agregar(i, l.seg[i], l.disp[i], l.nombre));
+  });
+  return out;
+}
+
+/** Arma el combo apuntando a cuota justa ≈ objetivo con líneas seguras. */
+function armarCombinada(
+  partidos: Proyeccion[],
+  m: Metrica[],
+  ahora: number,
+  objetivo = OBJETIVO_COMBI
+): Pata[] {
+  const porPartido = new Map<number, Pata[]>();
+  for (const p of partidos) {
+    if (p.resultado || p.ts <= ahora) continue; // solo por jugarse: se puede apostar
+    const cs = candidatosDePartido(p, m).sort((a, b) => b.cuota - a.cuota); // más cuota primero
+    if (cs.length) porPartido.set(p.fid, cs);
+  }
+  // Una pata por partido (la de más cuota, aún ≥80% por ser línea segura),
+  // acumulando de mayor a menor cuota hasta llegar al objetivo.
+  const mejores = [...porPartido.values()].map((cs) => cs[0]).sort((a, b) => b.cuota - a.cuota);
+  const patas: Pata[] = [];
+  let cuota = 1;
+  for (const c of mejores) {
+    if (cuota >= objetivo) break;
+    patas.push(c);
+    cuota *= c.cuota;
+  }
+  // Si con una por partido no alcanza, sumar segundas patas (correlacionadas).
+  if (cuota < objetivo) {
+    const segundas = [...porPartido.values()].flatMap((cs) => cs.slice(1)).sort((a, b) => b.cuota - a.cuota);
+    for (const c of segundas) {
+      if (cuota >= objetivo) break;
+      patas.push({ ...c, correl: true });
+      cuota *= c.cuota;
+    }
+  }
+  return patas;
+}
+
+/**
+ * Pestaña "Combinada 2.5": sugiere varias patas seguras que combinadas rozan la
+ * cuota 2.5, con cuota justa del modelo, y deja pegar la cuota real de la casa
+ * para ver la cuota combinada real y dónde hay valor. Guarda lo ingresado.
+ */
+function Combinada({ partidos, m, ahora }: { partidos: Proyeccion[]; m: Metrica[]; ahora: number | null }) {
+  const [abierto, setAbierto] = useState(false);
+  // Se cargan las cuotas guardadas en el inicializador (no en un efecto): en el
+  // servidor no hay localStorage, así que arranca vacío y en el cliente lee lo
+  // guardado.
+  const [cuotas, setCuotas] = useState<Record<string, string>>(() => {
+    if (typeof window === "undefined") return {};
+    try {
+      const raw = localStorage.getItem("combinada-cuotas");
+      return raw ? (JSON.parse(raw) as Record<string, string>) : {};
+    } catch {
+      return {};
+    }
+  });
+  const [quitadas, setQuitadas] = useState<Set<string>>(new Set());
+
+  const guardarCuota = (clave: string, v: string) =>
+    setCuotas((prev) => {
+      const next = { ...prev, [clave]: v };
+      try {
+        localStorage.setItem("combinada-cuotas", JSON.stringify(next));
+      } catch {}
+      return next;
+    });
+
+  // `ahora` llega null en el primer render y el padre lo fija enseguida; con 0
+  // todos los no terminados cuentan como por jugarse hasta que se fije el reloj.
+  const base = ahora ?? 0;
+  const patas = useMemo(() => armarCombinada(partidos, m, base), [partidos, m, base]);
+  const visibles = patas.filter((p) => !quitadas.has(p.clave));
+
+  const parse = (s: string | undefined) => {
+    const n = Number((s ?? "").replace(",", "."));
+    return Number.isFinite(n) && n > 1 ? n : null;
+  };
+  const cuotaJusta = visibles.reduce((s, p) => s * p.cuota, 1);
+  const probCombo = visibles.reduce((s, p) => s * p.prob, 1);
+  const reales = visibles.map((p) => parse(cuotas[p.clave]));
+  const algunaReal = reales.some((x) => x != null);
+  const cuotaReal = visibles.reduce((s, p, i) => s * (reales[i] ?? p.cuota), 1);
+
+  if (!partidos.length) return null;
+
+  return (
+    <section className="px-3 pt-3">
+      <div className="rounded-2xl bg-gradient-to-b from-sky-400/[0.10] to-transparent p-3 ring-1 ring-sky-400/20">
+        <button onClick={() => setAbierto((v) => !v)} className="flex w-full items-center justify-between px-1">
+          <span className="text-xs font-extrabold uppercase tracking-widest text-sky-300">🎯 Combinada 2.5</span>
+          <span className="text-[10px] tabular-nums text-slate-500">
+            {abierto ? "cerrar" : patas.length ? `cuota justa ${cuotaJusta.toFixed(2)}` : "sin partidos"}
+          </span>
+        </button>
+
+        {abierto && (
+          <div className="mt-2 space-y-2">
+            {!visibles.length ? (
+              <p className="px-1 py-3 text-[11px] text-slate-400">
+                No hay partidos por jugarse con líneas seguras para armar la combinada.
+              </p>
+            ) : (
+              <>
+                {visibles.map((p, i) => {
+                  const real = reales[i];
+                  const valor = real != null && real > p.cuota;
+                  return (
+                    <div key={p.clave} className="rounded-xl bg-black/30 p-2.5 ring-1 ring-white/5">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <div className="truncate text-[12px] font-bold text-white">
+                            {p.mercado}
+                            {p.correl && (
+                              <span className="ml-1 rounded bg-amber-400/15 px-1 py-px text-[9px] font-bold text-amber-300">
+                                correl.
+                              </span>
+                            )}
+                          </div>
+                          <div className="truncate text-[11px] text-slate-400">
+                            {p.partido}
+                            {p.ambito !== "partido" && <span className="text-slate-500"> · {p.ambito}</span>}
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => setQuitadas((q) => new Set(q).add(p.clave))}
+                          className="shrink-0 px-1 text-slate-600 active:text-slate-300"
+                          aria-label="Quitar pata"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                      <div className="mt-1.5 flex items-center justify-between gap-2">
+                        <span className="text-[11px] text-slate-400">
+                          {pct(p.prob)} · justa <b className="text-slate-300">{p.cuota.toFixed(2)}</b>
+                        </span>
+                        <label className="flex items-center gap-1.5">
+                          <span className="text-[10px] text-slate-500">cuota real</span>
+                          <input
+                            inputMode="decimal"
+                            value={cuotas[p.clave] ?? ""}
+                            onChange={(e) => guardarCuota(p.clave, e.target.value)}
+                            placeholder={p.cuota.toFixed(2)}
+                            className={`w-16 rounded-lg bg-slate-950/60 px-2 py-1 text-right text-[12px] tabular-nums ring-1 placeholder:text-slate-600 ${
+                              valor ? "text-emerald-300 ring-emerald-400/40" : "text-slate-200 ring-white/10"
+                            }`}
+                          />
+                        </label>
+                      </div>
+                    </div>
+                  );
+                })}
+
+                <div className="rounded-xl bg-white/[0.03] p-3 ring-1 ring-white/5">
+                  <div className="flex items-baseline justify-between">
+                    <span className="text-[11px] text-slate-400">Cuota justa del modelo</span>
+                    <b
+                      className={`tabular-nums ${cuotaJusta >= OBJETIVO_COMBI ? "text-sky-300" : "text-slate-200"}`}
+                    >
+                      {cuotaJusta.toFixed(2)}
+                    </b>
+                  </div>
+                  {algunaReal && (
+                    <div className="mt-1 flex items-baseline justify-between">
+                      <span className="text-[11px] text-slate-400">Cuota combinada (tu casa)</span>
+                      <b className={`tabular-nums ${cuotaReal >= OBJETIVO_COMBI ? "text-emerald-300" : "text-amber-300"}`}>
+                        {cuotaReal.toFixed(2)}
+                      </b>
+                    </div>
+                  )}
+                  <div className="mt-1 flex items-baseline justify-between">
+                    <span className="text-[11px] text-slate-400">Prob. del combo (modelo)</span>
+                    <b className="tabular-nums text-slate-300">{pct(probCombo)}</b>
+                  </div>
+                  <p className="mt-2 text-[10px] leading-relaxed text-slate-500">
+                    {cuotaJusta < OBJETIVO_COMBI && "Con los partidos por jugarse no se llega a 2.5 solo con líneas seguras; sumá una pata o baja una línea. "}
+                    {algunaReal &&
+                      (cuotaReal >= OBJETIVO_COMBI
+                        ? "Tu combinada llega a 2.5 ✓. "
+                        : "Aún no llega a 2.5 con las cuotas cargadas. ")}
+                    La <b className="text-slate-300">cuota justa</b> es 1/probabilidad del modelo (sin margen). Pegá la
+                    cuota real de Betano/Sofascore por pata: si tu combinada supera la justa, hay{" "}
+                    <b className="text-emerald-300/80">valor</b>. Ojo: el combo tiene ~{pct(probCombo)} de entrar entero.
+                  </p>
+                </div>
+
+                {quitadas.size > 0 && (
+                  <button
+                    onClick={() => setQuitadas(new Set())}
+                    className="w-full rounded-lg py-1.5 text-[11px] text-slate-400 ring-1 ring-white/10 active:bg-white/5"
+                  >
+                    Restaurar patas quitadas
+                  </button>
+                )}
+              </>
+            )}
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
 /**
  * Sube el xG real desde el Excel del usuario (CSV o JSON). ESPN no da el xG por
  * equipo, así que el historial lo trae estimado; esto lo reemplaza con el real.
@@ -706,6 +950,8 @@ export function Cartelera({
             </div>
           </section>
         )}
+
+        {deporte === "futbol" && datos && <Combinada partidos={partidos} m={m} ahora={ahora} />}
 
         {datos && (
           <div className="grid grid-cols-3 gap-2 px-3 pt-3">
