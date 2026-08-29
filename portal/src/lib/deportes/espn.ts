@@ -278,7 +278,7 @@ const claveEquipo = (nombre: string) => normNombre(nombre).replace(/ /g, "-");
 // Orden de preferencia de las ligas domésticas como fuente de equipos: dan
 // muchos más partidos por equipo que las copas (una liga entera vs. los pocos
 // de una copa), así un club que juega copa y liga se puebla desde su liga.
-const PRIORIDAD_FUENTE = ["usa.1", "mex.1", "chi.1", "eng.1", "esp.1", "ita.1", "ger.1", "fra.1"];
+const PRIORIDAD_FUENTE = ["usa.1", "mex.1", "chi.1", "eng.1", "esp.1", "ita.1", "ger.1", "por.1", "fra.1"];
 const rankFuente = (slug: string) => {
   const i = PRIORIDAD_FUENTE.indexOf(slug);
   return i < 0 ? 100 : i; // las copas (Leagues Cup, Libertadores, Champions…) al final
