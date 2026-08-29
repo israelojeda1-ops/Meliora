@@ -478,37 +478,56 @@ function candidatosDePartido(p: Proyeccion, m: Metrica[]): Pata[] {
   return out;
 }
 
-/** Arma el combo apuntando a cuota justa ≈ objetivo con líneas seguras. */
+/** Muestra mínima por equipo para que una pata sea confiable en modo automático. */
+const MIN_PJ_COMBI = 4;
+const MAX_PATAS_COMBI = 8;
+
+/**
+ * Arma el combo de forma automática apuntando a cuota justa lo más cerca posible
+ * de `objetivo`, con líneas seguras y una pata por partido (independientes). Solo
+ * usa partidos con muestra suficiente; si eso deja el pool vacío, relaja el
+ * mínimo. Si con una por partido no alcanza, suma segundas patas del mismo
+ * partido (correlacionadas). No pide nada al usuario: es el combo del día listo.
+ */
 function armarCombinada(
   partidos: Proyeccion[],
   m: Metrica[],
   ahora: number,
   objetivo = OBJETIVO_COMBI
 ): Pata[] {
-  const porPartido = new Map<number, Pata[]>();
-  for (const p of partidos) {
-    if (p.resultado || p.ts <= ahora) continue; // solo por jugarse: se puede apostar
-    const cs = candidatosDePartido(p, m).sort((a, b) => b.cuota - a.cuota); // más cuota primero
-    if (cs.length) porPartido.set(p.fid, cs);
-  }
-  // Una pata por partido (la de más cuota, aún ≥80% por ser línea segura),
-  // acumulando de mayor a menor cuota hasta llegar al objetivo.
-  const mejores = [...porPartido.values()].map((cs) => cs[0]).sort((a, b) => b.cuota - a.cuota);
+  const jugables = (minPj: number) =>
+    partidos.filter((p) => !p.resultado && p.ts > ahora && p.pjMin >= minPj);
+  // Con muestra sólida; si no queda ninguno, se relaja a cualquiera por jugarse.
+  let base = jugables(MIN_PJ_COMBI);
+  if (!base.length) base = jugables(0);
+
+  const porPartido = base
+    .map((p) => candidatosDePartido(p, m).sort((a, b) => b.cuota - a.cuota))
+    .filter((cs) => cs.length);
+
+  // De cada partido su pata de más cuota (aún ≥80% por ser línea segura). Se
+  // recorren de mayor a menor cuota y se agrega una pata si mantiene el combo por
+  // debajo del objetivo o si acerca la cuota al objetivo más que quedarse.
+  const acerca = (conNext: number, actual: number) =>
+    conNext <= objetivo || Math.abs(conNext - objetivo) < Math.abs(actual - objetivo);
+
   const patas: Pata[] = [];
   let cuota = 1;
-  for (const c of mejores) {
-    if (cuota >= objetivo) break;
+  const usar = (c: Pata) => {
+    const next = cuota * c.cuota;
+    if (patas.length >= MAX_PATAS_COMBI || cuota >= objetivo) return false;
+    if (!acerca(next, cuota)) return false;
     patas.push(c);
-    cuota *= c.cuota;
-  }
-  // Si con una por partido no alcanza, sumar segundas patas (correlacionadas).
+    cuota = next;
+    return true;
+  };
+
+  for (const c of porPartido.map((cs) => cs[0]).sort((a, b) => b.cuota - a.cuota)) usar(c);
+
+  // Si con una por partido no se llega, sumar segundas patas (correlacionadas).
   if (cuota < objetivo) {
-    const segundas = [...porPartido.values()].flatMap((cs) => cs.slice(1)).sort((a, b) => b.cuota - a.cuota);
-    for (const c of segundas) {
-      if (cuota >= objetivo) break;
-      patas.push({ ...c, correl: true });
-      cuota *= c.cuota;
-    }
+    const segundas = porPartido.flatMap((cs) => cs.slice(1)).sort((a, b) => b.cuota - a.cuota);
+    for (const c of segundas) usar({ ...c, correl: true });
   }
   return patas;
 }
@@ -519,7 +538,7 @@ function armarCombinada(
  * para ver la cuota combinada real y dónde hay valor. Guarda lo ingresado.
  */
 function Combinada({ partidos, m, ahora }: { partidos: Proyeccion[]; m: Metrica[]; ahora: number | null }) {
-  const [abierto, setAbierto] = useState(false);
+  const [abierto, setAbierto] = useState(true); // automático: se muestra listo
   // Se cargan las cuotas guardadas en el inicializador (no en un efecto): en el
   // servidor no hay localStorage, así que arranca vacío y en el cliente lee lo
   // guardado.
@@ -564,10 +583,13 @@ function Combinada({ partidos, m, ahora }: { partidos: Proyeccion[]; m: Metrica[
   return (
     <section className="px-3 pt-3">
       <div className="rounded-2xl bg-gradient-to-b from-sky-400/[0.10] to-transparent p-3 ring-1 ring-sky-400/20">
-        <button onClick={() => setAbierto((v) => !v)} className="flex w-full items-center justify-between px-1">
-          <span className="text-xs font-extrabold uppercase tracking-widest text-sky-300">🎯 Combinada 2.5</span>
-          <span className="text-[10px] tabular-nums text-slate-500">
-            {abierto ? "cerrar" : patas.length ? `cuota justa ${cuotaJusta.toFixed(2)}` : "sin partidos"}
+        <button onClick={() => setAbierto((v) => !v)} className="flex w-full items-center justify-between gap-2 px-1">
+          <span className="flex items-baseline gap-2">
+            <span className="text-xs font-extrabold uppercase tracking-widest text-sky-300">🎯 Combinada 2.5</span>
+            <span className="text-[10px] text-slate-500">automática · del día</span>
+          </span>
+          <span className="text-[11px] font-bold tabular-nums text-sky-300">
+            {patas.length ? cuotaJusta.toFixed(2) : "—"}
           </span>
         </button>
 
