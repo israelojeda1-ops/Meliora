@@ -91,8 +91,12 @@ export function CalculadoraHonorarios() {
   const resumenTexto = boleta
     ? [
         `Retención año 2026: ${tasa.toLocaleString("es-CL")}%`,
-        notaUF ? `Monto ingresado: ${notaUF} = ${fmt(montoPesos)}` : "",
-        `Monto bruto de la boleta: ${fmt(boleta.bruto)}`,
+        notaUF
+          ? `${direccion === "liquido" ? "Líquido deseado" : "Monto ingresado"}: ${notaUF} = ${fmt(montoPesos)}`
+          : "",
+        direccion === "liquido"
+          ? `Debes boletear por (bruto): ${fmt(boleta.bruto)}`
+          : `Monto bruto de la boleta: ${fmt(boleta.bruto)}`,
         `Retención SII: −${fmt(boleta.retencion)}`,
         `Líquido a recibir: ${fmt(boleta.liquido)}`,
       ]
@@ -268,36 +272,70 @@ export function CalculadoraHonorarios() {
             </h2>
             {notaUF && (
               <div className="flex items-baseline justify-between py-1.5">
-                <span className="text-sm text-slate-600">{notaUF}</span>
+                <span className="text-sm text-slate-600">
+                  {direccion === "liquido" ? "Líquido deseado: " : ""}
+                  {notaUF}
+                </span>
                 <span className="text-sm text-slate-700 tabular-nums">
                   {fmt(montoPesos)}
                 </span>
               </div>
             )}
-            <div className="flex items-baseline justify-between py-1.5">
-              <span className="text-sm font-semibold text-navy">
-                Monto bruto de la boleta
-              </span>
-              <span className="text-sm font-bold text-navy tabular-nums">
-                {fmt(boleta.bruto)}
-              </span>
-            </div>
-            <div className="flex items-baseline justify-between py-1.5">
-              <span className="text-sm text-slate-600">
-                Retención SII ({tasa.toLocaleString("es-CL")}%)
-              </span>
-              <span className="text-sm text-red-600 tabular-nums">
-                −{fmt(boleta.retencion)}
-              </span>
-            </div>
-            <div className="mt-3 rounded-xl bg-emerald/5 border border-emerald/20 px-4 py-3 flex items-baseline justify-between">
-              <span className="text-sm font-bold text-navy">
-                Líquido a recibir
-              </span>
-              <span className="text-xl font-bold text-emerald tabular-nums">
-                {fmt(boleta.liquido)}
-              </span>
-            </div>
+            {direccion === "liquido" ? (
+              <>
+                <div className="mt-2 rounded-xl bg-emerald/5 border border-emerald/20 px-4 py-3 flex items-baseline justify-between">
+                  <span className="text-sm font-bold text-navy">
+                    Debes boletear por (bruto)
+                  </span>
+                  <span className="text-xl font-bold text-emerald tabular-nums">
+                    {fmt(boleta.bruto)}
+                  </span>
+                </div>
+                <div className="mt-3 flex items-baseline justify-between py-1.5">
+                  <span className="text-sm text-slate-600">
+                    Retención SII ({tasa.toLocaleString("es-CL")}%)
+                  </span>
+                  <span className="text-sm text-red-600 tabular-nums">
+                    −{fmt(boleta.retencion)}
+                  </span>
+                </div>
+                <div className="flex items-baseline justify-between py-1.5">
+                  <span className="text-sm font-semibold text-navy">
+                    Líquido a recibir
+                  </span>
+                  <span className="text-sm font-bold text-navy tabular-nums">
+                    {fmt(boleta.liquido)}
+                  </span>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="flex items-baseline justify-between py-1.5">
+                  <span className="text-sm font-semibold text-navy">
+                    Monto bruto de la boleta
+                  </span>
+                  <span className="text-sm font-bold text-navy tabular-nums">
+                    {fmt(boleta.bruto)}
+                  </span>
+                </div>
+                <div className="flex items-baseline justify-between py-1.5">
+                  <span className="text-sm text-slate-600">
+                    Retención SII ({tasa.toLocaleString("es-CL")}%)
+                  </span>
+                  <span className="text-sm text-red-600 tabular-nums">
+                    −{fmt(boleta.retencion)}
+                  </span>
+                </div>
+                <div className="mt-3 rounded-xl bg-emerald/5 border border-emerald/20 px-4 py-3 flex items-baseline justify-between">
+                  <span className="text-sm font-bold text-navy">
+                    Líquido a recibir
+                  </span>
+                  <span className="text-xl font-bold text-emerald tabular-nums">
+                    {fmt(boleta.liquido)}
+                  </span>
+                </div>
+              </>
+            )}
 
             <p className="mt-5 text-[11px] leading-relaxed text-slate-400">
               La retención no es un impuesto perdido: financia tus cotizaciones
