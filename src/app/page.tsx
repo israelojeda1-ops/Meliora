@@ -114,13 +114,13 @@ export default function HomePage() {
               Asesoría financiera para PyMEs
             </p>
             <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white leading-tight tracking-tight">
-              El orden financiero que tu PyME necesita, sin cambiar de sistema ni
-              contratar tres proveedores.
+              Tu contador registra y declara. ¿Quién te explica tus números?
             </h1>
             <p className="mt-6 text-lg text-slate-300 leading-relaxed max-w-2xl">
-              Reportería gerencial especializada, en tiempo y forma y hecha
-              para tu negocio, con un equipo que te acompaña mes a mes en los
-              números y los procesos. Todo sobre tu sistema, o el nuestro.
+              Meliora convierte tu contabilidad en información para dirigir tu
+              negocio: reportería gerencial en tiempo y forma, como la vería un
+              gerente de finanzas, con un equipo que te acompaña mes a mes en
+              los números y los procesos. Todo sobre tu sistema, o el nuestro.
             </p>
             <div className="mt-10 flex flex-col sm:flex-row gap-4">
               <Link

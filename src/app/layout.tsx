@@ -23,7 +23,7 @@ const fraunces = Fraunces({
 export const metadata: Metadata = {
   title: "Meliora Advisory — Asesoría financiera, contable y de gestión para PyMEs",
   description:
-    "El orden financiero que tu PyME necesita, sin cambiar de sistema. Reportería gerencial especializada, en tiempo y forma y con acompañamiento mes a mes, sobre Softland, Softland Cloud o cualquier otro sistema.",
+    "Tu contador registra y declara; Meliora te entrega la información como la necesita quien dirige el negocio: reportería gerencial en tiempo y forma, con acompañamiento mes a mes, sobre Softland, Softland Cloud o cualquier otro sistema.",
   keywords: [
     "asesoría financiera PyME",
     "contabilidad Chile",
@@ -41,7 +41,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Meliora Advisory",
     description:
-      "El orden financiero que tu PyME necesita, sin cambiar de sistema ni contratar tres proveedores. Dashboards y reportería sobre Softland, Softland Cloud u otro ERP.",
+      "La información financiera de tu PyME como la necesita quien dirige el negocio. Dashboards y reportería sobre Softland, Softland Cloud u otro ERP.",
     url: "https://melioraadvisory.cl",
     siteName: "Meliora Advisory",
     locale: "es_CL",
@@ -52,7 +52,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Meliora Advisory",
     description:
-      "El orden financiero que tu PyME necesita, sin cambiar de sistema ni contratar tres proveedores.",
+      "La información financiera de tu PyME como la necesita quien dirige el negocio, con acompañamiento mes a mes.",
     images: ["https://melioraadvisory.cl/og-image.png"],
   },
 };
