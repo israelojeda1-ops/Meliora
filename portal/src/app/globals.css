@@ -33,3 +33,19 @@ body {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+/* Transición de entrada de los paneles del demo */
+@keyframes tab-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+.tab-panel {
+  animation: tab-in 0.22s ease-out both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .tab-panel {
+    animation: none;
+  }
+}
