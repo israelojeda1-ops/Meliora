@@ -38,7 +38,7 @@ export const PERIODOS = [
 ];
 
 export const money = (n: number, dec = 0) =>
-  `$${n.toLocaleString("es-CL", { minimumFractionDigits: dec, maximumFractionDigits: dec })}`;
+  `${n < 0 ? "-" : ""}$${Math.abs(n).toLocaleString("es-CL", { minimumFractionDigits: dec, maximumFractionDigits: dec })}`;
 export const mm = (n: number, dec = 0) => `${money(n, dec)} MM`;
 export const pct = (n: number, dec = 1) => `${n.toFixed(dec).replace(".", ",")}%`;
 export const days = (n: number) => `${Math.round(n)} días`;
@@ -69,19 +69,26 @@ export const forecastVentas = [64, 66, 63, 70, 76, 68];
 export const metaAnualForecast = 1000;
 
 /* ── Ventas: composición y clientes ───────────────────────────────────── */
+// Las cuatro líneas suman 595, el mismo acumulado de ventas[] de 12 meses.
 export const ventasPorLinea = [
-  { name: "Línea Retail", monto: 172 },
-  { name: "Proyectos", monto: 141 },
-  { name: "Servicios", monto: 98 },
-  { name: "Otros", monto: 44 },
+  { name: "Línea Retail", monto: 224 },
+  { name: "Proyectos", monto: 184 },
+  { name: "Servicios", monto: 129 },
+  { name: "Otros", monto: 58 },
 ];
-export const topClientes = [
-  { cliente: "Constructora Andes SpA", linea: "Proyectos", monto: 78, part: 15.4 },
-  { cliente: "Comercial del Sur Ltda", linea: "Línea Retail", monto: 61, part: 12.0 },
-  { cliente: "Inversiones Aconcagua", linea: "Proyectos", monto: 47, part: 9.3 },
-  { cliente: "Retail Pacífico SA", linea: "Línea Retail", monto: 39, part: 7.7 },
-  { cliente: "Distribuidora Central", linea: "Otros", monto: 28, part: 5.5 },
+export const totalVentasLineas = ventasPorLinea.reduce((a, l) => a + l.monto, 0);
+
+const clientesBase = [
+  { cliente: "Constructora Andes SpA", linea: "Proyectos", monto: 102 },
+  { cliente: "Comercial del Sur Ltda", linea: "Línea Retail", monto: 80 },
+  { cliente: "Inversiones Aconcagua", linea: "Proyectos", monto: 61 },
+  { cliente: "Retail Pacífico SA", linea: "Línea Retail", monto: 51 },
+  { cliente: "Distribuidora Central", linea: "Otros", monto: 37 },
 ];
+export const topClientes = clientesBase.map((c) => ({
+  ...c,
+  part: (c.monto / totalVentasLineas) * 100,
+}));
 
 /* ── Compras ──────────────────────────────────────────────────────────── */
 export const comprasPorCategoria = [
@@ -271,7 +278,8 @@ export const calendarioTributario = [
   { obligacion: "Cotizaciones previsionales", vencimiento: "13 ago 2026", monto: 8.6, estado: "Pendiente" as const },
   { obligacion: "IVA (F29) · Junio 2026", vencimiento: "12 jul 2026", monto: 13.1, estado: "Pagado" as const },
   { obligacion: "Cotizaciones previsionales · Junio", vencimiento: "13 jul 2026", monto: 8.3, estado: "Pagado" as const },
-  { obligacion: "Declaración de Renta (F22) · AT 2026", vencimiento: "30 abr 2026", monto: 0, estado: "Programado" as const },
+  { obligacion: "Declaración de Renta (F22) · AT 2026", vencimiento: "30 abr 2026", monto: 19.2, estado: "Pagado" as const },
+  { obligacion: "Declaración de Renta (F22) · AT 2027", vencimiento: "30 abr 2027", monto: 0, estado: "Programado" as const },
 ];
 export const TAX_ESTADO: Record<string, Estado | "neutral"> = { Pendiente: "warning", Pagado: "good", Programado: "neutral" };
 
