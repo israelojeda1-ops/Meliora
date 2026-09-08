@@ -9,12 +9,16 @@ import { Legend } from "./ui";
 
 /* Ticks redondos 1/2/5 */
 export function niceTicks(max: number, count = 4): number[] {
-  const rough = max / count;
+  const safeMax = max > 0 ? max : 1;
+  const rough = safeMax / count;
   const mag = Math.pow(10, Math.floor(Math.log10(rough)));
   const norm = rough / mag;
   const step = (norm >= 5 ? 10 : norm >= 2 ? 5 : norm >= 1 ? 2 : 1) * mag;
+  // El último tick debe quedar en o sobre el máximo: si no, las marcas que lo
+  // superan se dibujarían fuera del plot y el SVG las recortaría planas.
+  const top = Math.ceil(safeMax / step - 0.000001) * step;
   const ticks: number[] = [];
-  for (let t = 0; t <= max + step * 0.001; t += step) ticks.push(t);
+  for (let t = 0; t <= top + step * 0.001; t += step) ticks.push(Number(t.toFixed(6)));
   return ticks;
 }
 
@@ -27,15 +31,42 @@ function ChartTip({
   yPct: number;
   children: React.ReactNode;
 }) {
-  const left = Math.min(88, Math.max(12, xPct));
+  // Cerca de los bordes el tooltip se ancla al costado en vez de centrarse, y
+  // si no cabe arriba del punto se dibuja debajo.
+  const anclaIzq = xPct < 22;
+  const anclaDer = xPct > 78;
+  const abajo = yPct < 26;
+  const left = anclaIzq ? 2 : anclaDer ? 98 : xPct;
+  const translate = anclaIzq
+    ? "translate-x-0"
+    : anclaDer
+      ? "-translate-x-full"
+      : "-translate-x-1/2";
   return (
     <div
-      className="absolute z-10 pointer-events-none rounded-lg bg-navy/95 text-white text-xs px-3 py-2 shadow-xl ring-1 ring-white/10 -translate-x-1/2 -translate-y-full whitespace-nowrap"
-      style={{ left: `${left}%`, top: `${Math.max(10, yPct)}%` }}
+      className={`absolute z-10 pointer-events-none rounded-lg bg-navy/95 text-white text-xs px-3 py-2 shadow-xl ring-1 ring-white/10 max-w-[90%] ${translate} ${
+        abajo ? "translate-y-2" : "-translate-y-full"
+      }`}
+      style={{ left: `${left}%`, top: `${yPct}%` }}
     >
       {children}
     </div>
   );
+}
+
+/** Hover efímero para mouse y pin por click para pantallas táctiles: si se
+ *  comparten en un solo estado, hacer clic sobre la marca ya activa apaga el
+ *  tooltip con el puntero encima y no vuelve hasta salir y reentrar. */
+function useFoco() {
+  const [hover, setHover] = useState<number | null>(null);
+  const [pin, setPin] = useState<number | null>(null);
+  const activo = pin ?? hover;
+  return {
+    activo,
+    onEnter: (i: number) => setHover(i),
+    onLeave: () => setHover(null),
+    onClick: (i: number) => setPin((p) => (p === i ? null : i)),
+  };
 }
 
 const Swatch = ({ color }: { color: string }) => (
@@ -66,7 +97,7 @@ export function BarChart({
   highlight?: number;
   gapNote?: (i: number) => string | null;
 }) {
-  const [hover, setHover] = useState<number | null>(null);
+  const { activo: hover, onEnter, onLeave, onClick } = useFoco();
   const w = 720;
   const h = 260;
   const padL = 40;
@@ -98,7 +129,12 @@ export function BarChart({
 
   return (
     <div className="relative">
-      <svg viewBox={`0 0 ${w} ${h}`} className="w-full h-auto" role="img" aria-label={nameA}>
+      <svg
+        viewBox={`0 0 ${w} ${h}`}
+        className="w-full h-auto"
+        role="img"
+        aria-label={nameB ? `${nameA} vs ${nameB}` : nameA}
+      >
         {ticks.map((t, i) => (
           <g key={i}>
             <line x1={padL} x2={w - 10} y1={yOf(t)} y2={yOf(t)} stroke={C.grid} strokeWidth={1} />
@@ -134,9 +170,9 @@ export function BarChart({
                 width={groupW}
                 height={plotH}
                 fill="transparent"
-                onMouseEnter={() => setHover(i)}
-                onMouseLeave={() => setHover(null)}
-                onClick={() => setHover((hv) => (hv === i ? null : i))}
+                onMouseEnter={() => onEnter(i)}
+                onMouseLeave={onLeave}
+                onClick={() => onClick(i)}
               />
               <text
                 x={cx}
@@ -201,7 +237,7 @@ export function LineChart({
   target?: { value: number; label: string };
   highlight?: number;
 }) {
-  const [hover, setHover] = useState<number | null>(null);
+  const { activo: hover, onEnter, onLeave, onClick } = useFoco();
   const gradId = useId();
   const w = 720;
   const h = 240;
@@ -210,8 +246,17 @@ export function LineChart({
   const padT = 16;
   const lo = Math.min(...values, target ? target.value : Infinity);
   const hi = Math.max(...values, target ? target.value : -Infinity);
-  const min = lo - (hi - lo) * 0.25 - 0.5;
-  const max = hi + (hi - lo) * 0.2 + 0.5;
+  // Escala con extremos redondeados al mismo paso que los ticks, para que el
+  // eje muestre números limpios en vez de 39 / 48 / 57.
+  const span = hi - lo || Math.abs(hi) || 1;
+  const paso = (() => {
+    const rough = span / 2;
+    const mag = Math.pow(10, Math.floor(Math.log10(rough)));
+    const norm = rough / mag;
+    return (norm >= 5 ? 10 : norm >= 2 ? 5 : norm >= 1 ? 2 : 1) * mag;
+  })();
+  const min = Math.floor((lo - span * 0.2) / paso) * paso;
+  const max = Math.ceil((hi + span * 0.15) / paso) * paso;
   const plotW = w - padL - 10;
   const plotH = h - padT - padB;
 
@@ -222,7 +267,9 @@ export function LineChart({
   }));
   const line = pts.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x} ${p.y}`).join(" ");
   const area = `${line} L ${pts[pts.length - 1].x} ${padT + plotH} L ${pts[0].x} ${padT + plotH} Z`;
-  const ticks = [min, (min + max) / 2, max];
+  const ticks: number[] = [];
+  for (let v = min; v <= max + paso * 0.001; v += paso) ticks.push(Number(v.toFixed(6)));
+  const decTick = paso < 1 ? 1 : 0;
   const yTarget = target ? padT + plotH - ((target.value - min) / (max - min)) * plotH : 0;
   const last = pts[pts.length - 1];
   const focus = hover ?? highlight;
@@ -242,7 +289,7 @@ export function LineChart({
             <g key={i}>
               <line x1={padL} x2={w - 10} y1={y} y2={y} stroke={C.grid} strokeWidth={1} />
               <text x={padL - 6} y={y + 3} fontSize={10} fill="#64748b" textAnchor="end">
-                {t.toFixed(0)}
+                {t.toLocaleString("es-CL", { minimumFractionDigits: decTick, maximumFractionDigits: decTick })}
               </text>
             </g>
           );
@@ -278,9 +325,9 @@ export function LineChart({
               width={plotW / values.length}
               height={plotH}
               fill="transparent"
-              onMouseEnter={() => setHover(i)}
-              onMouseLeave={() => setHover(null)}
-              onClick={() => setHover((hv) => (hv === i ? null : i))}
+              onMouseEnter={() => onEnter(i)}
+              onMouseLeave={onLeave}
+              onClick={() => onClick(i)}
             />
             <text
               x={p.x}
@@ -295,12 +342,15 @@ export function LineChart({
           </g>
         ))}
         <text
-          x={last.x - 8 > w - 60 ? last.x - 8 : last.x + 8}
-          y={last.y + 3}
+          x={last.x}
+          y={Math.max(padT + 9, last.y - 11)}
           fontSize={10}
-          fontWeight={600}
+          fontWeight={700}
           fill={C.ink}
-          textAnchor={last.x - 8 > w - 60 ? "end" : "start"}
+          textAnchor="end"
+          stroke="#fff"
+          strokeWidth={3}
+          paintOrder="stroke"
         >
           {fmt(values[values.length - 1])}
         </text>
@@ -328,14 +378,14 @@ export function ForecastChart({
   splitIndex: number;
   fmt?: (n: number) => string;
 }) {
-  const [hover, setHover] = useState<number | null>(null);
+  const { activo: hover, onEnter, onLeave, onClick } = useFoco();
   const patId = useId();
   const w = 720;
   const h = 260;
   const padL = 40;
   const padB = 26;
-  const padT = 16;
-  const ticks = niceTicks(Math.max(...values) * 1.1);
+  const padT = 24;
+  const ticks = niceTicks(Math.max(...values) * 1.05);
   const max = ticks[ticks.length - 1];
   const plotW = w - padL - 10;
   const plotH = h - padT - padB;
@@ -362,7 +412,7 @@ export function ForecastChart({
           </g>
         ))}
         <line x1={xSplit} x2={xSplit} y1={padT} y2={padT + plotH} stroke={C.axis} strokeDasharray="4 4" />
-        <text x={xSplit + 6} y={padT + 10} fontSize={9} fill={C.ink2}>
+        <text x={xSplit + 6} y={padT - 4} fontSize={9} fill={C.ink2}>
           Proyección
         </text>
         {labels.map((m, i) => {
@@ -385,9 +435,9 @@ export function ForecastChart({
                 width={groupW}
                 height={plotH}
                 fill="transparent"
-                onMouseEnter={() => setHover(i)}
-                onMouseLeave={() => setHover(null)}
-                onClick={() => setHover((hv) => (hv === i ? null : i))}
+                onMouseEnter={() => onEnter(i)}
+                onMouseLeave={onLeave}
+                onClick={() => onClick(i)}
               />
               <text x={cx} y={h - 8} fontSize={9} fill="#64748b" textAnchor="middle">
                 {m}
@@ -431,12 +481,16 @@ export function HBarChart({
   fmt = (n) => mm(n),
   selected,
   onSelect,
+  showShare = true,
 }: {
   items: { name: string; monto: number }[];
   color: string;
   fmt?: (n: number) => string;
   selected?: string | null;
   onSelect?: (name: string | null) => void;
+  /** Desactivar cuando los valores no son aditivos (porcentajes de margen):
+   *  el "% del total" sobre una suma de porcentajes no significa nada. */
+  showShare?: boolean;
 }) {
   const [hover, setHover] = useState<string | null>(null);
   const max = Math.max(...items.map((i) => i.monto), 0.001);
@@ -482,7 +536,8 @@ export function HBarChart({
             )}
             {hover === it.name && (
               <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 whitespace-nowrap rounded-lg bg-navy/95 text-white text-[11px] px-2.5 py-1.5 z-20 shadow-xl">
-                {it.name}: {fmt(it.monto)} · {((it.monto / total) * 100).toFixed(0)}% del total
+                {it.name}: {fmt(it.monto)}
+                {showShare && ` · ${((it.monto / total) * 100).toFixed(0)}% del total`}
               </span>
             )}
           </div>
@@ -575,7 +630,7 @@ export function AgingBars({
 
 /* ── Cascada del estado de resultados ─────────────────────────────────── */
 export function Waterfall() {
-  const [hover, setHover] = useState<number | null>(null);
+  const { activo: hover, onEnter, onLeave, onClick } = useFoco();
   const w = 720;
   const h = 300;
   const padL = 40;
@@ -649,7 +704,7 @@ export function Waterfall() {
               <rect x={cx - barW / 2} y={yt} width={barW} height={Math.max(2, yb - yt)} rx={4} fill={bar.fill} opacity={hover === null || hover === i ? 1 : 0.55} />
               {bar.kind === "total" && (
                 <text x={cx} y={yt - 6} fontSize={10} fontWeight={700} fill={C.ink} textAnchor="middle">
-                  {mm(bar.value, 0)}
+                  {mm(bar.value, 1)}
                 </text>
               )}
               <rect
@@ -658,9 +713,9 @@ export function Waterfall() {
                 width={colW}
                 height={plotH}
                 fill="transparent"
-                onMouseEnter={() => setHover(i)}
-                onMouseLeave={() => setHover(null)}
-                onClick={() => setHover((hv) => (hv === i ? null : i))}
+                onMouseEnter={() => onEnter(i)}
+                onMouseLeave={onLeave}
+                onClick={() => onClick(i)}
               />
               <text x={cx} y={h - padB + 18} fontSize={9.5} fill={C.ink2} textAnchor="middle">
                 {bar.label}

@@ -7,7 +7,7 @@ import {
   ventas, presupuestoVentas, ventasAnoAnterior, compras, ebitdaMargen,
   ingresosCaja, egresosCaja, dso, dpo, saldoCaja,
   forecastMeses, forecastVentas, metaAnualForecast,
-  ventasPorLinea, topClientes, comprasPorCategoria, topProveedores,
+  ventasPorLinea, totalVentasLineas, topClientes, comprasPorCategoria, topProveedores,
   cartera, topDeudores, carteraPagar, proveedoresPago,
   eerr, pnlIfrs, topVariaciones, activos, pasivosPatrimonio, flujoIndirecto,
   productos, stock, capex, CAPEX_ESTADO, dotacion, costoNomina,
@@ -78,7 +78,7 @@ const QUE_MIRAR: { texto: string; tab: Tab }[] = [
 ];
 
 const ALERTAS: { status: Estado; texto: string; tab: Tab }[] = [
-  { status: "critical", texto: "3 clientes concentran el 62% de la cartera vencida a más de 90 días.", tab: "cobranza" },
+  { status: "critical", texto: "3 clientes concentran el 84% de la cartera vencida, y $3,8 MM ya superan los 90 días.", tab: "cobranza" },
   { status: "warning", texto: "El gasto de venta superó el presupuesto en 4 de los últimos 6 meses.", tab: "resultados" },
   { status: "good", texto: "El margen EBITDA subió 4,6 puntos porcentuales respecto al semestre anterior.", tab: "resultados" },
 ];
@@ -131,6 +131,14 @@ export default function DemoDashboard() {
   useEffect(() => {
     tabRefs.current[tab]?.scrollIntoView({ inline: "nearest", block: "nearest" });
   }, [tab]);
+
+  useEffect(() => {
+    if (!periodoOpen) return;
+    const t = window.setTimeout(() => {
+      periodoRef.current?.querySelector('[aria-selected="true"]')?.scrollIntoView({ block: "nearest" });
+    }, 0);
+    return () => window.clearTimeout(t);
+  }, [periodoOpen]);
 
   const grupoActivo = NAV.find((g) => g.tabs.some((t) => t.id === tab))!;
   const tabActivo = ALL_TABS.find((t) => t.id === tab)!;
@@ -206,7 +214,7 @@ export default function DemoDashboard() {
     [estadoStock, qStock]
   );
   const valorInventario = stock.reduce((a, s) => a + s.valor, 0);
-  const skuConCobertura = stock.filter((s) => s.estado !== "critical");
+  const skuConCobertura = stock.filter((s) => s.unidades > 0);
   const coberturaPromedio = skuConCobertura.reduce((a, s) => a + s.dias, 0) / skuConCobertura.length;
   const skuMayorValor = [...stock].sort((a, b) => b.valor - a.valor)[0];
 
@@ -241,14 +249,16 @@ export default function DemoDashboard() {
   return (
     <div>
       {/* ── Header ── */}
-      <div className="relative overflow-hidden bg-gradient-to-b from-[#22345C] to-navy">
-        <div aria-hidden className="pointer-events-none absolute -top-24 right-[-8%] h-80 w-80 rounded-full bg-emerald/20 blur-3xl" />
+      <div className="print-header relative bg-gradient-to-b from-[#22345C] to-navy">
+        <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
+          <div className="absolute -top-24 right-[-8%] h-80 w-80 rounded-full bg-emerald/20 blur-3xl" />
+        </div>
         <div className="relative mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 pt-6 pb-5">
           <div className="flex items-center justify-between gap-3 mb-4">
             <Logo variant="icon" theme="dark" />
             <span className="text-slate-400 text-xs">Portal Meliora Advisory</span>
           </div>
-          <p className="text-emerald-light font-semibold text-xs tracking-wide uppercase mb-1">
+          <p className="print-kicker text-emerald-light font-semibold text-xs tracking-wide uppercase mb-1">
             Reporte gerencial mensual
           </p>
           <div className="flex flex-wrap items-end justify-between gap-3">
@@ -266,7 +276,7 @@ export default function DemoDashboard() {
                 className="inline-flex items-center gap-1.5 rounded-lg bg-white/10 px-3 py-1.5 text-xs font-semibold text-white hover:bg-white/20 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald"
               >
                 <IconDownload className="h-3.5 w-3.5" />
-                Descargar PDF
+                Imprimir esta sección
               </button>
               <div className="relative" ref={periodoRef}>
                 <button
@@ -313,8 +323,12 @@ export default function DemoDashboard() {
 
         {/* ── Nav dos niveles ── */}
         <div className="relative border-t border-white/10 print:hidden">
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-l from-navy to-transparent sm:hidden"
+          />
           <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
-            <div className="flex gap-1 overflow-x-auto no-scrollbar pt-2.5">
+            <div className="flex gap-1 overflow-x-auto no-scrollbar pt-2.5 pr-8 sm:pr-0">
               {NAV.map((g) => {
                 const activa = g.grupo === grupoActivo.grupo;
                 return (
@@ -333,7 +347,7 @@ export default function DemoDashboard() {
               })}
             </div>
             <div role="tablist" aria-label="Secciones del reporte" className="flex gap-1 overflow-x-auto no-scrollbar">
-              {grupoActivo.tabs.map((t) => {
+              {grupoActivo.tabs.map((t, i) => {
                 const Icono = t.icon;
                 const activa = t.id === tab;
                 return (
@@ -344,7 +358,18 @@ export default function DemoDashboard() {
                     }}
                     type="button"
                     role="tab"
+                    id={`tab-${t.id}`}
+                    aria-controls="panel-reporte"
                     aria-selected={activa}
+                    tabIndex={activa ? 0 : -1}
+                    onKeyDown={(e) => {
+                      if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
+                      e.preventDefault();
+                      const paso = e.key === "ArrowRight" ? 1 : -1;
+                      const destino = grupoActivo.tabs[(i + paso + grupoActivo.tabs.length) % grupoActivo.tabs.length];
+                      setTab(destino.id as Tab);
+                      tabRefs.current[destino.id]?.focus();
+                    }}
                     onClick={() => setTab(t.id as Tab)}
                     className={`relative inline-flex items-center gap-2 whitespace-nowrap px-3.5 py-3 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald ${
                       activa ? "text-white" : "text-slate-400 hover:text-white"
@@ -361,7 +386,12 @@ export default function DemoDashboard() {
         </div>
       </div>
 
-      <div role="tabpanel" className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+      <div
+        role="tabpanel"
+        id="panel-reporte"
+        aria-labelledby={`tab-${tab}`}
+        className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-6 sm:py-8"
+      >
         {/* ── Encabezado de pestaña ── */}
         <div key={tab} className="tab-panel">
           <div className="mb-6">
@@ -452,6 +482,7 @@ export default function DemoDashboard() {
 
                 <Card
                   title="Indicadores que requieren atención"
+                  subtitle="Al cierre de Julio 2026"
                   meta={
                     <span className="text-[11px] font-semibold" style={{ color: C.critical }}>
                       1 crítico
@@ -514,8 +545,8 @@ export default function DemoDashboard() {
                       ].map((r) => (
                         <tr key={r[0]} className="border-b border-slate-100 last:border-0 hover:bg-slate-50 transition-colors">
                           <td className="py-2.5 pr-4 font-medium text-navy">{r[0]}</td>
-                          <td className="py-2.5 px-4 text-right tabular-nums text-slate-700">{r[1]}</td>
-                          <td className="py-2.5 pl-4 text-right tabular-nums text-slate-700">{r[2]}</td>
+                          <td className="py-2.5 px-4 text-right tabular-nums whitespace-nowrap text-slate-700">{r[1]}</td>
+                          <td className="py-2.5 pl-4 text-right tabular-nums whitespace-nowrap text-slate-700">{r[2]}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -538,7 +569,7 @@ export default function DemoDashboard() {
                   caption="vs presupuesto"
                   spark={d.corte(ventas)}
                 />
-                <StatTile label="Ventas acumuladas" value={mm(d.ventasYTD)} caption={`${mes + 1} meses`} />
+                <StatTile label="Ventas acumuladas" value={mm(d.ventasYTD)} caption={`${mes + 1} ${mes === 0 ? "mes" : "meses"}`} />
                 <StatTile
                   label="Crecimiento interanual"
                   value={pct(d.deltaInteranual)}
@@ -548,9 +579,10 @@ export default function DemoDashboard() {
                 <StatTile label="Ticket promedio" value={`${money(3.4, 1)} MM`} caption="por operación" />
               </div>
 
-              <Insight tone="good">
-                Las ventas del mes superan el presupuesto por tercer mes consecutivo. La Línea Retail explica la mayor
-                parte del sobre cumplimiento gracias al contrato con Constructora Andes.
+              <Insight tone={d.deltaPpto >= 0 ? "good" : "warning"}>
+                {d.deltaPpto >= 0
+                  ? `Las ventas de ${PERIODOS[mes]} superan el presupuesto en ${pct(d.deltaPpto)}. La Línea Retail explica la mayor parte del sobre cumplimiento gracias al contrato con Constructora Andes.`
+                  : `Las ventas de ${PERIODOS[mes]} quedaron ${pct(Math.abs(d.deltaPpto))} bajo el presupuesto. Conviene revisar el pipeline comercial y la estacionalidad del período antes del próximo cierre.`}
               </Insight>
 
               <Card
@@ -598,8 +630,10 @@ export default function DemoDashboard() {
                   <HBarChart items={ventasPorLinea} color={C.blue} selected={lineaSel} onSelect={setLineaSel} />
                   {lineaSel && (
                     <p className="mt-3 text-xs text-slate-400">
-                      {lineaSel}: {mm(ventasPorLinea.find((v) => v.name === lineaSel)?.monto ?? 0)} de {mm(455)} (
-                      {(((ventasPorLinea.find((v) => v.name === lineaSel)?.monto ?? 0) / 455) * 100).toFixed(0)}%)
+                      {lineaSel}: {mm(ventasPorLinea.find((v) => v.name === lineaSel)?.monto ?? 0)} de{" "}
+                      {mm(totalVentasLineas)} (
+                      {(((ventasPorLinea.find((v) => v.name === lineaSel)?.monto ?? 0) / totalVentasLineas) * 100).toFixed(0)}
+                      %)
                     </p>
                   )}
                 </Card>
@@ -662,12 +696,16 @@ export default function DemoDashboard() {
             <div className="space-y-6">
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                 <StatTile label="Compras del mes" value={mm(d.comprasMes)} spark={d.corte(compras)} />
-                <StatTile label="Compras acumuladas" value={mm(d.comprasAcum)} caption={`${mes + 1} meses`} />
+                <StatTile label="Compras acumuladas" value={mm(d.comprasAcum)} caption={`${mes + 1} ${mes === 0 ? "mes" : "meses"}`} />
                 <StatTile
                   label="Compras / Ventas"
                   value={pct((d.comprasMes / d.ventaMes) * 100, 0)}
-                  delta="Bajo el objetivo de 62%"
-                  deltaTone="good"
+                  delta={
+                    (d.comprasMes / d.ventaMes) * 100 <= 62
+                      ? "Bajo el objetivo de 62%"
+                      : "Sobre el objetivo de 62%"
+                  }
+                  deltaTone={(d.comprasMes / d.ventaMes) * 100 <= 62 ? "good" : "bad"}
                   deltaArrow={false}
                 />
                 <StatTile label="Proveedores activos" value="38" />
@@ -786,10 +824,16 @@ export default function DemoDashboard() {
                     <StatTile
                       label="DSO actual"
                       value={days(d.dsoMes)}
-                      delta={d.dsoDelta === 0 ? "sin cambio" : plural(d.dsoDelta, "día") + (d.dsoDelta < 0 ? " menos" : " más")}
+                      delta={
+                        mes === 0
+                          ? undefined
+                          : d.dsoDelta === 0
+                            ? "sin cambio"
+                            : plural(d.dsoDelta, "día") + (d.dsoDelta < 0 ? " menos" : " más")
+                      }
                       deltaTone={d.dsoDelta <= 0 ? "good" : "bad"}
                       deltaDown={d.dsoDelta < 0}
-                      caption="que el mes anterior"
+                      caption={mes === 0 ? "primer mes de la serie" : "que el mes anterior"}
                       spark={d.corte(dso)}
                     />
                     <StatTile
@@ -872,9 +916,15 @@ export default function DemoDashboard() {
                     <StatTile
                       label="DPO actual"
                       value={days(d.dpoMes)}
-                      delta={d.dpoDelta === 0 ? "sin cambio" : plural(d.dpoDelta, "día") + (d.dpoDelta < 0 ? " menos" : " más")}
+                      delta={
+                        mes === 0
+                          ? undefined
+                          : d.dpoDelta === 0
+                            ? "sin cambio"
+                            : plural(d.dpoDelta, "día") + (d.dpoDelta < 0 ? " menos" : " más")
+                      }
                       deltaTone="neutral"
-                      caption="que el mes anterior"
+                      caption={mes === 0 ? "primer mes de la serie" : "que el mes anterior"}
                       spark={d.corte(dpo)}
                     />
                     <StatTile
@@ -1059,9 +1109,11 @@ export default function DemoDashboard() {
                                 <td className={`py-2.5 pr-4 ${emphasize ? "font-bold text-navy" : "font-medium text-slate-600"}`}>
                                   {r.label}
                                 </td>
-                                <td className="py-2.5 px-4 text-right text-slate-500 tabular-nums">{r.pres.toFixed(1)}</td>
+                                <td className="py-2.5 px-4 text-right text-slate-500 tabular-nums">
+                                  {r.pres.toLocaleString("es-CL", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}
+                                </td>
                                 <td className={`py-2.5 px-4 text-right tabular-nums ${emphasize ? "font-bold text-navy" : "font-semibold text-navy"}`}>
-                                  {r.real.toFixed(1)}
+                                  {r.real.toLocaleString("es-CL", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}
                                 </td>
                                 <td
                                   className="py-2.5 pl-4 text-right font-semibold tabular-nums"
@@ -1234,6 +1286,7 @@ export default function DemoDashboard() {
                     items={[...productosFiltrados].sort((a, b) => b.margenPct - a.margenPct).map((p) => ({ name: p.nombre, monto: p.margenPct }))}
                     color={C.green}
                     fmt={(n) => pct(n)}
+                    showShare={false}
                   />
                 </Card>
                 <Card title="Detalle por producto" subtitle="Acumulado 12 meses, MM CLP">
@@ -1278,10 +1331,11 @@ export default function DemoDashboard() {
                   <StatTile label="SKU de mayor valor" value={skuMayorValor.sku} caption={mm(skuMayorValor.valor, 1)} />
                   <StatTile
                     label="SKUs en quiebre"
-                    value={String(stock.filter((s) => s.estado === "critical").length)}
+                    value={String(stock.filter((s) => s.unidades === 0).length)}
                     delta="Requieren reposición"
                     deltaTone="bad"
                     deltaArrow={false}
+                    caption={`${stock.filter((s) => s.estado === "critical" && s.unidades > 0).length} más en nivel crítico`}
                   />
                 </div>
                 <Card
@@ -1312,7 +1366,7 @@ export default function DemoDashboard() {
                         { label: "Producto", render: (s) => s.nombre, sortValue: (s) => s.nombre },
                         { label: "Unidades", align: "right", render: (s) => s.unidades.toLocaleString("es-CL"), sortValue: (s) => s.unidades },
                         { label: "Valor", align: "right", render: (s) => mm(s.valor, 1), sortValue: (s) => s.valor },
-                        { label: "Cobertura", align: "right", render: (s) => (s.estado === "critical" ? "-" : days(s.dias)), sortValue: (s) => s.dias },
+                        { label: "Cobertura", align: "right", render: (s) => (s.unidades === 0 ? "-" : days(s.dias)), sortValue: (s) => s.dias },
                         { label: "Estado", render: (s) => <StatusBadge status={s.estado} /> },
                       ]}
                       rows={stockFiltrado}

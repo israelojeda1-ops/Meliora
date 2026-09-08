@@ -130,9 +130,9 @@ export function StatTile({
       <button
         type="button"
         onClick={onClick}
-        className={`${shell} text-left transition-shadow hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald`}
+        className={`${shell} block w-full text-left align-top transition-shadow hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald`}
       >
-        <span className="absolute right-3 top-3 text-slate-300" aria-hidden="true">
+        <span className="absolute right-3 top-4 text-emerald" aria-hidden="true">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-3 w-3">
             <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
           </svg>

@@ -77,7 +77,7 @@ function FeatureIcon({ children }: { children: React.ReactNode }) {
 
 /** Mockup del dashboard hecho solo con CSS/SVG, sin imágenes externas. */
 export function DashboardPreview() {
-  const bars = [38, 52, 45, 61, 55, 70, 64, 82];
+  const bars = [45, 61, 55, 70, 64, 74, 82];
   return (
     <div className="relative rounded-2xl border border-white/10 bg-white/[0.04] backdrop-blur-sm shadow-2xl shadow-black/20 p-5 sm:p-6">
       <div className="flex items-center justify-between mb-5">
@@ -90,7 +90,7 @@ export function DashboardPreview() {
 
       <div className="grid grid-cols-3 gap-3 mb-5">
         {[
-          { label: "Ventas YTD", value: "$595 MM", trend: "+16,1%", up: true },
+          { label: "Ventas 12M", value: "$595 MM", trend: "+16,1%", up: true },
           { label: "EBITDA", value: "15,8%", trend: "+4,6 pp", up: true },
           { label: "DSO", value: "42 días", trend: "-10 días", up: true },
         ].map((k) => (
