@@ -17,12 +17,15 @@ export default function DemoGate() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      setAccess(raw ? (JSON.parse(raw) as Access) : null);
-    } catch {
-      setAccess(null);
-    }
+    const t = window.setTimeout(() => {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        setAccess(raw ? (JSON.parse(raw) as Access) : null);
+      } catch {
+        setAccess(null);
+      }
+    }, 0);
+    return () => window.clearTimeout(t);
   }, []);
 
   async function handleSubmit(e: FormEvent) {

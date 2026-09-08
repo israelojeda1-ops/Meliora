@@ -3,7 +3,7 @@ import { Logo } from "@/components/Logo";
 const FEATURES: { title: string; desc: string; icon: React.ReactNode }[] = [
   {
     title: "Ventas y Forecast",
-    desc: "Real vs. presupuesto por mes, línea de negocio y proyección a 6 meses.",
+    desc: "Real vs. presupuesto, líneas de negocio, filtros interactivos y proyección a 6 meses.",
     icon: (
       <path strokeLinecap="round" strokeLinejoin="round" d="M3 3v18h18M7 15l4-4 3 3 5-6" />
     ),
@@ -20,8 +20,8 @@ const FEATURES: { title: string; desc: string; icon: React.ReactNode }[] = [
     ),
   },
   {
-    title: "Cobranza y Deuda",
-    desc: "Antigüedad de cartera por cliente, DSO y cuentas por pagar al día.",
+    title: "Cobranza y Pagos",
+    desc: "Antigüedad de cartera por cliente, DSO, DPO y prioridades de pago.",
     icon: (
       <path
         strokeLinecap="round"
@@ -31,8 +31,8 @@ const FEATURES: { title: string; desc: string; icon: React.ReactNode }[] = [
     ),
   },
   {
-    title: "Estado de Resultados",
-    desc: "P&L comparativo interanual bajo norma IFRS (IAS 1), listo para directorio.",
+    title: "Resultados",
+    desc: "Cascada del mes, presupuesto vs. real con plan de acción y EERR anual IFRS.",
     icon: (
       <path
         strokeLinecap="round"
@@ -43,7 +43,7 @@ const FEATURES: { title: string; desc: string; icon: React.ReactNode }[] = [
   },
   {
     title: "Balance General",
-    desc: "Activos, pasivos y patrimonio consolidados, con márgenes por producto.",
+    desc: "Activos, pasivos y patrimonio consolidados al cierre de cada período.",
     icon: (
       <path
         strokeLinecap="round"
@@ -75,8 +75,8 @@ function FeatureIcon({ children }: { children: React.ReactNode }) {
   );
 }
 
-/** Mockup del dashboard hecho solo con CSS/SVG — sin imágenes externas. */
-function DashboardPreview() {
+/** Mockup del dashboard hecho solo con CSS/SVG, sin imágenes externas. */
+export function DashboardPreview() {
   const bars = [38, 52, 45, 61, 55, 70, 64, 82];
   return (
     <div className="relative rounded-2xl border border-white/10 bg-white/[0.04] backdrop-blur-sm shadow-2xl shadow-black/20 p-5 sm:p-6">
@@ -157,7 +157,7 @@ export function DemoCover() {
 
               <p className="mt-5 text-base sm:text-lg text-slate-300 leading-relaxed max-w-xl">
                 Meliora Advisory transforma tu contabilidad en un portal ejecutivo: ventas, flujo de caja,
-                cobranza, estado de resultados y más — actualizado cada cierre, sin planillas.
+                cobranza, estado de resultados y más, actualizado en cada cierre y sin planillas.
               </p>
 
               <div className="mt-8 flex flex-wrap items-center gap-4">
