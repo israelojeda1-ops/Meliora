@@ -425,7 +425,7 @@ export default function DemoDashboard() {
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <Card
                   title="Qué mirar este mes"
-                  subtitle={`Análisis del equipo Meliora · ${PERIODOS[mes]}`}
+                  subtitle="Análisis del equipo Meliora · cierre de Julio 2026"
                   className="border-l-4 border-l-emerald"
                 >
                   <ul className="space-y-4">
