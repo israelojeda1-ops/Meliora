@@ -9,7 +9,7 @@ import {
   forecastMeses, forecastVentas, metaAnualForecast,
   ventasPorLinea, totalVentasLineas, topClientes, comprasPorCategoria, topProveedores,
   cartera, topDeudores, carteraPagar, proveedoresPago,
-  eerr, pnlIfrs, topVariaciones, activos, pasivosPatrimonio, flujoIndirecto,
+  eerr, pnlIfrs, topVariaciones, activos, pasivosPatrimonio, flujoIndirecto, utilidadNetaAnual,
   productos, stock, capex, CAPEX_ESTADO, dotacion, costoNomina,
   calendarioTributario, TAX_ESTADO, DEFINICIONES,
   type Estado, type Prioridad,
@@ -72,15 +72,15 @@ const ALL_TABS = NAV.flatMap((g) => g.tabs.map((t) => ({ ...t, grupo: g.grupo })
 
 /* ── Bloque "Qué mirar este mes" ──────────────────────────────────────── */
 const QUE_MIRAR: { texto: string; tab: Tab }[] = [
-  { texto: "Las ventas superan el presupuesto por tercer mes consecutivo (+10,9% en julio). La proyección anual llega a $1.002 MM y roza la meta de $1.000 MM.", tab: "ventas" },
-  { texto: "La caja cierra en $113 MM, pero $22,2 MM de cobranza vencida concentrada en 3 clientes es el riesgo del mes. Priorizar gestión con Inversiones Aconcagua (96 días).", tab: "cobranza" },
+  { texto: "Las ventas superan el presupuesto por quinto mes consecutivo (+10,9% en julio). La proyección para los próximos 12 meses llega a $726 MM y supera la meta de $700 MM.", tab: "ventas" },
+  { texto: "La caja cierra en $113 MM, pero $22,2 MM de cobranza vencida son el riesgo del mes. Priorizar gestión con Inversiones Aconcagua, que acumula 96 días.", tab: "cobranza" },
   { texto: "El costo de venta subió 8,5% sobre presupuesto por alza de materia prima. La negociación del contrato de cobertura sigue en curso.", tab: "resultados" },
 ];
 
 const ALERTAS: { status: Estado; texto: string; tab: Tab }[] = [
-  { status: "critical", texto: "3 clientes concentran el 84% de la cartera vencida, y $3,8 MM ya superan los 90 días.", tab: "cobranza" },
-  { status: "warning", texto: "El gasto de venta superó el presupuesto en 4 de los últimos 6 meses.", tab: "resultados" },
-  { status: "good", texto: "El margen EBITDA subió 4,6 puntos porcentuales respecto al semestre anterior.", tab: "resultados" },
+  { status: "critical", texto: "3 clientes concentran el 68% de la cartera vencida, y $3,8 MM ya superan los 90 días.", tab: "cobranza" },
+  { status: "warning", texto: "El gasto de venta superó el presupuesto por cuarto mes seguido, esta vez en $0,7 MM.", tab: "resultados" },
+  { status: "good", texto: "El margen EBITDA promedio subió 1,8 puntos porcentuales respecto al semestre anterior.", tab: "resultados" },
 ];
 
 export default function DemoDashboard() {
@@ -88,6 +88,7 @@ export default function DemoDashboard() {
   const [mes, setMes] = useState(11);
   const [periodoOpen, setPeriodoOpen] = useState(false);
   const periodoRef = useRef<HTMLDivElement | null>(null);
+  const periodoBtnRef = useRef<HTMLButtonElement | null>(null);
   const tabRefs = useRef<Record<string, HTMLButtonElement | null>>({});
 
   /* rangos por sección */
@@ -96,6 +97,7 @@ export default function DemoDashboard() {
   const [rangoCaja, setRangoCaja] = useState(12);
   const [rangoResumen, setRangoResumen] = useState(12);
   const [rangoCartera, setRangoCartera] = useState(12);
+  const [rangoSaldo, setRangoSaldo] = useState(12);
 
   /* filtros por pestaña */
   const [comparar, setComparar] = useState<"presupuesto" | "anterior">("presupuesto");
@@ -118,7 +120,9 @@ export default function DemoDashboard() {
       if (!periodoRef.current?.contains(e.target as Node)) setPeriodoOpen(false);
     };
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setPeriodoOpen(false);
+      if (e.key !== "Escape") return;
+      setPeriodoOpen(false);
+      periodoBtnRef.current?.focus();
     };
     document.addEventListener("mousedown", onDown);
     document.addEventListener("keydown", onKey);
@@ -135,7 +139,9 @@ export default function DemoDashboard() {
   useEffect(() => {
     if (!periodoOpen) return;
     const t = window.setTimeout(() => {
-      periodoRef.current?.querySelector('[aria-selected="true"]')?.scrollIntoView({ block: "nearest" });
+      const sel = periodoRef.current?.querySelector<HTMLButtonElement>('[aria-selected="true"]');
+      sel?.scrollIntoView({ block: "nearest" });
+      sel?.focus();
     }, 0);
     return () => window.clearTimeout(t);
   }, [periodoOpen]);
@@ -177,7 +183,8 @@ export default function DemoDashboard() {
   const serie = (s: number[], rango: number) => d.corte(s).slice(-rango);
   const hl = (rango: number) => Math.min(rango, mes + 1) - 1;
 
-  const plural = (n: number, unidad: string) => `${Math.abs(n)} ${Math.abs(n) === 1 ? unidad : unidad + "s"}`;
+  const plural = (n: number, unidad: string) =>
+    `${Math.abs(n)} ${Math.abs(n) === 1 ? unidad : unidad === "mes" ? "meses" : unidad + "s"}`;
 
   /* cartera */
   const totalCartera = cartera.reduce((a, r) => a + r.monto, 0);
@@ -189,7 +196,8 @@ export default function DemoDashboard() {
   /* forecast */
   const ventasYTD12 = ventas.reduce((a, b) => a + b, 0);
   const forecastTotal = forecastVentas.reduce((a, b) => a + b, 0);
-  const proyeccionAnual = ventasYTD12 + forecastTotal;
+  // Ventana móvil de 12 meses: los 6 meses reales más recientes y los 6 proyectados.
+  const proyeccion12m = ventas.slice(6).reduce((a, b) => a + b, 0) + forecastTotal;
   const promedioTrim = (ventas[9] + ventas[10] + ventas[11]) / 3;
   const crecimientoProyectado = ((forecastTotal / 6 - promedioTrim) / promedioTrim) * 100;
 
@@ -204,19 +212,31 @@ export default function DemoDashboard() {
   const mejorProducto = [...productosFiltrados].sort((a, b) => b.margenPct - a.margenPct)[0];
   const peorProducto = [...productosFiltrados].sort((a, b) => a.margenPct - b.margenPct)[0];
 
+  // Los chips de categoría del tab filtran también el inventario: cada SKU
+  // pertenece a un producto, y el producto a una categoría.
+  const categoriaDeProducto = useMemo(
+    () => new Map(productos.map((p) => [p.nombre, p.categoria])),
+    []
+  );
+  const stockCategoria = useMemo(
+    () => stock.filter((s) => catProd === "all" || categoriaDeProducto.get(s.categoria) === catProd),
+    [catProd, categoriaDeProducto]
+  );
   const stockFiltrado = useMemo(
     () =>
-      stock.filter(
+      stockCategoria.filter(
         (s) =>
           (estadoStock === "all" || s.estado === estadoStock) &&
           norm(`${s.sku} ${s.nombre} ${s.categoria}`).includes(norm(qStock))
       ),
-    [estadoStock, qStock]
+    [stockCategoria, estadoStock, qStock]
   );
-  const valorInventario = stock.reduce((a, s) => a + s.valor, 0);
-  const skuConCobertura = stock.filter((s) => s.unidades > 0);
-  const coberturaPromedio = skuConCobertura.reduce((a, s) => a + s.dias, 0) / skuConCobertura.length;
-  const skuMayorValor = [...stock].sort((a, b) => b.valor - a.valor)[0];
+  const valorInventario = stockCategoria.reduce((a, s) => a + s.valor, 0);
+  const skuConCobertura = stockCategoria.filter((s) => s.unidades > 0);
+  const coberturaPromedio = skuConCobertura.length
+    ? skuConCobertura.reduce((a, s) => a + s.dias, 0) / skuConCobertura.length
+    : 0;
+  const skuMayorValor = [...stockCategoria].sort((a, b) => b.valor - a.valor)[0];
 
   /* clientes / proveedores filtrados */
   const clientesFiltrados = topClientes.filter((c) => !lineaSel || c.linea === lineaSel);
@@ -266,7 +286,7 @@ export default function DemoDashboard() {
               <h1 className="text-xl sm:text-2xl font-bold text-white">Empresa Demo SpA</h1>
               <p className="text-slate-300 text-sm mt-0.5">Control financiero integrado · Portal Meliora</p>
               <p className="text-[11px] text-slate-400 mt-1">
-                Datos al 31 de julio de 2026 · Cifras en MM CLP · Información ficticia de demostración
+                Período {PERIODOS[mes]} · Cifras en MM CLP · Información ficticia de demostración
               </p>
             </div>
             <div className="flex items-center gap-2 print:hidden">
@@ -280,6 +300,7 @@ export default function DemoDashboard() {
               </button>
               <div className="relative" ref={periodoRef}>
                 <button
+                  ref={periodoBtnRef}
                   type="button"
                   aria-haspopup="listbox"
                   aria-expanded={periodoOpen}
@@ -294,6 +315,21 @@ export default function DemoDashboard() {
                   <div
                     role="listbox"
                     aria-label="Período del reporte"
+                    onKeyDown={(e) => {
+                      if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+                        e.preventDefault();
+                        const paso = e.key === "ArrowDown" ? 1 : -1;
+                        const destino = (mes + paso + PERIODOS.length) % PERIODOS.length;
+                        setMes(destino);
+                        window.setTimeout(
+                          () => periodoRef.current?.querySelector<HTMLButtonElement>('[aria-selected="true"]')?.focus(),
+                          0
+                        );
+                      } else if (e.key === "Home" || e.key === "End") {
+                        e.preventDefault();
+                        setMes(e.key === "Home" ? 0 : PERIODOS.length - 1);
+                      }
+                    }}
                     className="absolute right-0 mt-2 w-52 rounded-xl bg-white border border-slate-200 shadow-lg z-30 p-1 max-h-80 overflow-y-auto"
                   >
                     {PERIODOS.map((p, i) => (
@@ -325,10 +361,10 @@ export default function DemoDashboard() {
         <div className="relative border-t border-white/10 print:hidden">
           <div
             aria-hidden
-            className="pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-l from-navy to-transparent sm:hidden"
+            className="pointer-events-none absolute right-0 top-0 h-11 w-12 bg-gradient-to-l from-navy via-navy/90 to-transparent sm:hidden"
           />
-          <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
-            <div className="flex gap-1 overflow-x-auto no-scrollbar pt-2.5 pr-8 sm:pr-0">
+          <div className="mx-auto max-w-6xl pl-4 pr-0 sm:px-6 lg:px-8">
+            <div className="flex gap-1 overflow-x-auto no-scrollbar pt-2.5 pr-14 sm:pr-0 [scroll-padding-right:3.5rem]">
               {NAV.map((g) => {
                 const activa = g.grupo === grupoActivo.grupo;
                 return (
@@ -515,7 +551,7 @@ export default function DemoDashboard() {
                 <Card
                   title="Evolución del margen EBITDA"
                   subtitle="% sobre ventas"
-                  actions={<RangeToggle value={rangoResumen} onChange={setRangoResumen} />}
+                  actions={<RangeToggle value={rangoResumen} onChange={setRangoResumen} disponible={mes + 1} />}
                 >
                   <LineChart
                     labels={labels(rangoResumen)}
@@ -527,7 +563,10 @@ export default function DemoDashboard() {
                     highlight={hl(rangoResumen)}
                   />
                 </Card>
-                <Card title="Resumen financiero" subtitle={`${PERIODOS[mes]} vs. acumulado FY 2026`}>
+                <Card
+                  title="Resumen financiero"
+                  subtitle={`${PERIODOS[mes]} y acumulado a ese mes`}
+                >
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 border-b border-slate-200">
@@ -540,8 +579,9 @@ export default function DemoDashboard() {
                       {[
                         ["Ingresos", mm(d.ventaMes), mm(d.ventasYTD)],
                         ["EBITDA", mm(d.ebitdaMes, 1), mm(d.ebitdaAcum, 1)],
-                        ["Utilidad neta", "-", mm(51.8, 1)],
-                        ["Flujo operacional (OCF)", "-", mm(58.4, 1)],
+                        // Utilidad neta y OCF solo existen al cierre del ejercicio.
+                        ["Utilidad neta", "-", esCierre ? mm(utilidadNetaAnual, 1) : "al cierre"],
+                        ["Flujo operacional (OCF)", "-", esCierre ? mm(47.2, 1) : "al cierre"],
                       ].map((r) => (
                         <tr key={r[0]} className="border-b border-slate-100 last:border-0 hover:bg-slate-50 transition-colors">
                           <td className="py-2.5 pr-4 font-medium text-navy">{r[0]}</td>
@@ -573,7 +613,7 @@ export default function DemoDashboard() {
                 <StatTile
                   label="Crecimiento interanual"
                   value={pct(d.deltaInteranual)}
-                  delta={`vs ${MESES[mes]} 2025`}
+                  delta={`vs ${MESES[mes]} ${mes <= 4 ? 2024 : 2025}`}
                   deltaTone={d.deltaInteranual >= 0 ? "good" : "bad"}
                 />
                 <StatTile label="Ticket promedio" value={`${money(3.4, 1)} MM`} caption="por operación" />
@@ -587,9 +627,9 @@ export default function DemoDashboard() {
 
               <Card
                 title={comparar === "presupuesto" ? "Ventas reales vs. presupuesto" : "Ventas reales vs. año anterior"}
-                subtitle={`Últimos ${Math.min(rangoVentas, mes + 1)} meses`}
+                subtitle={`Últimos ${plural(Math.min(rangoVentas, mes + 1), "mes")}`}
                 actions={
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <Segmented
                       size="sm"
                       label="Base de comparación"
@@ -600,7 +640,7 @@ export default function DemoDashboard() {
                       value={comparar}
                       onChange={setComparar}
                     />
-                    <RangeToggle value={rangoVentas} onChange={setRangoVentas} />
+                    <RangeToggle value={rangoVentas} onChange={setRangoVentas} disponible={mes + 1} />
                   </div>
                 }
               >
@@ -673,10 +713,12 @@ export default function DemoDashboard() {
                     deltaTone={crecimientoProyectado >= 0 ? "good" : "bad"}
                   />
                   <StatTile
-                    label="Proyección FY vs. meta"
-                    value={mm(proyeccionAnual)}
+                    label="Proyección 12 meses vs. meta"
+                    value={mm(proyeccion12m)}
                     delta={`Meta ${mm(metaAnualForecast)}`}
-                    deltaTone={proyeccionAnual >= metaAnualForecast ? "good" : "neutral"}
+                    deltaTone={proyeccion12m >= metaAnualForecast ? "good" : "neutral"}
+                    deltaArrow={false}
+                    caption="Feb 2026 a Ene 2027"
                   />
                 </div>
                 <Card title="Ventas: real y proyección" subtitle="12 meses reales + 6 meses proyectados">
@@ -712,8 +754,8 @@ export default function DemoDashboard() {
               </div>
               <Card
                 title="Compras por mes"
-                subtitle={`Últimos ${Math.min(rangoCompras, mes + 1)} meses`}
-                actions={<RangeToggle value={rangoCompras} onChange={setRangoCompras} />}
+                subtitle={`Últimos ${plural(Math.min(rangoCompras, mes + 1), "mes")}`}
+                actions={<RangeToggle value={rangoCompras} onChange={setRangoCompras} disponible={mes + 1} />}
               >
                 <BarChart
                   labels={labels(rangoCompras)}
@@ -771,8 +813,8 @@ export default function DemoDashboard() {
               </Insight>
               <Card
                 title="Ingresos vs. egresos de caja"
-                subtitle={`Últimos ${Math.min(rangoCaja, mes + 1)} meses`}
-                actions={<RangeToggle value={rangoCaja} onChange={setRangoCaja} />}
+                subtitle={`Últimos ${plural(Math.min(rangoCaja, mes + 1), "mes")}`}
+                actions={<RangeToggle value={rangoCaja} onChange={setRangoCaja} disponible={mes + 1} />}
               >
                 <BarChart
                   labels={labels(rangoCaja)}
@@ -785,14 +827,18 @@ export default function DemoDashboard() {
                   highlight={hl(rangoCaja)}
                 />
               </Card>
-              <Card title="Saldo de caja acumulado" subtitle="MM CLP">
+              <Card
+                title="Saldo de caja acumulado"
+                subtitle={`Últimos ${plural(Math.min(rangoSaldo, mes + 1), "mes")}`}
+                actions={<RangeToggle value={rangoSaldo} onChange={setRangoSaldo} disponible={mes + 1} />}
+              >
                 <LineChart
-                  labels={labels(rangoCaja)}
-                  values={serie(saldoCaja, rangoCaja)}
+                  labels={labels(rangoSaldo)}
+                  values={serie(saldoCaja, rangoSaldo)}
                   color={C.blue}
                   name="Saldo de caja"
                   fmt={(n) => mm(n)}
-                  highlight={hl(rangoCaja)}
+                  highlight={hl(rangoSaldo)}
                 />
               </Card>
               <Card title="Estado de flujo de efectivo · método indirecto" subtitle="FY 2026" meta={notaCierre}>
@@ -861,7 +907,7 @@ export default function DemoDashboard() {
                         </>
                       }
                       subtitle="Evolución en días"
-                      actions={<RangeToggle value={rangoCartera} onChange={setRangoCartera} />}
+                      actions={<RangeToggle value={rangoCartera} onChange={setRangoCartera} disponible={mes + 1} />}
                     >
                       <LineChart
                         labels={labels(rangoCartera)}
@@ -954,7 +1000,7 @@ export default function DemoDashboard() {
                         </>
                       }
                       subtitle="Evolución en días"
-                      actions={<RangeToggle value={rangoCartera} onChange={setRangoCartera} />}
+                      actions={<RangeToggle value={rangoCartera} onChange={setRangoCartera} disponible={mes + 1} />}
                     >
                       <LineChart
                         labels={labels(rangoCartera)}
@@ -1276,8 +1322,8 @@ export default function DemoDashboard() {
               </div>
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                 <StatTile label="Margen promedio" value={pct(margenPromedio)} caption={catProd === "all" ? "todos los productos" : catProd} />
-                <StatTile label="Producto más rentable" value={mejorProducto?.nombre ?? "-"} delta={mejorProducto ? pct(mejorProducto.margenPct) : undefined} deltaTone="good" />
-                <StatTile label="Producto menos rentable" value={peorProducto?.nombre ?? "-"} delta={peorProducto ? pct(peorProducto.margenPct) : undefined} deltaTone="bad" />
+                <StatTile label="Producto más rentable" value={mejorProducto?.nombre ?? "-"} caption={mejorProducto ? `margen ${pct(mejorProducto.margenPct)}` : undefined} />
+                <StatTile label="Producto menos rentable" value={peorProducto?.nombre ?? "-"} caption={peorProducto ? `margen ${pct(peorProducto.margenPct)}` : undefined} />
                 <StatTile label="SKUs con margen bajo 25%" value={String(productosFiltrados.filter((p) => p.margenPct < 25).length)} />
               </div>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -1328,19 +1374,21 @@ export default function DemoDashboard() {
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
                   <StatTile label="Valor total inventario" value={mm(valorInventario, 1)} />
                   <StatTile label="Cobertura promedio" value={days(coberturaPromedio)} caption="SKUs con stock" />
-                  <StatTile label="SKU de mayor valor" value={skuMayorValor.sku} caption={mm(skuMayorValor.valor, 1)} />
+                  <StatTile label="SKU de mayor valor" value={skuMayorValor?.sku ?? "-"} caption={skuMayorValor ? mm(skuMayorValor.valor, 1) : undefined} />
                   <StatTile
                     label="SKUs en quiebre"
-                    value={String(stock.filter((s) => s.unidades === 0).length)}
+                    value={String(stockCategoria.filter((s) => s.unidades === 0).length)}
                     delta="Requieren reposición"
                     deltaTone="bad"
                     deltaArrow={false}
-                    caption={`${stock.filter((s) => s.estado === "critical" && s.unidades > 0).length} más en nivel crítico`}
+                    caption={`${stockCategoria.filter((s) => s.estado === "critical" && s.unidades > 0).length} más en nivel crítico`}
                   />
                 </div>
                 <Card
                   title="Stock por SKU"
-                  subtitle={`Mostrando ${stockFiltrado.length} de ${stock.length} SKU`}
+                  subtitle={`Mostrando ${stockFiltrado.length} de ${stockCategoria.length} SKU${
+                    catProd === "all" ? "" : ` de ${catProd}`
+                  }`}
                   actions={
                     <div className="flex flex-wrap items-center gap-3">
                       <FilterChips
