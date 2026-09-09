@@ -52,21 +52,25 @@ export const ventasAnoAnterior = [36, 39, 36, 41, 45, 40, 38, 42, 45, 47, 50, 53
 export const compras = [26, 28, 25, 29, 32, 29, 27, 30, 31, 33, 34, 36];
 export const ebitdaMargen = [11.2, 12.1, 10.4, 12.8, 14.1, 12.9, 11.8, 13.2, 13.9, 14.6, 15.2, 15.8];
 export const ingresosCaja = [50, 54, 49, 56, 61, 55, 52, 58, 60, 63, 66, 69];
-export const egresosCaja = [45, 47, 44, 48, 52, 49, 47, 50, 51, 53, 55, 57];
+export const egresosCaja = [51, 54, 50, 55, 58, 56, 53, 57, 58, 60, 62, 64];
 export const dso = [52, 50, 54, 49, 47, 48, 51, 46, 45, 44, 43, 42];
 export const dpo = [48, 50, 47, 49, 51, 50, 49, 48, 50, 52, 51, 52];
 
+/** Caja al inicio del ejercicio; el estado de flujo indirecto parte del mismo
+ *  saldo y cierra en el mismo valor que esta serie. */
+export const cajaInicial = 98;
 export const saldoCaja: number[] = [];
 ingresosCaja.reduce((acc, ing, i) => {
   const s = acc + (ing - egresosCaja[i]);
   saldoCaja.push(s);
   return s;
-}, 18);
+}, cajaInicial);
 
 /* ── Forecast (6 meses proyectados) ───────────────────────────────────── */
 export const forecastMeses = ["Ago*", "Sep*", "Oct*", "Nov*", "Dic*", "Ene*"];
 export const forecastVentas = [64, 66, 63, 70, 76, 68];
-export const metaAnualForecast = 1000;
+/** Meta para la ventana móvil de 12 meses (Feb 2026 a Ene 2027). */
+export const metaAnualForecast = 700;
 
 /* ── Ventas: composición y clientes ───────────────────────────────────── */
 // Las cuatro líneas suman 595, el mismo acumulado de ventas[] de 12 meses.
@@ -83,6 +87,7 @@ const clientesBase = [
   { cliente: "Comercial del Sur Ltda", linea: "Línea Retail", monto: 80 },
   { cliente: "Inversiones Aconcagua", linea: "Proyectos", monto: 61 },
   { cliente: "Retail Pacífico SA", linea: "Línea Retail", monto: 51 },
+  { cliente: "Servicios Cordillera Ltda", linea: "Servicios", monto: 44 },
   { cliente: "Distribuidora Central", linea: "Otros", monto: 37 },
 ];
 export const topClientes = clientesBase.map((c) => ({
@@ -91,18 +96,20 @@ export const topClientes = clientesBase.map((c) => ({
 }));
 
 /* ── Compras ──────────────────────────────────────────────────────────── */
+// Las cuatro categorías suman 360, el mismo acumulado de compras[].
 export const comprasPorCategoria = [
-  { name: "Materia prima", monto: 198 },
-  { name: "Servicios externos", monto: 92 },
-  { name: "Logística", monto: 61 },
-  { name: "Administración", monto: 43 },
+  { name: "Materia prima", monto: 180 },
+  { name: "Servicios externos", monto: 84 },
+  { name: "Logística", monto: 56 },
+  { name: "Administración", monto: 40 },
 ];
+export const totalComprasCategorias = comprasPorCategoria.reduce((a, c) => a + c.monto, 0);
 export const topProveedores = [
-  { prov: "Importadora Química SA", cat: "Materia prima", monto: 84, cond: "30 días" },
-  { prov: "Transportes Rápidos Ltda", cat: "Logística", monto: 52, cond: "Contado" },
-  { prov: "Insumos Industriales", cat: "Materia prima", monto: 44, cond: "60 días" },
-  { prov: "Energía y Gas SpA", cat: "Servicios externos", monto: 31, cond: "30 días" },
-  { prov: "Servicios TI Cloud", cat: "Administración", monto: 22, cond: "Contado" },
+  { prov: "Importadora Química SA", cat: "Materia prima", monto: 76, cond: "30 días" },
+  { prov: "Transportes Rápidos Ltda", cat: "Logística", monto: 48, cond: "Contado" },
+  { prov: "Insumos Industriales", cat: "Materia prima", monto: 40, cond: "60 días" },
+  { prov: "Energía y Gas SpA", cat: "Servicios externos", monto: 28, cond: "30 días" },
+  { prov: "Servicios TI Cloud", cat: "Administración", monto: 19, cond: "Contado" },
 ];
 
 /* ── Cobranza y pagos ─────────────────────────────────────────────────── */
@@ -112,11 +119,12 @@ export const cartera = [
   { rango: "61 a 90 días", monto: 6.3, status: "serious" as Estado },
   { rango: "Más de 90 días", monto: 3.8, status: "critical" as Estado },
 ];
+// Cada deudor cabe dentro de su tramo de antigüedad de `cartera`.
 export const topDeudores = [
-  { cliente: "Comercial del Sur Ltda", monto: 9.4, dias: 74, status: "serious" as Estado },
-  { cliente: "Retail Pacífico SA", monto: 6.1, dias: 41, status: "warning" as Estado },
-  { cliente: "Inversiones Aconcagua", monto: 3.8, dias: 96, status: "critical" as Estado },
-  { cliente: "Distribuidora Central", monto: 2.9, dias: 22, status: "good" as Estado },
+  { cliente: "Distribuidora Central", monto: 9.4, dias: 22, status: "good" as Estado },
+  { cliente: "Retail Pacífico SA", monto: 7.2, dias: 41, status: "warning" as Estado },
+  { cliente: "Comercial del Sur Ltda", monto: 4.8, dias: 74, status: "serious" as Estado },
+  { cliente: "Inversiones Aconcagua", monto: 3.1, dias: 96, status: "critical" as Estado },
 ];
 export const carteraPagar = [
   { rango: "Por vencer (0 a 30 días)", monto: 32.6, status: "good" as Estado },
@@ -152,25 +160,32 @@ export const pnlIfrs: { label: string; actual: number; anterior: number; kind: S
   { label: "Ganancia bruta", actual: 226.9, anterior: 189.6, kind: "subtotal" },
   { label: "Otros ingresos, por función", actual: 6.2, anterior: 4.8, kind: "line" },
   { label: "Costos de distribución", actual: -41.3, anterior: -35.1, kind: "line" },
-  { label: "Gastos de administración", actual: -98.7, anterior: -91.2, kind: "line" },
+  { label: "Gastos de administración", actual: -114.1, anterior: -100.2, kind: "line" },
   { label: "Otros gastos, por función", actual: -12.4, anterior: -9.6, kind: "line" },
   { label: "Otras ganancias (pérdidas)", actual: 1.8, anterior: -0.9, kind: "line" },
-  { label: "Ganancias de actividades operacionales", actual: 82.5, anterior: 57.6, kind: "subtotal" },
+  { label: "Ganancias de actividades operacionales", actual: 67.1, anterior: 48.6, kind: "subtotal" },
   { label: "Ingresos financieros", actual: 3.1, anterior: 2.4, kind: "line" },
   { label: "Costos financieros", actual: -14.6, anterior: -13.8, kind: "line" },
-  { label: "Ganancia antes de impuestos", actual: 71.0, anterior: 46.2, kind: "subtotal" },
-  { label: "Gasto por impuestos a las ganancias", actual: -19.2, anterior: -12.5, kind: "line" },
-  { label: "Ganancia del período", actual: 51.8, anterior: 33.7, kind: "total" },
+  { label: "Ganancia antes de impuestos", actual: 55.6, anterior: 37.2, kind: "subtotal" },
+  { label: "Gasto por impuestos a las ganancias", actual: -15.0, anterior: -10.0, kind: "line" },
+  { label: "Ganancia del período", actual: 40.6, anterior: 27.2, kind: "total" },
 ];
+/** Depreciación y amortización del ejercicio: el EBITDA acumulado que muestra
+ *  el Resumen es el resultado operacional más esta cifra. */
+export const depreciacionAnual = 12.4;
+export const utilidadNetaAnual = 40.6;
 
+/** Las variaciones reconstruyen línea por línea la tabla `eerr` del mes:
+ *  ventas +6,0; costo de ventas −2,8; admin +0,4; venta −0,7; otros −0,3,
+ *  que suman los +2,6 de diferencia del EBITDA contra presupuesto. */
 export const topVariaciones = [
-  { item: "Ventas · Línea Retail", varMonto: 12.4, tipo: "F" as const, explicacion: "Nuevo contrato con cliente ancla (Constructora Andes)", accion: "Mantener capacidad de despacho", responsable: "Gerente Comercial", estado: "Cerrado" },
-  { item: "Materia prima", varMonto: -8.6, tipo: "U" as const, explicacion: "Alza de precio de insumos +8% interanual", accion: "Negociar contrato de cobertura", responsable: "Abastecimiento", estado: "En curso" },
-  { item: "Ventas · Proyectos", varMonto: 6.1, tipo: "F" as const, explicacion: "Mayor demanda en obras menores", accion: "Reforzar dotación de instalación", responsable: "Jefe de Proyectos", estado: "Cerrado" },
-  { item: "Gastos de venta", varMonto: -4.3, tipo: "U" as const, explicacion: "Feria comercial no presupuestada", accion: "Evaluar retorno de la inversión", responsable: "Marketing", estado: "Revisión" },
-  { item: "Costo de mano de obra directa", varMonto: -3.1, tipo: "U" as const, explicacion: "Horas extra por peak de producción", accion: "Evaluar contratación adicional", responsable: "RR.HH.", estado: "En curso" },
-  { item: "Gastos de administración", varMonto: 2.8, tipo: "F" as const, explicacion: "Ahorro en servicios básicos", accion: "Documentar buenas prácticas", responsable: "Administración", estado: "Cerrado" },
-  { item: "Gastos financieros", varMonto: 1.2, tipo: "F" as const, explicacion: "Refinanciamiento de deuda a mejor tasa", accion: "-", responsable: "Finanzas", estado: "Cerrado" },
+  { item: "Ventas · Línea Retail", varMonto: 3.8, tipo: "F" as const, explicacion: "Nuevo contrato con cliente ancla (Constructora Andes)", accion: "Mantener capacidad de despacho", responsable: "Gerente Comercial", estado: "Cerrado" },
+  { item: "Ventas · Proyectos", varMonto: 2.2, tipo: "F" as const, explicacion: "Mayor demanda en obras menores", accion: "Reforzar dotación de instalación", responsable: "Jefe de Proyectos", estado: "Cerrado" },
+  { item: "Materia prima", varMonto: -2.1, tipo: "U" as const, explicacion: "Alza de precio de insumos +8% interanual", accion: "Negociar contrato de cobertura", responsable: "Abastecimiento", estado: "En curso" },
+  { item: "Costo de mano de obra directa", varMonto: -0.7, tipo: "U" as const, explicacion: "Horas extra por peak de producción", accion: "Evaluar contratación adicional", responsable: "RR.HH.", estado: "En curso" },
+  { item: "Gastos de venta", varMonto: -0.7, tipo: "U" as const, explicacion: "Feria comercial no presupuestada", accion: "Evaluar retorno de la inversión", responsable: "Marketing", estado: "Revisión" },
+  { item: "Gastos de administración", varMonto: 0.4, tipo: "F" as const, explicacion: "Ahorro en servicios básicos", accion: "Documentar buenas prácticas", responsable: "Administración", estado: "Cerrado" },
+  { item: "Otros gastos operativos", varMonto: -0.3, tipo: "U" as const, explicacion: "Mantención correctiva no programada", accion: "Incorporar al plan preventivo", responsable: "Operaciones", estado: "En curso" },
 ];
 
 /* ── Balance ──────────────────────────────────────────────────────────── */
@@ -197,39 +212,42 @@ export const pasivosPatrimonio: { label: string; monto: number; kind: StatementK
   { label: "Total pasivos no corrientes", monto: 97.5, kind: "subtotal" },
   { label: "Total pasivos", monto: 210.0, kind: "subtotal" },
   { label: "Capital social", monto: 150.0, kind: "line" },
-  { label: "Reservas y otros resultados acumulados", monto: 38.2, kind: "line" },
-  { label: "Resultado del ejercicio", monto: 51.8, kind: "line" },
+  { label: "Reservas y otros resultados acumulados", monto: 49.4, kind: "line" },
+  { label: "Resultado del ejercicio", monto: 40.6, kind: "line" },
   { label: "Total patrimonio", monto: 240.0, kind: "subtotal" },
   { label: "TOTAL PASIVOS Y PATRIMONIO", monto: 450.0, kind: "total" },
 ];
 
 export const flujoIndirecto: { label: string; monto: number; kind: StatementKind }[] = [
-  { label: "Utilidad neta del ejercicio", monto: 51.8, kind: "line" },
+  { label: "Utilidad neta del ejercicio", monto: 40.6, kind: "line" },
   { label: "(+) Depreciación y amortización", monto: 12.4, kind: "line" },
   { label: "(−) Variación en cuentas por cobrar", monto: -8.2, kind: "line" },
   { label: "(−) Variación en existencias", monto: -4.1, kind: "line" },
   { label: "(+) Variación en cuentas por pagar", monto: 6.5, kind: "line" },
-  { label: "Flujo operacional (OCF)", monto: 58.4, kind: "subtotal" },
+  { label: "Flujo operacional (OCF)", monto: 47.2, kind: "subtotal" },
   { label: "(−) CAPEX: adquisición de activos fijos", monto: -22.0, kind: "line" },
   { label: "Flujo de inversión (ICF)", monto: -22.0, kind: "subtotal" },
-  { label: "(−) Pago de deuda", monto: -6.0, kind: "line" },
-  { label: "(−) Pago de dividendos", monto: -15.0, kind: "line" },
-  { label: "Flujo de financiamiento (FCF)", monto: -21.0, kind: "subtotal" },
-  { label: "Variación neta de caja", monto: 15.4, kind: "subtotal" },
-  { label: "Caja al inicio del período", monto: 97.6, kind: "line" },
+  { label: "(−) Pago de deuda", monto: -4.2, kind: "line" },
+  { label: "(−) Pago de dividendos", monto: -6.0, kind: "line" },
+  { label: "Flujo de financiamiento (FCF)", monto: -10.2, kind: "subtotal" },
+  { label: "Variación neta de caja", monto: 15.0, kind: "subtotal" },
+  { label: "Caja al inicio del período", monto: 98.0, kind: "line" },
   { label: "CAJA AL CIERRE DEL PERÍODO", monto: 113.0, kind: "total" },
 ];
 
 /* ── Productos y stock ────────────────────────────────────────────────── */
+/** Ventas por producto: 224 Retail + 184 Proyectos + 129 Servicios + 58 Otros,
+ *  las mismas 595 del acumulado y de las líneas de negocio. */
 export const productos = [
-  { nombre: "Línea Premium A", categoria: "Retail", ventas: 96.4, costo: 52.1 },
-  { nombre: "Kit Instalación Pro", categoria: "Proyectos", ventas: 84.2, costo: 55.6 },
-  { nombre: "Línea Estándar B", categoria: "Retail", ventas: 71.8, costo: 46.7 },
-  { nombre: "Servicio Mantención", categoria: "Servicios", ventas: 58.3, costo: 21.4 },
-  { nombre: "Accesorios varios", categoria: "Retail", ventas: 41.6, costo: 30.9 },
-  { nombre: "Kit Obra Menor", categoria: "Proyectos", ventas: 38.9, costo: 27.3 },
-  { nombre: "Línea Económica C", categoria: "Retail", ventas: 33.5, costo: 27.8 },
-  { nombre: "Servicio Post-Venta", categoria: "Servicios", ventas: 22.1, costo: 10.2 },
+  { nombre: "Línea Premium A", categoria: "Retail", ventas: 96.0, costo: 51.8 },
+  { nombre: "Kit Instalación Pro", categoria: "Proyectos", ventas: 112.0, costo: 74.0 },
+  { nombre: "Línea Estándar B", categoria: "Retail", ventas: 72.0, costo: 46.8 },
+  { nombre: "Servicio Mantención", categoria: "Servicios", ventas: 84.0, costo: 30.8 },
+  { nombre: "Accesorios varios", categoria: "Retail", ventas: 34.0, costo: 25.3 },
+  { nombre: "Kit Obra Menor", categoria: "Proyectos", ventas: 72.0, costo: 50.4 },
+  { nombre: "Línea Económica C", categoria: "Retail", ventas: 22.0, costo: 18.3 },
+  { nombre: "Servicio Post-Venta", categoria: "Servicios", ventas: 45.0, costo: 20.7 },
+  { nombre: "Venta mayorista y otros", categoria: "Otros", ventas: 58.0, costo: 40.6 },
 ].map((p) => ({
   ...p,
   margen: p.ventas - p.costo,
@@ -247,28 +265,31 @@ export const stock = [
 ].map((s) => ({ ...s, valor: s.unidades * s.costoUnit }));
 
 /* ── CAPEX y dotación ─────────────────────────────────────────────────── */
+// Lo ejecutado suma 22,0, el mismo CAPEX que informa el estado de flujo.
 export const capex = [
-  { proyecto: "Ampliación línea productiva", categoria: "Equipamiento", presupuesto: 45.0, ejecutado: 38.5, estado: "En curso" as const },
-  { proyecto: "Actualización ERP", categoria: "TI", presupuesto: 12.0, ejecutado: 12.0, estado: "Completo" as const },
-  { proyecto: "Paneles solares · planta", categoria: "Infraestructura", presupuesto: 18.0, ejecutado: 16.8, estado: "Completo" as const },
-  { proyecto: "Renovación flota de reparto", categoria: "Equipamiento", presupuesto: 9.0, ejecutado: 4.2, estado: "Retrasado" as const },
-  { proyecto: "Laboratorio I+D", categoria: "I+D", presupuesto: 6.0, ejecutado: 3.6, estado: "En curso" as const },
+  { proyecto: "Ampliación línea productiva", categoria: "Equipamiento", presupuesto: 12.0, ejecutado: 9.5, estado: "En curso" as const },
+  { proyecto: "Actualización ERP", categoria: "TI", presupuesto: 4.0, ejecutado: 4.0, estado: "Completo" as const },
+  { proyecto: "Paneles solares · planta", categoria: "Infraestructura", presupuesto: 5.0, ejecutado: 4.8, estado: "Completo" as const },
+  { proyecto: "Renovación flota de reparto", categoria: "Equipamiento", presupuesto: 3.0, ejecutado: 1.4, estado: "Retrasado" as const },
+  { proyecto: "Laboratorio I+D", categoria: "I+D", presupuesto: 3.0, ejecutado: 2.3, estado: "En curso" as const },
 ];
 export const CAPEX_ESTADO: Record<string, Estado> = { Completo: "good", "En curso": "warning", Retrasado: "critical" };
 
+/** 20 personas para ventas de 61 MM al mes: la nómina pesa 21 MM mensuales,
+ *  un costo promedio de $1,05 MM por persona, compatible con el EERR. */
 export const dotacion = [
-  { area: "Producción / Operaciones", hc: 48, variacion: 2 },
-  { area: "Comercial", hc: 12, variacion: 0 },
-  { area: "Logística", hc: 9, variacion: 1 },
-  { area: "Administración y Finanzas", hc: 8, variacion: 0 },
-  { area: "TI", hc: 4, variacion: 0 },
-  { area: "Gerencia", hc: 3, variacion: 0 },
+  { area: "Producción / Operaciones", hc: 9, variacion: 1 },
+  { area: "Comercial", hc: 4, variacion: 0 },
+  { area: "Logística", hc: 3, variacion: 1 },
+  { area: "Administración y Finanzas", hc: 2, variacion: 0 },
+  { area: "TI", hc: 1, variacion: 0 },
+  { area: "Gerencia", hc: 1, variacion: 0 },
 ];
 export const costoNomina = [
-  { name: "Sueldos brutos", monto: 42.8 },
-  { name: "Leyes sociales / cotizaciones", monto: 8.6 },
-  { name: "Bonos y gratificaciones", monto: 5.2 },
-  { name: "Otros beneficios", monto: 2.1 },
+  { name: "Sueldos brutos", monto: 15.8 },
+  { name: "Leyes sociales / cotizaciones", monto: 3.2 },
+  { name: "Bonos y gratificaciones", monto: 1.4 },
+  { name: "Otros beneficios", monto: 0.6 },
 ];
 
 /* ── Tributario ───────────────────────────────────────────────────────── */
@@ -278,7 +299,7 @@ export const calendarioTributario = [
   { obligacion: "Cotizaciones previsionales", vencimiento: "13 ago 2026", monto: 8.6, estado: "Pendiente" as const },
   { obligacion: "IVA (F29) · Junio 2026", vencimiento: "12 jul 2026", monto: 13.1, estado: "Pagado" as const },
   { obligacion: "Cotizaciones previsionales · Junio", vencimiento: "13 jul 2026", monto: 8.3, estado: "Pagado" as const },
-  { obligacion: "Declaración de Renta (F22) · AT 2026", vencimiento: "30 abr 2026", monto: 19.2, estado: "Pagado" as const },
+  { obligacion: "Declaración de Renta (F22) · AT 2026", vencimiento: "30 abr 2026", monto: 15.0, estado: "Pagado" as const },
   { obligacion: "Declaración de Renta (F22) · AT 2027", vencimiento: "30 abr 2027", monto: 0, estado: "Programado" as const },
 ];
 export const TAX_ESTADO: Record<string, Estado | "neutral"> = { Pendiente: "warning", Pagado: "good", Programado: "neutral" };

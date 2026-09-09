@@ -1,7 +1,7 @@
 "use client";
 
 /* Primitivos de UI del dashboard demo: cards, tiles, badges, filtros y tablas. */
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { C, STATUS_COLOR, type Estado } from "./data";
 import { IconChevronDown, IconDelta, IconSearch } from "./icons";
 
@@ -33,7 +33,7 @@ export function Card({
             {subtitle && <p className="text-xs text-slate-400 mt-0.5">{subtitle}</p>}
           </div>
           {(meta || actions) && (
-            <div className="flex items-center gap-3 shrink-0">
+            <div className="flex w-full sm:w-auto min-w-0 flex-wrap items-center gap-3 sm:justify-end">
               {meta}
               {actions}
             </div>
@@ -106,7 +106,7 @@ export function StatTile({
         {value}
       </p>
       {(delta || caption) && (
-        <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+        <div className="mt-1.5 flex flex-wrap items-center gap-1.5 mt-auto pt-1.5">
           {delta && (
             <span
               className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold tabular-nums ${DELTA_TONE[deltaTone]}`}
@@ -122,15 +122,17 @@ export function StatTile({
     </>
   );
 
+  // h-full + flex mantiene alineados label, valor y pie entre tiles hermanos,
+  // tanto en <div> como en el <button> del tile con drill-down.
   const shell =
-    "relative rounded-2xl bg-white ring-1 ring-slate-900/5 shadow-[0_1px_2px_rgba(16,24,40,0.06),0_1px_3px_rgba(16,24,40,0.08)] p-4 sm:p-5 print:break-inside-avoid";
+    "relative flex h-full w-full flex-col items-start text-left rounded-2xl bg-white ring-1 ring-slate-900/5 shadow-[0_1px_2px_rgba(16,24,40,0.06),0_1px_3px_rgba(16,24,40,0.08)] p-4 sm:p-5 print:break-inside-avoid";
 
   if (onClick) {
     return (
       <button
         type="button"
         onClick={onClick}
-        className={`${shell} block w-full text-left align-top transition-shadow hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald`}
+        className={`${shell} transition-shadow hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald`}
       >
         <span className="absolute right-3 top-4 text-emerald" aria-hidden="true">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-3 w-3">
@@ -239,7 +241,11 @@ export function Segmented<T extends string>({
   size?: "sm" | "md";
 }) {
   return (
-    <div role="group" aria-label={label} className="inline-flex items-center rounded-lg bg-slate-100 p-0.5">
+    <div
+      role="group"
+      aria-label={label}
+      className="inline-flex max-w-full items-center overflow-x-auto no-scrollbar rounded-lg bg-slate-100 p-0.5"
+    >
       {options.map((o) => {
         const active = o.value === value;
         return (
@@ -260,17 +266,24 @@ export function Segmented<T extends string>({
   );
 }
 
-export function RangeToggle({ value, onChange }: { value: number; onChange: (v: number) => void }) {
+export function RangeToggle({
+  value,
+  onChange,
+  disponible = 12,
+}: {
+  value: number;
+  onChange: (v: number) => void;
+  /** Meses de historia disponibles en el período elegido. */
+  disponible?: number;
+}) {
+  const opciones = [3, 6, 12].filter((m) => m === 3 || m <= disponible + 2);
+  if (disponible <= 3) return null;
   return (
     <Segmented
       size="sm"
       label="Rango de meses"
-      options={[
-        { value: "3", label: "3M" },
-        { value: "6", label: "6M" },
-        { value: "12", label: "12M" },
-      ]}
-      value={String(value) as "3" | "6" | "12"}
+      options={opciones.map((m) => ({ value: String(m), label: `${m}M` }))}
+      value={String(Math.min(value, opciones[opciones.length - 1]))}
       onChange={(v) => onChange(Number(v))}
     />
   );
@@ -380,6 +393,18 @@ export function DataTable<T>({
   maxHeight?: string;
 }) {
   const [sort, setSort] = useState<{ col: number; dir: "asc" | "desc" } | null>(defaultSort ?? null);
+  const scroller = useRef<HTMLDivElement | null>(null);
+  const [desborda, setDesborda] = useState(false);
+
+  useEffect(() => {
+    const el = scroller.current;
+    if (!el) return;
+    const medir = () => setDesborda(el.scrollWidth - el.clientWidth > 4);
+    medir();
+    const ro = new ResizeObserver(medir);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [rows]);
 
   const sorted = useMemo(() => {
     if (!sort || !cols[sort.col]?.sortValue) return rows;
@@ -408,7 +433,7 @@ export function DataTable<T>({
             <th
               key={c.label}
               aria-sort={sort?.col === i ? (sort.dir === "asc" ? "ascending" : "descending") : undefined}
-              className={`py-2 px-3 first:pl-0 last:pr-0 ${maxHeight ? "sticky top-0 bg-white z-10" : ""} ${
+              className={`py-2 px-2 sm:px-3 first:pl-0 last:pr-0 ${maxHeight ? "sticky top-0 bg-white z-10" : ""} ${
                 c.align === "right" ? "text-right" : "text-left"
               }`}
             >
@@ -440,7 +465,7 @@ export function DataTable<T>({
             {cols.map((c, ci) => (
               <td
                 key={c.label}
-                className={`py-2.5 px-3 first:pl-0 last:pr-0 tabular-nums whitespace-nowrap ${
+                className={`py-2.5 px-2 sm:px-3 first:pl-0 last:pr-0 tabular-nums whitespace-nowrap ${
                   c.align === "right" ? "text-right" : "text-left"
                 } ${ci === 0 ? "font-medium text-navy" : "text-slate-600"}`}
               >
@@ -454,7 +479,21 @@ export function DataTable<T>({
   );
 
   return (
-    <div className={`overflow-x-auto ${maxHeight ? `overflow-y-auto ${maxHeight}` : ""}`}>{table}</div>
+    <div className="relative">
+      <div
+        ref={scroller}
+        onScroll={(e) => setDesborda(e.currentTarget.scrollWidth - e.currentTarget.clientWidth > 4 && e.currentTarget.scrollLeft < e.currentTarget.scrollWidth - e.currentTarget.clientWidth - 4)}
+        className={`overflow-x-auto ${maxHeight ? `overflow-y-auto ${maxHeight}` : ""}`}
+      >
+        {table}
+      </div>
+      {desborda && (
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-white to-transparent"
+        />
+      )}
+    </div>
   );
 }
 
@@ -512,7 +551,7 @@ export function StatementTable({
                   <td
                     key={vi}
                     className={`py-2.5 pl-4 text-right tabular-nums whitespace-nowrap ${
-                      emphasize ? "font-semibold text-navy" : vi === r.values.length - 1 && r.values.length > 1 ? "text-slate-400" : "text-slate-700"
+                      emphasize ? "font-semibold text-navy" : vi === r.values.length - 1 && r.values.length > 1 ? "text-slate-500" : "text-slate-700"
                     }`}
                   >
                     {fmtVal(v)}

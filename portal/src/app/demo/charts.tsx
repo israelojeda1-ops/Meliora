@@ -57,10 +57,13 @@ function ChartTip({
 /** Hover efímero para mouse y pin por click para pantallas táctiles: si se
  *  comparten en un solo estado, hacer clic sobre la marca ya activa apaga el
  *  tooltip con el puntero encima y no vuelve hasta salir y reentrar. */
-function useFoco() {
+function useFoco(largo: number) {
   const [hover, setHover] = useState<number | null>(null);
   const [pin, setPin] = useState<number | null>(null);
-  const activo = pin ?? hover;
+  const crudo = pin ?? hover;
+  // Al cambiar el rango o el período la serie se acorta: un índice fijado antes
+  // podría apuntar fuera del arreglo.
+  const activo = crudo !== null && crudo < largo ? crudo : null;
   return {
     activo,
     onEnter: (i: number) => setHover(i),
@@ -97,7 +100,7 @@ export function BarChart({
   highlight?: number;
   gapNote?: (i: number) => string | null;
 }) {
-  const { activo: hover, onEnter, onLeave, onClick } = useFoco();
+  const { activo: hover, onEnter, onLeave, onClick } = useFoco(labels.length);
   const w = 720;
   const h = 260;
   const padL = 40;
@@ -138,7 +141,7 @@ export function BarChart({
         {ticks.map((t, i) => (
           <g key={i}>
             <line x1={padL} x2={w - 10} y1={yOf(t)} y2={yOf(t)} stroke={C.grid} strokeWidth={1} />
-            <text x={padL - 6} y={yOf(t) + 3} fontSize={10} fill="#64748b" textAnchor="end">
+            <text x={padL - 6} y={yOf(t) + 3} fontSize={13} fill="#64748b" textAnchor="end">
               {t.toLocaleString("es-CL")}
             </text>
           </g>
@@ -160,7 +163,7 @@ export function BarChart({
               {bar(xA, a[i], colorA, dim)}
               {dual && b && colorB && bar(cx + gap / 2, b[i], colorB, dim)}
               {highlight === i && (
-                <text x={dual ? cx - barW / 2 - gap / 2 : cx} y={yOf(a[i]) - 5} fontSize={10} fontWeight={700} fill={C.ink} textAnchor="middle">
+                <text x={dual ? cx - barW / 2 - gap / 2 : cx} y={yOf(a[i]) - 5} fontSize={13} fontWeight={700} fill={C.ink} textAnchor="middle">
                   {fmt(a[i])}
                 </text>
               )}
@@ -177,10 +180,11 @@ export function BarChart({
               <text
                 x={cx}
                 y={h - 8}
-                fontSize={9.5}
+                fontSize={12.5}
                 fontWeight={highlight === i ? 700 : 400}
                 fill={highlight === i ? C.ink : "#64748b"}
                 textAnchor="middle"
+                className={labels.length > 7 && i % 2 === 1 && highlight !== i ? "hidden sm:inline" : undefined}
               >
                 {m}
               </text>
@@ -237,7 +241,7 @@ export function LineChart({
   target?: { value: number; label: string };
   highlight?: number;
 }) {
-  const { activo: hover, onEnter, onLeave, onClick } = useFoco();
+  const { activo: hover, onEnter, onLeave, onClick } = useFoco(values.length);
   const gradId = useId();
   const w = 720;
   const h = 240;
@@ -260,8 +264,10 @@ export function LineChart({
   const plotW = w - padL - 10;
   const plotH = h - padT - padB;
 
+  const unico = values.length === 1;
   const pts = values.map((v, i) => ({
-    x: padL + (plotW / Math.max(1, values.length - 1)) * i,
+    // Con un solo dato el punto va al centro del plot, no pegado al eje.
+    x: unico ? padL + plotW / 2 : padL + (plotW / Math.max(1, values.length - 1)) * i,
     y: padT + plotH - ((v - min) / (max - min)) * plotH,
     v,
   }));
@@ -288,7 +294,7 @@ export function LineChart({
           return (
             <g key={i}>
               <line x1={padL} x2={w - 10} y1={y} y2={y} stroke={C.grid} strokeWidth={1} />
-              <text x={padL - 6} y={y + 3} fontSize={10} fill="#64748b" textAnchor="end">
+              <text x={padL - 6} y={y + 3} fontSize={13} fill="#64748b" textAnchor="end">
                 {t.toLocaleString("es-CL", { minimumFractionDigits: decTick, maximumFractionDigits: decTick })}
               </text>
             </g>
@@ -297,13 +303,15 @@ export function LineChart({
         {target && (
           <g>
             <line x1={padL} x2={w - 10} y1={yTarget} y2={yTarget} stroke={C.axis} strokeWidth={1.5} strokeDasharray="4 4" />
-            <text x={w - 12} y={yTarget - 5} fontSize={9} fill={C.ink2} textAnchor="end">
+            <text x={w - 12} y={yTarget - 5} fontSize={11.5} fill={C.ink2} textAnchor="end">
               {target.label}
             </text>
           </g>
         )}
-        <path d={area} fill={`url(#${gradId})`} />
-        <path d={line} fill="none" stroke={color} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
+        {!unico && <path d={area} fill={`url(#${gradId})`} />}
+        {!unico && (
+          <path d={line} fill="none" stroke={color} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
+        )}
         {focus !== undefined && focus !== null && pts[focus] && (
           <line
             x1={pts[focus].x}
@@ -332,10 +340,11 @@ export function LineChart({
             <text
               x={p.x}
               y={h - 8}
-              fontSize={9.5}
+              fontSize={12.5}
               fontWeight={highlight === i ? 700 : 400}
               fill={highlight === i ? C.ink : "#64748b"}
               textAnchor="middle"
+              className={values.length > 7 && i % 2 === 1 && highlight !== i ? "hidden sm:inline" : undefined}
             >
               {labels[i]}
             </text>
@@ -344,10 +353,10 @@ export function LineChart({
         <text
           x={last.x}
           y={Math.max(padT + 9, last.y - 11)}
-          fontSize={10}
+          fontSize={13}
           fontWeight={700}
           fill={C.ink}
-          textAnchor="end"
+          textAnchor={unico ? "middle" : "end"}
           stroke="#fff"
           strokeWidth={3}
           paintOrder="stroke"
@@ -355,7 +364,7 @@ export function LineChart({
           {fmt(values[values.length - 1])}
         </text>
       </svg>
-      {hover !== null && (
+      {hover !== null && pts[hover] && (
         <ChartTip xPct={(pts[hover].x / w) * 100} yPct={(pts[hover].y / h) * 100}>
           <p className="font-semibold">
             {labels[hover]}: {fmt(values[hover])}
@@ -378,7 +387,7 @@ export function ForecastChart({
   splitIndex: number;
   fmt?: (n: number) => string;
 }) {
-  const { activo: hover, onEnter, onLeave, onClick } = useFoco();
+  const { activo: hover, onEnter, onLeave, onClick } = useFoco(labels.length);
   const patId = useId();
   const w = 720;
   const h = 260;
@@ -406,13 +415,13 @@ export function ForecastChart({
         {ticks.map((t, i) => (
           <g key={i}>
             <line x1={padL} x2={w - 10} y1={yOf(t)} y2={yOf(t)} stroke={C.grid} strokeWidth={1} />
-            <text x={padL - 6} y={yOf(t) + 3} fontSize={10} fill="#64748b" textAnchor="end">
+            <text x={padL - 6} y={yOf(t) + 3} fontSize={13} fill="#64748b" textAnchor="end">
               {t.toLocaleString("es-CL")}
             </text>
           </g>
         ))}
         <line x1={xSplit} x2={xSplit} y1={padT} y2={padT + plotH} stroke={C.axis} strokeDasharray="4 4" />
-        <text x={xSplit + 6} y={padT - 4} fontSize={9} fill={C.ink2}>
+        <text x={xSplit + 6} y={padT - 6} fontSize={11.5} fill={C.ink2}>
           Proyección
         </text>
         {labels.map((m, i) => {
@@ -439,7 +448,14 @@ export function ForecastChart({
                 onMouseLeave={onLeave}
                 onClick={() => onClick(i)}
               />
-              <text x={cx} y={h - 8} fontSize={9} fill="#64748b" textAnchor="middle">
+              <text
+                x={cx}
+                y={h - 8}
+                fontSize={12}
+                fill="#64748b"
+                textAnchor="middle"
+                className={i % 2 === 1 ? "hidden sm:inline" : undefined}
+              >
                 {m}
               </text>
             </g>
@@ -630,7 +646,7 @@ export function AgingBars({
 
 /* ── Cascada del estado de resultados ─────────────────────────────────── */
 export function Waterfall() {
-  const { activo: hover, onEnter, onLeave, onClick } = useFoco();
+  const { activo: hover, onEnter, onLeave, onClick } = useFoco(6);
   const w = 720;
   const h = 300;
   const padL = 40;
@@ -679,7 +695,7 @@ export function Waterfall() {
         {ticks.map((t, i) => (
           <g key={i}>
             <line x1={padL} x2={w - 10} y1={y(t)} y2={y(t)} stroke={C.grid} strokeWidth={1} />
-            <text x={padL - 6} y={y(t) + 3} fontSize={10} fill="#64748b" textAnchor="end">
+            <text x={padL - 6} y={y(t) + 3} fontSize={13} fill="#64748b" textAnchor="end">
               {t}
             </text>
           </g>
@@ -694,8 +710,8 @@ export function Waterfall() {
                 <line
                   x1={padL + colW * (i - 1) + colW / 2 + barW / 2}
                   x2={cx - barW / 2}
-                  y1={y(bars[i - 1].kind === "total" ? bars[i - 1].top : bars[i - 1].bot)}
-                  y2={bar.kind === "total" ? yb : yt}
+                  y1={y(bars[i - 1].acumulado)}
+                  y2={y(bars[i - 1].acumulado)}
                   stroke={C.axis}
                   strokeWidth={1}
                   strokeDasharray="3 3"
@@ -703,7 +719,7 @@ export function Waterfall() {
               )}
               <rect x={cx - barW / 2} y={yt} width={barW} height={Math.max(2, yb - yt)} rx={4} fill={bar.fill} opacity={hover === null || hover === i ? 1 : 0.55} />
               {bar.kind === "total" && (
-                <text x={cx} y={yt - 6} fontSize={10} fontWeight={700} fill={C.ink} textAnchor="middle">
+                <text x={cx} y={yt - 6} fontSize={13} fontWeight={700} fill={C.ink} textAnchor="middle">
                   {mm(bar.value, 1)}
                 </text>
               )}
@@ -717,7 +733,7 @@ export function Waterfall() {
                 onMouseLeave={onLeave}
                 onClick={() => onClick(i)}
               />
-              <text x={cx} y={h - padB + 18} fontSize={9.5} fill={C.ink2} textAnchor="middle">
+              <text x={cx} y={h - padB + 18} fontSize={11.5} fill={C.ink2} textAnchor="middle">
                 {bar.label}
               </text>
             </g>
