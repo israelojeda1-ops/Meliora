@@ -1,14 +1,42 @@
 import type { ParametrosPeriodo } from "./tipos.ts";
+import { topeGratificacionMensual } from "./motor.ts";
+import { esFeriadoChile } from "./feriados-chile.ts";
 
+/**
+ * Causales de término de contrato (Código del Trabajo). Cada una determina
+ * si corresponde indemnización por años de servicio y aviso previo:
+ *
+ * - art. 159 (necesidades_empresa NO incluida aquí, va por art. 161):
+ *   mutuo_acuerdo, renuncia, vencimiento_plazo, conclusion_trabajo_caso_fortuito
+ *   → sin indemnización, sin aviso previo.
+ * - art. 160 (conducta_trabajador): falta de probidad, conducta indebida
+ *   grave, etc. → sin indemnización.
+ * - art. 161 (necesidades_empresa): con indemnización años de servicio y,
+ *   si no hubo aviso con 30 días, indemnización sustitutiva.
+ * - art. 161 bis (invalidez): con indemnización años de servicio, sin
+ *   exigencia de aviso previo.
+ */
 export type CausalTermino =
   | "necesidades_empresa"
+  | "invalidez"
   | "renuncia"
   | "mutuo_acuerdo"
-  | "vencimiento_plazo";
+  | "vencimiento_plazo"
+  | "conclusion_trabajo_caso_fortuito"
+  | "conducta_trabajador";
+
+const CAUSALES_CON_INDEMNIZACION: ReadonlySet<CausalTermino> = new Set([
+  "necesidades_empresa",
+  "invalidez",
+]);
 
 export interface EntradaFiniquito {
-  /** Última remuneración mensual imponible */
-  remuneracion: number;
+  /** Sueldo base mensual pactado (sin gratificación) */
+  sueldoBase: number;
+  /** Promedio de remuneración variable (comisiones) de los últimos 3 meses */
+  remuneracionVariablePromedio?: number;
+  /** ¿Recibe gratificación legal mensual (25% del devengado, con tope)? */
+  gratificacionLegalMensual: boolean;
   /** Fechas en formato ISO yyyy-mm-dd */
   fechaInicio: string;
   fechaTermino: string;
@@ -20,16 +48,32 @@ export interface EntradaFiniquito {
 }
 
 export interface ResultadoFiniquito {
+  // Remuneraciones pendientes (art. 63: se deben íntegras y proporcionales)
+  diasPendientesMes: number;
+  sueldoProporcional: number;
+  gratificacionProporcional: number;
+  totalRemuneracionesPendientes: number;
+
+  // Feriado proporcional (art. 73: procede sea cual sea la causal)
   aniosServicio: number;
-  aniosComputables: number;
-  topeRemuneracion: number;
-  baseIndemnizacion: number;
-  indemnizacionAnios: number;
-  indemnizacionAviso: number;
   feriadoDiasHabiles: number;
   feriadoDiasCorridos: number;
   feriadoMonto: number;
+
+  // Indemnizaciones (solo si la causal lo permite)
+  aplicaIndemnizacion: boolean;
+  aniosComputables: number;
+  topeRemuneracion: number;
+  remuneracionBaseIndemnizacion: number;
+  baseIndemnizacion: number;
+  indemnizacionAnios: number;
+  indemnizacionAviso: number;
+
   total: number;
+  /** Indemnizaciones: exentas de impuesto único hasta el tope legal (art. 178 LIR) */
+  totalExento: number;
+  /** Remuneraciones pendientes y feriado: tributan como renta normal */
+  totalTributable: number;
 }
 
 function parseISO(s: string): Date {
@@ -55,10 +99,17 @@ function mesesYDias(desde: Date, hasta: Date): { meses: number; dias: number } {
   return { meses: Math.max(0, meses), dias };
 }
 
+function aISO(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
+    d.getDate()
+  ).padStart(2, "0")}`;
+}
+
 /**
  * Días corridos que cubren una cantidad de días hábiles de feriado,
- * contando desde el día siguiente al término (sábados y domingos
- * inhábiles; festivos no considerados).
+ * contando desde el día siguiente al término. Son inhábiles los sábados,
+ * domingos y festivos legales (el feriado siempre se paga en días corridos,
+ * pero su duración se define en días hábiles).
  */
 export function habilesACorridos(
   habiles: number,
@@ -74,7 +125,7 @@ export function habilesACorridos(
     d.setDate(d.getDate() + 1);
     corridos += 1;
     const dow = d.getDay();
-    if (dow !== 0 && dow !== 6) contados += 1;
+    if (dow !== 0 && dow !== 6 && !esFeriadoChile(aISO(d))) contados += 1;
   }
   return corridos + fraccion;
 }
@@ -83,53 +134,134 @@ export function calcularFiniquito(
   e: EntradaFiniquito,
   p: ParametrosPeriodo
 ): ResultadoFiniquito {
-  const remuneracion = Math.max(0, Math.round(e.remuneracion || 0));
+  const sueldoBase = Math.max(0, Math.round(e.sueldoBase || 0));
+  const remuneracionVariablePromedio = Math.max(
+    0,
+    Math.round(e.remuneracionVariablePromedio || 0)
+  );
   const inicio = parseISO(e.fechaInicio);
   const termino = parseISO(e.fechaTermino);
+
+  // 1) Remuneraciones pendientes del mes en curso (art. 63 CdT).
+  const diasPendientesMes = Math.min(termino.getDate(), 30);
+  const factorMes = diasPendientesMes / 30;
+  const sueldoProporcional = Math.round(sueldoBase * factorMes);
+  const gratificacionProporcional = e.gratificacionLegalMensual
+    ? Math.min(
+        Math.round(sueldoProporcional * 0.25),
+        Math.round(topeGratificacionMensual(p) * factorMes)
+      )
+    : 0;
+  const totalRemuneracionesPendientes =
+    sueldoProporcional + gratificacionProporcional;
 
   // Años de servicio: fracción superior a 6 meses cuenta como año completo;
   // tope legal de 11 años (art. 163 CdT, contratos desde el 14-08-1981).
   const { meses } = mesesYDias(inicio, termino);
-  let anios = Math.floor(meses / 12);
+  const aniosServicio = Math.floor(meses / 12);
+  let anios = aniosServicio;
   if (meses % 12 > 6) anios += 1;
   const aniosComputables = Math.min(Math.max(0, anios), 11);
 
-  // Base de indemnización: última remuneración con tope de 90 UF (art. 172).
-  const topeRemuneracion = Math.round(p.topeImponibleUF * p.uf);
-  const baseIndemnizacion = Math.min(remuneracion, topeRemuneracion);
+  // 2) Feriado proporcional: 1,25 días hábiles por mes desde el último
+  // aniversario, más vacaciones devengadas pendientes. Se paga en días
+  // corridos contados desde el día siguiente al término. Procede con
+  // cualquier causal, incluso las imputables al trabajador (art. 73).
+  const desdeAniversario = new Date(inicio);
+  desdeAniversario.setMonth(desdeAniversario.getMonth() + aniosServicio * 12);
+  const prop = mesesYDias(desdeAniversario, termino);
+  const habilesProporcional = prop.meses * 1.25 + (prop.dias / 30) * 1.25;
+  const feriadoDiasHabiles =
+    Math.round(
+      (habilesProporcional + Math.max(0, e.vacacionesPendientesDias || 0)) * 100
+    ) / 100;
+  const feriadoDiasCorridos =
+    Math.round(habilesACorridos(feriadoDiasHabiles, e.fechaTermino) * 100) / 100;
+  const feriadoMonto = Math.round((sueldoBase / 30) * feriadoDiasCorridos);
 
-  const esNecesidades = e.causal === "necesidades_empresa";
-  const indemnizacionAnios = esNecesidades
+  // 3) Indemnizaciones: solo si la causal lo permite (art. 161 / 161 bis).
+  // Base = última remuneración mensual (art. 172): sueldo + gratificación
+  // si se paga mensualmente + promedio de variable, con tope de 90 UF.
+  const aplicaIndemnizacion = CAUSALES_CON_INDEMNIZACION.has(e.causal);
+  const gratificacionBaseIndemnizacion = e.gratificacionLegalMensual
+    ? Math.min(Math.round(sueldoBase * 0.25), topeGratificacionMensual(p))
+    : 0;
+  const remuneracionBaseIndemnizacion =
+    sueldoBase + gratificacionBaseIndemnizacion + remuneracionVariablePromedio;
+  const topeRemuneracion = Math.round(p.topeImponibleUF * p.uf);
+  const baseIndemnizacion = Math.min(
+    remuneracionBaseIndemnizacion,
+    topeRemuneracion
+  );
+
+  const indemnizacionAnios = aplicaIndemnizacion
     ? aniosComputables * baseIndemnizacion
     : 0;
   const indemnizacionAviso =
-    esNecesidades && !e.avisoPrevio ? baseIndemnizacion : 0;
+    e.causal === "necesidades_empresa" && !e.avisoPrevio ? baseIndemnizacion : 0;
 
-  // Feriado proporcional: 1,25 días hábiles por mes desde el último
-  // aniversario, más vacaciones devengadas pendientes. Se paga en días
-  // corridos contados desde el día siguiente al término.
-  const aniversarios = Math.floor(meses / 12);
-  const desdeAniversario = new Date(inicio);
-  desdeAniversario.setMonth(desdeAniversario.getMonth() + aniversarios * 12);
-  const prop = mesesYDias(desdeAniversario, termino);
-  const habilesProporcional =
-    prop.meses * 1.25 + (prop.dias / 30) * 1.25;
-  const feriadoDiasHabiles =
-    Math.round((habilesProporcional + Math.max(0, e.vacacionesPendientesDias || 0)) * 100) / 100;
-  const feriadoDiasCorridos =
-    Math.round(habilesACorridos(feriadoDiasHabiles, e.fechaTermino) * 100) / 100;
-  const feriadoMonto = Math.round((remuneracion / 30) * feriadoDiasCorridos);
+  const totalExento = indemnizacionAnios + indemnizacionAviso;
+  const totalTributable = totalRemuneracionesPendientes + feriadoMonto;
 
   return {
-    aniosServicio: Math.floor(meses / 12),
-    aniosComputables,
-    topeRemuneracion,
-    baseIndemnizacion,
-    indemnizacionAnios,
-    indemnizacionAviso,
+    diasPendientesMes,
+    sueldoProporcional,
+    gratificacionProporcional,
+    totalRemuneracionesPendientes,
+
+    aniosServicio,
     feriadoDiasHabiles,
     feriadoDiasCorridos,
     feriadoMonto,
-    total: indemnizacionAnios + indemnizacionAviso + feriadoMonto,
+
+    aplicaIndemnizacion,
+    aniosComputables,
+    topeRemuneracion,
+    remuneracionBaseIndemnizacion,
+    baseIndemnizacion,
+    indemnizacionAnios,
+    indemnizacionAviso,
+
+    total: totalTributable + totalExento,
+    totalExento,
+    totalTributable,
   };
+}
+
+/**
+ * Recargo por despido injustificado, indebido o improcedente (art. 168 CdT).
+ * Se entrega solo como referencia informativa: exige que un juicio laboral
+ * declare la causal infundada, y se calcula sobre la indemnización por años
+ * de servicio que habría correspondido de aplicarse el art. 161 (no sobre la
+ * indemnización efectivamente pagada, que en estas causales es cero) —
+ * `aniosComputables × baseIndemnizacion` del resultado del finiquito.
+ */
+export function recargoDespidoInjustificado(
+  causal: CausalTermino,
+  indemnizacionAniosHipotetica: number
+): { porcentaje: number; monto: number } | null {
+  if (causal === "necesidades_empresa") {
+    return {
+      porcentaje: 0.3,
+      monto: Math.round(indemnizacionAniosHipotetica * 0.3),
+    };
+  }
+  if (
+    causal === "renuncia" ||
+    causal === "mutuo_acuerdo" ||
+    causal === "vencimiento_plazo" ||
+    causal === "conclusion_trabajo_caso_fortuito"
+  ) {
+    return {
+      porcentaje: 0.5,
+      monto: Math.round(indemnizacionAniosHipotetica * 0.5),
+    };
+  }
+  if (causal === "conducta_trabajador") {
+    return {
+      porcentaje: 0.8,
+      monto: Math.round(indemnizacionAniosHipotetica * 0.8),
+    };
+  }
+  return null;
 }
