@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test:remuneraciones": "node --experimental-strip-types src/lib/remuneraciones/motor.test.ts"
+    "test:remuneraciones": "node --experimental-strip-types src/lib/remuneraciones/motor.test.ts",
+    "test:finiquito": "node --experimental-strip-types src/lib/remuneraciones/finiquito.test.ts"
   },
   "dependencies": {
     "next": "16.2.10",

@@ -2,7 +2,11 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { calcularFiniquito, type CausalTermino } from "../lib/remuneraciones/finiquito.ts";
+import {
+  calcularFiniquito,
+  recargoDespidoInjustificado,
+  type CausalTermino,
+} from "../lib/remuneraciones/finiquito.ts";
 import { periodoActual } from "../lib/remuneraciones/parametros/index.ts";
 
 const FORM_ENDPOINT = "https://formsubmit.co/israelojeda1@gmail.com";
@@ -18,15 +22,49 @@ const inputClass =
   "w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald focus:border-emerald bg-white";
 const labelClass = "block text-sm font-medium text-slate-700 mb-1.5";
 
-const causales: { key: CausalTermino; label: string }[] = [
-  { key: "necesidades_empresa", label: "Necesidades de la empresa (art. 161)" },
-  { key: "renuncia", label: "Renuncia voluntaria" },
-  { key: "mutuo_acuerdo", label: "Mutuo acuerdo" },
-  { key: "vencimiento_plazo", label: "Vencimiento del plazo" },
+const causales: { key: CausalTermino; label: string; nota: string }[] = [
+  {
+    key: "necesidades_empresa",
+    label: "Necesidades de la empresa (art. 161)",
+    nota: "Con indemnización por años de servicio y, si no hubo aviso con 30 días, indemnización sustitutiva.",
+  },
+  {
+    key: "invalidez",
+    label: "Invalidez del trabajador (art. 161 bis)",
+    nota: "Con indemnización por años de servicio, sin exigir aviso previo.",
+  },
+  {
+    key: "renuncia",
+    label: "Renuncia voluntaria (art. 159 N°2)",
+    nota: "Sin indemnización por años de servicio ni aviso previo.",
+  },
+  {
+    key: "mutuo_acuerdo",
+    label: "Mutuo acuerdo (art. 159 N°1)",
+    nota: "Sin indemnización por años de servicio ni aviso previo.",
+  },
+  {
+    key: "vencimiento_plazo",
+    label: "Vencimiento del plazo (art. 159 N°4)",
+    nota: "Sin indemnización por años de servicio ni aviso previo.",
+  },
+  {
+    key: "conclusion_trabajo_caso_fortuito",
+    label: "Conclusión del trabajo o caso fortuito (art. 159 N°5 y N°6)",
+    nota: "Sin indemnización por años de servicio ni aviso previo.",
+  },
+  {
+    key: "conducta_trabajador",
+    label: "Causa imputable al trabajador (art. 160)",
+    nota: "Sin indemnización, aunque el feriado proporcional igual se paga.",
+  },
 ];
 
 export function CalculadoraFiniquito() {
-  const [remuneracion, setRemuneracion] = useState("");
+  const [sueldoBase, setSueldoBase] = useState("");
+  const [gratificacionLegalMensual, setGratificacionLegalMensual] = useState(false);
+  const [tieneVariable, setTieneVariable] = useState(false);
+  const [remuneracionVariable, setRemuneracionVariable] = useState("");
   const [fechaInicio, setFechaInicio] = useState("");
   const [fechaTermino, setFechaTermino] = useState("");
   const [causal, setCausal] = useState<CausalTermino>("necesidades_empresa");
@@ -34,25 +72,51 @@ export function CalculadoraFiniquito() {
   const [vacacionesPendientes, setVacacionesPendientes] = useState("");
 
   const resultado = useMemo(() => {
-    const rem = parseCLP(remuneracion);
-    if (rem <= 0 || !fechaInicio || !fechaTermino) return null;
+    const sb = parseCLP(sueldoBase);
+    if (sb <= 0 || !fechaInicio || !fechaTermino) return null;
     if (fechaTermino <= fechaInicio) return null;
     return calcularFiniquito(
       {
-        remuneracion: rem,
+        sueldoBase: sb,
+        gratificacionLegalMensual,
+        remuneracionVariablePromedio: tieneVariable
+          ? parseCLP(remuneracionVariable)
+          : 0,
         fechaInicio,
         fechaTermino,
         causal,
         avisoPrevio,
-        vacacionesPendientesDias: parseFloat(vacacionesPendientes.replace(",", ".")) || 0,
+        vacacionesPendientesDias:
+          parseFloat(vacacionesPendientes.replace(",", ".")) || 0,
       },
       periodoActual
     );
-  }, [remuneracion, fechaInicio, fechaTermino, causal, avisoPrevio, vacacionesPendientes]);
+  }, [
+    sueldoBase,
+    gratificacionLegalMensual,
+    tieneVariable,
+    remuneracionVariable,
+    fechaInicio,
+    fechaTermino,
+    causal,
+    avisoPrevio,
+    vacacionesPendientes,
+  ]);
+
+  const causalInfo = causales.find((c) => c.key === causal);
+
+  const recargo = resultado
+    ? recargoDespidoInjustificado(
+        causal,
+        resultado.aniosComputables * resultado.baseIndemnizacion
+      )
+    : null;
 
   const resumenTexto = resultado
     ? [
-        `Causal: ${causales.find((c) => c.key === causal)?.label}`,
+        `Causal: ${causalInfo?.label}`,
+        `Sueldo proporcional: ${fmt(resultado.sueldoProporcional)}`,
+        `Gratificación proporcional: ${fmt(resultado.gratificacionProporcional)}`,
         `Años computables: ${resultado.aniosComputables}`,
         `Indemnización años de servicio: ${fmt(resultado.indemnizacionAnios)}`,
         `Indemnización sustitutiva de aviso previo: ${fmt(resultado.indemnizacionAviso)}`,
@@ -75,16 +139,55 @@ export function CalculadoraFiniquito() {
         <div className="space-y-5">
           <div>
             <label htmlFor="fin-rem" className={labelClass}>
-              Última remuneración mensual imponible
+              Sueldo base mensual
             </label>
             <input
               id="fin-rem"
               inputMode="numeric"
               className={inputClass}
               placeholder="$1.000.000"
-              value={remuneracion ? `$${parseCLP(remuneracion).toLocaleString("es-CL")}` : ""}
-              onChange={(e) => setRemuneracion(e.target.value)}
+              value={sueldoBase ? `$${parseCLP(sueldoBase).toLocaleString("es-CL")}` : ""}
+              onChange={(e) => setSueldoBase(e.target.value)}
             />
+          </div>
+          <label className="flex items-center gap-3 text-sm text-slate-700">
+            <input
+              type="checkbox"
+              checked={gratificacionLegalMensual}
+              onChange={(e) => setGratificacionLegalMensual(e.target.checked)}
+              className="h-4 w-4 rounded border-slate-300 text-emerald focus:ring-emerald"
+            />
+            Recibe gratificación legal mensual (25% del devengado, con tope)
+          </label>
+          <div>
+            <label className="flex items-center gap-3 text-sm text-slate-700 mb-2">
+              <input
+                type="checkbox"
+                checked={tieneVariable}
+                onChange={(e) => setTieneVariable(e.target.checked)}
+                className="h-4 w-4 rounded border-slate-300 text-emerald focus:ring-emerald"
+              />
+              Tiene remuneración variable (comisiones)
+            </label>
+            {tieneVariable && (
+              <div>
+                <label htmlFor="fin-var" className={labelClass}>
+                  Promedio mensual de los últimos 3 meses
+                </label>
+                <input
+                  id="fin-var"
+                  inputMode="numeric"
+                  className={inputClass}
+                  placeholder="$0"
+                  value={
+                    remuneracionVariable
+                      ? `$${parseCLP(remuneracionVariable).toLocaleString("es-CL")}`
+                      : ""
+                  }
+                  onChange={(e) => setRemuneracionVariable(e.target.value)}
+                />
+              </div>
+            )}
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
@@ -128,6 +231,9 @@ export function CalculadoraFiniquito() {
                 </option>
               ))}
             </select>
+            {causalInfo && (
+              <p className="mt-1.5 text-xs text-slate-400">{causalInfo.nota}</p>
+            )}
           </div>
           {causal === "necesidades_empresa" && (
             <label className="flex items-center gap-3 text-sm text-slate-700">
@@ -163,7 +269,7 @@ export function CalculadoraFiniquito() {
         {!resultado ? (
           <div className="no-print rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-8 flex items-center justify-center min-h-[300px]">
             <p className="text-sm text-slate-400 text-center max-w-xs">
-              Completa la remuneración y las fechas del contrato para ver el
+              Completa el sueldo y las fechas del contrato para ver el
               desglose del finiquito.
             </p>
           </div>
@@ -182,51 +288,84 @@ export function CalculadoraFiniquito() {
               Desglose del finiquito
             </h2>
 
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-400 mb-1.5">
+              Remuneraciones pendientes
+            </p>
             <div className="flex items-baseline justify-between py-1.5">
               <span className="text-sm text-slate-600">
-                Años de servicio computables
-                {resultado.aniosServicio > resultado.aniosComputables &&
-                  ` (${resultado.aniosServicio} reales, tope 11)`}
+                Sueldo proporcional ({resultado.diasPendientesMes} días)
               </span>
               <span className="text-sm text-slate-700 tabular-nums">
-                {resultado.aniosComputables}
+                {fmt(resultado.sueldoProporcional)}
               </span>
             </div>
-            {resultado.baseIndemnizacion < parseCLP(remuneracion) && (
+            {gratificacionLegalMensual && (
               <div className="flex items-baseline justify-between py-1.5">
                 <span className="text-sm text-slate-600">
-                  Base de indemnización (tope 90 UF)
+                  Gratificación proporcional
                 </span>
                 <span className="text-sm text-slate-700 tabular-nums">
-                  {fmt(resultado.baseIndemnizacion)}
+                  {fmt(resultado.gratificacionProporcional)}
                 </span>
               </div>
             )}
+
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-400 mt-4 mb-1.5">
+              Feriado proporcional
+            </p>
             <div className="flex items-baseline justify-between py-1.5">
               <span className="text-sm text-slate-600">
-                Indemnización por años de servicio
-              </span>
-              <span className="text-sm text-slate-700 tabular-nums">
-                {fmt(resultado.indemnizacionAnios)}
-              </span>
-            </div>
-            <div className="flex items-baseline justify-between py-1.5">
-              <span className="text-sm text-slate-600">
-                Indemnización sustitutiva de aviso previo
-              </span>
-              <span className="text-sm text-slate-700 tabular-nums">
-                {fmt(resultado.indemnizacionAviso)}
-              </span>
-            </div>
-            <div className="flex items-baseline justify-between py-1.5">
-              <span className="text-sm text-slate-600">
-                Feriado proporcional ({resultado.feriadoDiasHabiles.toLocaleString("es-CL")} días
-                hábiles → {resultado.feriadoDiasCorridos.toLocaleString("es-CL")} corridos)
+                {resultado.feriadoDiasHabiles.toLocaleString("es-CL")} días
+                hábiles → {resultado.feriadoDiasCorridos.toLocaleString("es-CL")} corridos
               </span>
               <span className="text-sm text-slate-700 tabular-nums">
                 {fmt(resultado.feriadoMonto)}
               </span>
             </div>
+
+            {resultado.aplicaIndemnizacion && (
+              <>
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-400 mt-4 mb-1.5">
+                  Indemnizaciones
+                </p>
+                <div className="flex items-baseline justify-between py-1.5">
+                  <span className="text-sm text-slate-600">
+                    Años de servicio computables
+                    {resultado.aniosServicio > resultado.aniosComputables &&
+                      ` (${resultado.aniosServicio} reales, tope 11)`}
+                  </span>
+                  <span className="text-sm text-slate-700 tabular-nums">
+                    {resultado.aniosComputables}
+                  </span>
+                </div>
+                {resultado.baseIndemnizacion < resultado.remuneracionBaseIndemnizacion && (
+                  <div className="flex items-baseline justify-between py-1.5">
+                    <span className="text-sm text-slate-600">
+                      Base de indemnización (tope 90 UF)
+                    </span>
+                    <span className="text-sm text-slate-700 tabular-nums">
+                      {fmt(resultado.baseIndemnizacion)}
+                    </span>
+                  </div>
+                )}
+                <div className="flex items-baseline justify-between py-1.5">
+                  <span className="text-sm text-slate-600">
+                    Indemnización por años de servicio
+                  </span>
+                  <span className="text-sm text-slate-700 tabular-nums">
+                    {fmt(resultado.indemnizacionAnios)}
+                  </span>
+                </div>
+                <div className="flex items-baseline justify-between py-1.5">
+                  <span className="text-sm text-slate-600">
+                    Indemnización sustitutiva de aviso previo
+                  </span>
+                  <span className="text-sm text-slate-700 tabular-nums">
+                    {fmt(resultado.indemnizacionAviso)}
+                  </span>
+                </div>
+              </>
+            )}
 
             <div className="mt-4 rounded-xl bg-emerald/5 border border-emerald/20 px-4 py-3 flex items-baseline justify-between">
               <span className="text-sm font-bold text-navy">Total finiquito</span>
@@ -234,13 +373,37 @@ export function CalculadoraFiniquito() {
                 {fmt(resultado.total)}
               </span>
             </div>
+            {resultado.totalExento > 0 && (
+              <p className="mt-2 text-xs text-slate-400">
+                {fmt(resultado.totalTributable)} tributa como renta normal,{" "}
+                {fmt(resultado.totalExento)} está exento de impuesto único
+                hasta el tope legal (art. 178 Ley de Impuesto a la Renta).
+              </p>
+            )}
+
+            {recargo && (
+              <div className="mt-4 rounded-xl bg-amber-50 border border-amber-200 px-4 py-3">
+                <p className="text-xs font-semibold text-amber-900">
+                  Solo si la causal se declara injustificada en juicio
+                </p>
+                <p className="mt-1 text-xs text-amber-800 leading-relaxed">
+                  Si un tribunal laboral declara esta causal injustificada,
+                  indebida o improcedente, el art. 168 del Código del Trabajo
+                  agrega un recargo de {Math.round(recargo.porcentaje * 100)}%
+                  sobre la indemnización por años de servicio que habría
+                  correspondido: {fmt(recargo.monto)}. Este monto no forma
+                  parte del finiquito que se paga al término del contrato.
+                </p>
+              </div>
+            )}
 
             <p className="mt-5 text-[11px] leading-relaxed text-slate-400">
-              Cálculo referencial según Código del Trabajo (arts. 161, 162, 163
-              y 172): fracción superior a 6 meses cuenta como año completo, tope
-              de 11 años y base topeada en 90 UF. El feriado proporcional
-              considera 1,25 días hábiles por mes y su conversión a días
-              corridos sin festivos. No reemplaza el finiquito ratificado ante
+              Cálculo referencial según Código del Trabajo (arts. 63, 73, 161,
+              161 bis, 162, 163 y 172): fracción superior a 6 meses cuenta
+              como año completo, tope de 11 años y base topeada en 90 UF. El
+              feriado proporcional considera 1,25 días hábiles por mes y su
+              conversión a días corridos excluyendo sábados, domingos y
+              festivos legales. No reemplaza el finiquito ratificado ante
               ministro de fe.
             </p>
 

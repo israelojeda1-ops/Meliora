@@ -27,7 +27,7 @@ export const metadata: Metadata = {
 const faqs = [
   {
     q: "¿Qué incluye un finiquito por necesidades de la empresa?",
-    a: "Indemnización por años de servicio (una remuneración por cada año trabajado, donde la fracción superior a 6 meses cuenta como año completo, con tope de 11 años), indemnización sustitutiva de aviso previo si el despido no se avisó con 30 días de anticipación, y el feriado proporcional por las vacaciones no tomadas. La base de cálculo de las indemnizaciones tiene un tope de 90 UF.",
+    a: "El sueldo y la gratificación proporcional al mes en curso, el feriado proporcional por las vacaciones no tomadas, la indemnización por años de servicio (una remuneración por cada año trabajado, donde la fracción superior a 6 meses cuenta como año completo, con tope de 11 años) y la indemnización sustitutiva de aviso previo si el despido no se avisó con 30 días de anticipación. La base de cálculo de las indemnizaciones tiene un tope de 90 UF.",
   },
   {
     q: "¿Si el trabajador renuncia, hay que pagar indemnización?",
@@ -35,7 +35,7 @@ const faqs = [
   },
   {
     q: "¿Cómo se calcula el feriado proporcional?",
-    a: "Se devengan 1,25 días hábiles de vacaciones por cada mes trabajado desde el último aniversario del contrato (más los períodos completos pendientes). Esos días hábiles se convierten a días corridos contando desde el día siguiente al término, y se pagan a razón de la remuneración diaria (sueldo mensual dividido en 30).",
+    a: "Se devengan 1,25 días hábiles de vacaciones por cada mes trabajado desde el último aniversario del contrato (más los períodos completos pendientes). Esos días hábiles se convierten a días corridos contando desde el día siguiente al término, saltando sábados, domingos y festivos legales, y se pagan a razón de la remuneración diaria (sueldo mensual dividido en 30). Procede sea cual sea la causal, incluso en un despido por conducta del trabajador.",
   },
   {
     q: "¿Qué es el tope de 90 UF en el finiquito?",
