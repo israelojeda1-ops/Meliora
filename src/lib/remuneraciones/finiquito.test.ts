@@ -51,7 +51,7 @@ console.log("\nFiniquito — mes completo, necesidades de la empresa, sin aviso 
   const f = calcularFiniquito(
     {
       sueldoBase: 1500000,
-      gratificacionLegalMensual: false,
+      modoGratificacion: "ninguna",
       fechaInicio: "2020-03-01",
       fechaTermino: "2026-08-31",
       causal: "necesidades_empresa",
@@ -86,7 +86,7 @@ console.log("\nFiniquito — renuncia voluntaria (remuneraciones pendientes + fe
   const f = calcularFiniquito(
     {
       sueldoBase: 1500000,
-      gratificacionLegalMensual: false,
+      modoGratificacion: "ninguna",
       fechaInicio: "2020-03-01",
       fechaTermino: "2026-08-31",
       causal: "renuncia",
@@ -114,7 +114,7 @@ console.log("\nFiniquito — topes: 90 UF de base y 11 años");
   const f = calcularFiniquito(
     {
       sueldoBase: 5000000,
-      gratificacionLegalMensual: false,
+      modoGratificacion: "ninguna",
       fechaInicio: "2010-01-01",
       fechaTermino: "2026-06-30",
       causal: "necesidades_empresa",
@@ -138,7 +138,7 @@ console.log("\nFiniquito — gratificación legal mensual, término a mitad de m
   const f = calcularFiniquito(
     {
       sueldoBase: 900000,
-      gratificacionLegalMensual: true,
+      modoGratificacion: "legal",
       fechaInicio: "2024-01-15",
       fechaTermino: "2026-08-20",
       causal: "renuncia",
@@ -159,7 +159,7 @@ console.log("\nFiniquito — invalidez del trabajador");
   const f = calcularFiniquito(
     {
       sueldoBase: 1000000,
-      gratificacionLegalMensual: false,
+      modoGratificacion: "ninguna",
       fechaInicio: "2023-01-01",
       fechaTermino: "2026-01-01",
       causal: "invalidez",
@@ -179,7 +179,7 @@ console.log("\nFiniquito — despido por causa imputable al trabajador (art. 160
   const f = calcularFiniquito(
     {
       sueldoBase: 800000,
-      gratificacionLegalMensual: false,
+      modoGratificacion: "ninguna",
       fechaInicio: "2024-06-01",
       fechaTermino: "2026-06-15",
       causal: "conducta_trabajador",
@@ -197,6 +197,37 @@ console.log("\nFiniquito — despido por causa imputable al trabajador (art. 160
     500000 * 6 // hipotético, solo para validar el porcentaje
   );
   eq("Recargo 80% si la causal del art. 160 no se prueba", recargo!.porcentaje * 100, 80);
+}
+
+// ── Caso 7: horas extra promedio y gratificación convencional (manual) ──
+console.log("\nFiniquito — horas extra promedio y gratificación convencional");
+{
+  const f = calcularFiniquito(
+    {
+      sueldoBase: 1000000,
+      horasExtraPromedio: 100000,
+      modoGratificacion: "manual",
+      gratificacionManual: 150000,
+      fechaInicio: "2022-02-01",
+      fechaTermino: "2026-02-10",
+      causal: "necesidades_empresa",
+      avisoPrevio: true,
+    },
+    agosto
+  );
+  eq("Días pendientes del mes", f.diasPendientesMes, 10);
+  eq("Sueldo proporcional", f.sueldoProporcional, 333333);
+  eq("Horas extra proporcional", f.horasExtraProporcional, 33333);
+  eq("Gratificación proporcional (convencional, prorrateada)", f.gratificacionProporcional, 50000);
+  eq("Total remuneraciones pendientes", f.totalRemuneracionesPendientes, 416666);
+  eq(
+    "Base de indemnización excluye horas extra (art. 172)",
+    f.remuneracionBaseIndemnizacion,
+    1150000
+  );
+  eq("Indemnización años de servicio", f.indemnizacionAnios, 4600000);
+  eq("Feriado proporcional", f.feriadoMonto, 14000);
+  eq("Total finiquito", f.total, 5030666);
 }
 
 if (fallas > 0) {

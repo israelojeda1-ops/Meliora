@@ -8,6 +8,7 @@ import {
   type CausalTermino,
 } from "../lib/remuneraciones/finiquito.ts";
 import { periodoActual } from "../lib/remuneraciones/parametros/index.ts";
+import type { ModoGratificacion } from "../lib/remuneraciones/tipos.ts";
 
 const FORM_ENDPOINT = "https://formsubmit.co/israelojeda1@gmail.com";
 
@@ -60,9 +61,19 @@ const causales: { key: CausalTermino; label: string; nota: string }[] = [
   },
 ];
 
+const modosGratificacion: { key: ModoGratificacion; label: string }[] = [
+  { key: "ninguna", label: "No recibe gratificación mensual" },
+  { key: "legal", label: "Legal (25% del devengado, con tope)" },
+  { key: "manual", label: "Convencional (monto fijo mensual pactado)" },
+];
+
 export function CalculadoraFiniquito() {
   const [sueldoBase, setSueldoBase] = useState("");
-  const [gratificacionLegalMensual, setGratificacionLegalMensual] = useState(false);
+  const [modoGratificacion, setModoGratificacion] =
+    useState<ModoGratificacion>("ninguna");
+  const [gratificacionManual, setGratificacionManual] = useState("");
+  const [tieneHorasExtra, setTieneHorasExtra] = useState(false);
+  const [horasExtraPromedio, setHorasExtraPromedio] = useState("");
   const [tieneVariable, setTieneVariable] = useState(false);
   const [remuneracionVariable, setRemuneracionVariable] = useState("");
   const [fechaInicio, setFechaInicio] = useState("");
@@ -78,7 +89,10 @@ export function CalculadoraFiniquito() {
     return calcularFiniquito(
       {
         sueldoBase: sb,
-        gratificacionLegalMensual,
+        modoGratificacion,
+        gratificacionManual:
+          modoGratificacion === "manual" ? parseCLP(gratificacionManual) : 0,
+        horasExtraPromedio: tieneHorasExtra ? parseCLP(horasExtraPromedio) : 0,
         remuneracionVariablePromedio: tieneVariable
           ? parseCLP(remuneracionVariable)
           : 0,
@@ -93,7 +107,10 @@ export function CalculadoraFiniquito() {
     );
   }, [
     sueldoBase,
-    gratificacionLegalMensual,
+    modoGratificacion,
+    gratificacionManual,
+    tieneHorasExtra,
+    horasExtraPromedio,
     tieneVariable,
     remuneracionVariable,
     fechaInicio,
@@ -116,6 +133,7 @@ export function CalculadoraFiniquito() {
     ? [
         `Causal: ${causalInfo?.label}`,
         `Sueldo proporcional: ${fmt(resultado.sueldoProporcional)}`,
+        `Horas extra proporcional: ${fmt(resultado.horasExtraProporcional)}`,
         `Gratificación proporcional: ${fmt(resultado.gratificacionProporcional)}`,
         `Años computables: ${resultado.aniosComputables}`,
         `Indemnización años de servicio: ${fmt(resultado.indemnizacionAnios)}`,
@@ -150,15 +168,78 @@ export function CalculadoraFiniquito() {
               onChange={(e) => setSueldoBase(e.target.value)}
             />
           </div>
-          <label className="flex items-center gap-3 text-sm text-slate-700">
-            <input
-              type="checkbox"
-              checked={gratificacionLegalMensual}
-              onChange={(e) => setGratificacionLegalMensual(e.target.checked)}
-              className="h-4 w-4 rounded border-slate-300 text-emerald focus:ring-emerald"
-            />
-            Recibe gratificación legal mensual (25% del devengado, con tope)
-          </label>
+          <div>
+            <label htmlFor="fin-grat" className={labelClass}>
+              Gratificación
+            </label>
+            <select
+              id="fin-grat"
+              className={inputClass}
+              value={modoGratificacion}
+              onChange={(e) =>
+                setModoGratificacion(e.target.value as ModoGratificacion)
+              }
+            >
+              {modosGratificacion.map((m) => (
+                <option key={m.key} value={m.key}>
+                  {m.label}
+                </option>
+              ))}
+            </select>
+            {modoGratificacion === "manual" && (
+              <div className="mt-3">
+                <label htmlFor="fin-grat-manual" className={labelClass}>
+                  Monto mensual pactado
+                </label>
+                <input
+                  id="fin-grat-manual"
+                  inputMode="numeric"
+                  className={inputClass}
+                  placeholder="$0"
+                  value={
+                    gratificacionManual
+                      ? `$${parseCLP(gratificacionManual).toLocaleString("es-CL")}`
+                      : ""
+                  }
+                  onChange={(e) => setGratificacionManual(e.target.value)}
+                />
+              </div>
+            )}
+          </div>
+          <div>
+            <label className="flex items-center gap-3 text-sm text-slate-700 mb-2">
+              <input
+                type="checkbox"
+                checked={tieneHorasExtra}
+                onChange={(e) => setTieneHorasExtra(e.target.checked)}
+                className="h-4 w-4 rounded border-slate-300 text-emerald focus:ring-emerald"
+              />
+              Tiene horas extraordinarias habituales
+            </label>
+            {tieneHorasExtra && (
+              <div>
+                <label htmlFor="fin-hextra" className={labelClass}>
+                  Promedio mensual de horas extra
+                </label>
+                <input
+                  id="fin-hextra"
+                  inputMode="numeric"
+                  className={inputClass}
+                  placeholder="$0"
+                  value={
+                    horasExtraPromedio
+                      ? `$${parseCLP(horasExtraPromedio).toLocaleString("es-CL")}`
+                      : ""
+                  }
+                  onChange={(e) => setHorasExtraPromedio(e.target.value)}
+                />
+                <p className="mt-1.5 text-xs text-slate-400">
+                  Se paga en las remuneraciones pendientes, pero el art. 172
+                  excluye las horas extra de la base de las indemnizaciones.
+                </p>
+              </div>
+            )}
+          </div>
           <div>
             <label className="flex items-center gap-3 text-sm text-slate-700 mb-2">
               <input
@@ -299,7 +380,17 @@ export function CalculadoraFiniquito() {
                 {fmt(resultado.sueldoProporcional)}
               </span>
             </div>
-            {gratificacionLegalMensual && (
+            {tieneHorasExtra && (
+              <div className="flex items-baseline justify-between py-1.5">
+                <span className="text-sm text-slate-600">
+                  Horas extra proporcional
+                </span>
+                <span className="text-sm text-slate-700 tabular-nums">
+                  {fmt(resultado.horasExtraProporcional)}
+                </span>
+              </div>
+            )}
+            {modoGratificacion !== "ninguna" && (
               <div className="flex items-baseline justify-between py-1.5">
                 <span className="text-sm text-slate-600">
                   Gratificación proporcional
@@ -403,8 +494,9 @@ export function CalculadoraFiniquito() {
               como año completo, tope de 11 años y base topeada en 90 UF. El
               feriado proporcional considera 1,25 días hábiles por mes y su
               conversión a días corridos excluyendo sábados, domingos y
-              festivos legales. No reemplaza el finiquito ratificado ante
-              ministro de fe.
+              festivos legales. La base de las indemnizaciones excluye las
+              horas extra (art. 172). No reemplaza el finiquito ratificado
+              ante ministro de fe.
             </p>
 
             <div className="no-print mt-6">

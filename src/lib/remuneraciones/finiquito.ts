@@ -1,4 +1,4 @@
-import type { ParametrosPeriodo } from "./tipos.ts";
+import type { ModoGratificacion, ParametrosPeriodo } from "./tipos.ts";
 import { topeGratificacionMensual } from "./motor.ts";
 import { esFeriadoChile } from "./feriados-chile.ts";
 
@@ -31,12 +31,16 @@ const CAUSALES_CON_INDEMNIZACION: ReadonlySet<CausalTermino> = new Set([
 ]);
 
 export interface EntradaFiniquito {
-  /** Sueldo base mensual pactado (sin gratificación) */
+  /** Sueldo base mensual pactado (sin gratificación ni horas extra) */
   sueldoBase: number;
+  /** Promedio mensual de horas extraordinarias (sobresueldo) */
+  horasExtraPromedio?: number;
   /** Promedio de remuneración variable (comisiones) de los últimos 3 meses */
   remuneracionVariablePromedio?: number;
-  /** ¿Recibe gratificación legal mensual (25% del devengado, con tope)? */
-  gratificacionLegalMensual: boolean;
+  /** legal: 25% del devengado con tope. manual: monto fijo pactado. ninguna: no recibe. */
+  modoGratificacion: ModoGratificacion;
+  /** Monto mensual pactado, solo si modoGratificacion === "manual" */
+  gratificacionManual?: number;
   /** Fechas en formato ISO yyyy-mm-dd */
   fechaInicio: string;
   fechaTermino: string;
@@ -51,6 +55,7 @@ export interface ResultadoFiniquito {
   // Remuneraciones pendientes (art. 63: se deben íntegras y proporcionales)
   diasPendientesMes: number;
   sueldoProporcional: number;
+  horasExtraProporcional: number;
   gratificacionProporcional: number;
   totalRemuneracionesPendientes: number;
 
@@ -135,25 +140,33 @@ export function calcularFiniquito(
   p: ParametrosPeriodo
 ): ResultadoFiniquito {
   const sueldoBase = Math.max(0, Math.round(e.sueldoBase || 0));
+  const horasExtraPromedio = Math.max(0, Math.round(e.horasExtraPromedio || 0));
   const remuneracionVariablePromedio = Math.max(
     0,
     Math.round(e.remuneracionVariablePromedio || 0)
   );
+  const gratificacionManual = Math.max(0, Math.round(e.gratificacionManual || 0));
   const inicio = parseISO(e.fechaInicio);
   const termino = parseISO(e.fechaTermino);
 
-  // 1) Remuneraciones pendientes del mes en curso (art. 63 CdT).
+  // 1) Remuneraciones pendientes del mes en curso (art. 63 CdT): se prorratean
+  // el sueldo y las horas extra habituales por los días efectivamente
+  // trabajados en el mes de término.
   const diasPendientesMes = Math.min(termino.getDate(), 30);
   const factorMes = diasPendientesMes / 30;
   const sueldoProporcional = Math.round(sueldoBase * factorMes);
-  const gratificacionProporcional = e.gratificacionLegalMensual
-    ? Math.min(
-        Math.round(sueldoProporcional * 0.25),
-        Math.round(topeGratificacionMensual(p) * factorMes)
-      )
-    : 0;
+  const horasExtraProporcional = Math.round(horasExtraPromedio * factorMes);
+  const gratificacionProporcional =
+    e.modoGratificacion === "legal"
+      ? Math.min(
+          Math.round((sueldoProporcional + horasExtraProporcional) * 0.25),
+          Math.round(topeGratificacionMensual(p) * factorMes)
+        )
+      : e.modoGratificacion === "manual"
+        ? Math.round(gratificacionManual * factorMes)
+        : 0;
   const totalRemuneracionesPendientes =
-    sueldoProporcional + gratificacionProporcional;
+    sueldoProporcional + horasExtraProporcional + gratificacionProporcional;
 
   // Años de servicio: fracción superior a 6 meses cuenta como año completo;
   // tope legal de 11 años (art. 163 CdT, contratos desde el 14-08-1981).
@@ -181,11 +194,20 @@ export function calcularFiniquito(
 
   // 3) Indemnizaciones: solo si la causal lo permite (art. 161 / 161 bis).
   // Base = última remuneración mensual (art. 172): sueldo + gratificación
-  // si se paga mensualmente + promedio de variable, con tope de 90 UF.
+  // si se paga mensualmente + promedio de variable, con tope de 90 UF. El
+  // propio art. 172 excluye expresamente el sobretiempo (horas extra) de
+  // esta base, aunque sí se usa para calcular el monto de la gratificación
+  // legal (25% de lo devengado, incluidas las horas extra).
   const aplicaIndemnizacion = CAUSALES_CON_INDEMNIZACION.has(e.causal);
-  const gratificacionBaseIndemnizacion = e.gratificacionLegalMensual
-    ? Math.min(Math.round(sueldoBase * 0.25), topeGratificacionMensual(p))
-    : 0;
+  const gratificacionBaseIndemnizacion =
+    e.modoGratificacion === "legal"
+      ? Math.min(
+          Math.round((sueldoBase + horasExtraPromedio) * 0.25),
+          topeGratificacionMensual(p)
+        )
+      : e.modoGratificacion === "manual"
+        ? gratificacionManual
+        : 0;
   const remuneracionBaseIndemnizacion =
     sueldoBase + gratificacionBaseIndemnizacion + remuneracionVariablePromedio;
   const topeRemuneracion = Math.round(p.topeImponibleUF * p.uf);
@@ -206,6 +228,7 @@ export function calcularFiniquito(
   return {
     diasPendientesMes,
     sueldoProporcional,
+    horasExtraProporcional,
     gratificacionProporcional,
     totalRemuneracionesPendientes,
 
