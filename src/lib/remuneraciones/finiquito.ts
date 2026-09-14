@@ -33,7 +33,12 @@ const CAUSALES_CON_INDEMNIZACION: ReadonlySet<CausalTermino> = new Set([
 export interface EntradaFiniquito {
   /** Sueldo base mensual pactado (sin gratificación ni horas extra) */
   sueldoBase: number;
-  /** Promedio mensual de horas extraordinarias (sobresueldo) */
+  /**
+   * Promedio mensual de horas extraordinarias habituales (sobresueldo).
+   * Si son habituales/permanentes se tratan como remuneración variable y
+   * se incluyen en la base de las indemnizaciones (Corte Suprema, Cuarta
+   * Sala, 28-04-2026, rol 54883-2024); las esporádicas no van aquí.
+   */
   horasExtraPromedio?: number;
   /** Promedio de remuneración variable (comisiones) de los últimos 3 meses */
   remuneracionVariablePromedio?: number;
@@ -194,10 +199,11 @@ export function calcularFiniquito(
 
   // 3) Indemnizaciones: solo si la causal lo permite (art. 161 / 161 bis).
   // Base = última remuneración mensual (art. 172): sueldo + gratificación
-  // si se paga mensualmente + promedio de variable, con tope de 90 UF. El
-  // propio art. 172 excluye expresamente el sobretiempo (horas extra) de
-  // esta base, aunque sí se usa para calcular el monto de la gratificación
-  // legal (25% de lo devengado, incluidas las horas extra).
+  // si se paga mensualmente + promedio de variable, con tope de 90 UF. Las
+  // horas extra pagadas de forma habitual/permanente se tratan como
+  // remuneración variable y se incluyen, promediadas, en esta base (Corte
+  // Suprema, Cuarta Sala, 28-04-2026, rol 54883-2024: revierte el criterio
+  // de exclusión absoluta que sostenían fallos de Cortes de Apelaciones).
   const aplicaIndemnizacion = CAUSALES_CON_INDEMNIZACION.has(e.causal);
   const gratificacionBaseIndemnizacion =
     e.modoGratificacion === "legal"
@@ -209,7 +215,10 @@ export function calcularFiniquito(
         ? gratificacionManual
         : 0;
   const remuneracionBaseIndemnizacion =
-    sueldoBase + gratificacionBaseIndemnizacion + remuneracionVariablePromedio;
+    sueldoBase +
+    gratificacionBaseIndemnizacion +
+    remuneracionVariablePromedio +
+    horasExtraPromedio;
   const topeRemuneracion = Math.round(p.topeImponibleUF * p.uf);
   const baseIndemnizacion = Math.min(
     remuneracionBaseIndemnizacion,

@@ -219,7 +219,7 @@ export function CalculadoraFiniquito() {
             {tieneHorasExtra && (
               <div>
                 <label htmlFor="fin-hextra" className={labelClass}>
-                  Promedio mensual de horas extra
+                  Promedio mensual de los últimos 3 meses
                 </label>
                 <input
                   id="fin-hextra"
@@ -234,8 +234,8 @@ export function CalculadoraFiniquito() {
                   onChange={(e) => setHorasExtraPromedio(e.target.value)}
                 />
                 <p className="mt-1.5 text-xs text-slate-400">
-                  Se paga en las remuneraciones pendientes, pero el art. 172
-                  excluye las horas extra de la base de las indemnizaciones.
+                  Al ser habituales se suman, promediadas, a la base de las
+                  indemnizaciones (Corte Suprema, Cuarta Sala, 28-04-2026).
                 </p>
               </div>
             )}
@@ -494,9 +494,10 @@ export function CalculadoraFiniquito() {
               como año completo, tope de 11 años y base topeada en 90 UF. El
               feriado proporcional considera 1,25 días hábiles por mes y su
               conversión a días corridos excluyendo sábados, domingos y
-              festivos legales. La base de las indemnizaciones excluye las
-              horas extra (art. 172). No reemplaza el finiquito ratificado
-              ante ministro de fe.
+              festivos legales. Las horas extra habituales se promedian en
+              la base de las indemnizaciones junto con la remuneración
+              variable (Corte Suprema, Cuarta Sala, 28-04-2026). No
+              reemplaza el finiquito ratificado ante ministro de fe.
             </p>
 
             <div className="no-print mt-6">

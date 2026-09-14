@@ -199,8 +199,8 @@ console.log("\nFiniquito — despido por causa imputable al trabajador (art. 160
   eq("Recargo 80% si la causal del art. 160 no se prueba", recargo!.porcentaje * 100, 80);
 }
 
-// ── Caso 7: horas extra promedio y gratificación convencional (manual) ──
-console.log("\nFiniquito — horas extra promedio y gratificación convencional");
+// ── Caso 7: horas extra habituales y gratificación convencional (manual) ──
+console.log("\nFiniquito — horas extra habituales y gratificación convencional");
 {
   const f = calcularFiniquito(
     {
@@ -221,13 +221,13 @@ console.log("\nFiniquito — horas extra promedio y gratificación convencional"
   eq("Gratificación proporcional (convencional, prorrateada)", f.gratificacionProporcional, 50000);
   eq("Total remuneraciones pendientes", f.totalRemuneracionesPendientes, 416666);
   eq(
-    "Base de indemnización excluye horas extra (art. 172)",
+    "Base de indemnización incluye horas extra habituales (Corte Suprema 28-04-2026)",
     f.remuneracionBaseIndemnizacion,
-    1150000
+    1250000
   );
-  eq("Indemnización años de servicio", f.indemnizacionAnios, 4600000);
+  eq("Indemnización años de servicio", f.indemnizacionAnios, 5000000);
   eq("Feriado proporcional", f.feriadoMonto, 14000);
-  eq("Total finiquito", f.total, 5030666);
+  eq("Total finiquito", f.total, 5430666);
 }
 
 if (fallas > 0) {
