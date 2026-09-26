@@ -58,7 +58,7 @@ lectura», sin negritas en nombres de herramientas, comillas angulares « » en 
 ## Los dos proyectos del repo
 
 ### 1. Sitio público (raíz) — melioraadvisory.cl
-Next.js 16 + Tailwind 4, **export estático** a GitHub Pages (`output: "export"`).
+Next.js 16 + Tailwind 4, **export estático** publicado en el servidor propio (`output: "export"`, workflow `publicar-vps.yml`).
 - Herramientas de captación: `/diagnostico`, `/calculadora` (sueldos),
   `/calculadora-honorarios`, `/calculadora-finiquito`, `/indicadores`.
 - Motor de remuneraciones en `src/lib/remuneraciones/`, validado al peso contra
@@ -91,7 +91,7 @@ git fetch origin main && git checkout -B claude/fortalecer-negocio-meliora-z41ag
 git add … && git commit && git push -u origin … --force-with-lease
 ```
 Luego PR con cuerpo en español y merge por squash. Israel autorizó crear y
-mergear PRs sin preguntar. El sitio despliega por GitHub Actions y el portal por
+mergear PRs sin preguntar. El sitio se publica en el servidor por GitHub Actions y el portal por
 Vercel (solo si cambió `portal/`).
 
 **Verificar el deploy**: el contenido de páginas cliente vive en los chunks de
