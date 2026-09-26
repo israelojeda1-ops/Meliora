@@ -1,0 +1,88 @@
+# Publica melioraadvisory.cl en el servidor propio (Creattiva), detrás de Cloudflare.
+# Compila aquí (el servidor no compila), sube out/ a una carpeta nueva y cambia
+# el enlace «current» de una vez; se guardan las últimas 5 versiones para volver
+# atrás en segundos. GitHub Pages (deploy.yml) sigue en paralelo hasta verificar.
+#
+# Secretos del repo: DEPLOY_HOST, DEPLOY_SSH_KEY (llave privada del usuario deploy),
+# DEPLOY_KNOWN_HOSTS (salida de ssh-keyscan del servidor).
+name: Publicar en el servidor
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - "portal/**"
+      - "data/**"
+      - "revision/**"
+      - "**.md"
+  workflow_dispatch:
+
+concurrency:
+  group: publicar-vps
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  publicar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm run build
+
+      - name: Comprobar el sitio exportado
+        run: |
+          for f in index.html 404.html servicios/index.html nosotros/index.html planes/index.html contacto/index.html sitemap.xml robots.txt; do
+            test -f "out/$f" || { echo "Falta out/$f"; exit 1; }
+          done
+
+      - name: Preparar la llave SSH
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          # tr -d '\r': la llave copiada desde Windows trae saltos de línea CRLF y ssh no la puede leer.
+          printf '%s\n' "$DEPLOY_SSH_KEY" | tr -d '\r' > ~/.ssh/deploy
+          chmod 600 ~/.ssh/deploy
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" | tr -d '\r' > ~/.ssh/known_hosts
+          if ! ssh-keygen -y -P "" -f ~/.ssh/deploy > /dev/null; then
+            echo "::error::DEPLOY_SSH_KEY no es una llave privada válida sin frase de paso"
+            exit 1
+          fi
+
+      - name: Subir y activar la versión
+        env:
+          HOST: ${{ secrets.DEPLOY_HOST }}
+        run: |
+          REL="$(date -u +%Y%m%d%H%M%S)-${GITHUB_SHA::7}"
+          SSH="ssh -i $HOME/.ssh/deploy -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes"
+          rsync -az --delete -e "$SSH" out/ "deploy@${HOST}:/srv/meliora/releases/${REL}/"
+          $SSH "deploy@${HOST}" "set -e; cd /srv/meliora; ln -sfn releases/${REL} current.tmp; mv -Tf current.tmp current; ls -1dt releases/* | grep -v '/inicial$' | tail -n +6 | xargs -r rm -rf"
+          echo "Publicada la versión ${REL}"
+
+      # Se verifica desde el propio servidor: no depende de hacia dónde apunte el DNS.
+      - name: Verificar el sitio
+        env:
+          HOST: ${{ secrets.DEPLOY_HOST }}
+        run: |
+          SSH="ssh -i $HOME/.ssh/deploy -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes"
+          $SSH "deploy@${HOST}" 'set -e
+            for p in / /servicios/ /nosotros/ /planes/ /contacto/ /calculadora/; do
+              code=$(curl -sk -o /dev/null -w "%{http_code}" --resolve melioraadvisory.cl:443:127.0.0.1 "https://melioraadvisory.cl$p")
+              echo "$p → $code"; test "$code" = "200"
+            done'
+
+      - name: Borrar la llave
+        if: always()
+        run: rm -f ~/.ssh/deploy
