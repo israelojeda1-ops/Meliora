@@ -43,7 +43,11 @@ export const CLIENTS: Record<string, ClientConfig> = {
     slug: "Nuprotecv3",
     name: "Nuprotec",
     passwordEnv: "NUPROTEC_PASSWORD",
-    proxyTarget: "https://nuprotec.melioraadvisory.cl",
+    // Con el portal y Nuprotec en la misma máquina, ir por el nombre público
+    // sale a Cloudflare y vuelve para hablar con una app que está al lado. En
+    // el servidor se pone NUPROTEC_V3_ORIGIN=http://127.0.0.1:3010 y el salto
+    // desaparece. Sin la variable queda el nombre público, que es lo de hoy.
+    proxyTarget: process.env.NUPROTEC_V3_ORIGIN ?? "https://nuprotec.melioraadvisory.cl",
   },
   condores: {
     slug: "condores",

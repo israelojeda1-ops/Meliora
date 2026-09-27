@@ -1,0 +1,169 @@
+# Publica el portal en el servidor propio (portal.melioraadvisory.cl).
+#
+# El portal vivía en Vercel, en la región `iad1` (Washington). Como los
+# clientes que proxea están en el VPS en Chile, cada clic hacía Chile → São
+# Paulo → Washington → Chile y de vuelta: ~0,9 s por pedido contra ~0,5 s
+# entrando directo, y cada pantalla son varios pedidos.
+#
+# El DNS de portal.melioraadvisory.cl ya apunta al VPS a través de Cloudflare,
+# el mismo camino que app.msnchile.cl. Falta que el VPS lo sirva, y eso es lo
+# que hace este workflow: compila acá —el servidor tiene la fuerza de un solo
+# núcleo y compilar ahí pone lento todo lo demás—, sube el paquete, reinicia y
+# comprueba. Si no responde, vuelve solo a la versión anterior.
+#
+# Es la misma plantilla de publicar-nuprotec-vps.yml, que ya publica NÜPROTEC
+# en este mismo VPS. El portal es más simple: no tiene base de datos.
+#
+# Secretos del repo: DEPLOY_HOST, DEPLOY_SSH_KEY y DEPLOY_KNOWN_HOSTS. Mientras
+# no estén, el workflow termina sin publicar y lo dice, en vez de fallar.
+#
+# HACE FALTA ESTO EN EL SERVIDOR (con sudo, una sola vez):
+#   - /srv/portal/{releases,data} y el servicio app@portal (plantilla app@.service)
+#   - /etc/apps/portal.env con SESSION_SECRET, GITHUB_TOKEN, CRON_SECRET,
+#     NUPROTEC_PASSWORD, CONDORES_PASSWORD, INTERNO_PASSWORD, PRIVADO_PASSWORD,
+#     PORT, y NUPROTEC_V3_ORIGIN=http://127.0.0.1:3010
+#   - sudo -n para que `deploy` reinicie app@portal
+#   - un bloque en Caddy para portal.melioraadvisory.cl
+name: Publicar el portal en el servidor
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "portal/**"
+      - ".github/workflows/publicar-portal-vps.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: publicar-portal-vps
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  publicar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    defaults:
+      run:
+        working-directory: portal
+    steps:
+      - name: ¿Está configurado el servidor?
+        id: cfg
+        working-directory: .
+        env:
+          HOST: ${{ secrets.DEPLOY_HOST }}
+        run: |
+          if [ -z "$HOST" ]; then
+            echo "::notice::Faltan los secretos DEPLOY_*: no se publica en el servidor."
+            echo "listo=no" >> "$GITHUB_OUTPUT"
+          else
+            echo "listo=si" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.cfg.outputs.listo == 'si'
+
+      - uses: actions/setup-node@v4
+        if: steps.cfg.outputs.listo == 'si'
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: portal/package-lock.json
+
+      - name: Compilar
+        if: steps.cfg.outputs.listo == 'si'
+        env:
+          SESSION_SECRET: solo-para-compilar-en-el-runner-0123456789
+          NEXT_TELEMETRY_DISABLED: "1"
+        run: |
+          set -euo pipefail
+          npm ci
+          npm run build
+
+          # Copiar el CONTENIDO (/.), no la carpeta: el paquete standalone ya
+          # trae su propio public/, y «cp -r public …/public» lo anida en
+          # public/public. Es lo que dejó al panel MSN sin logo.
+          mkdir -p .next/standalone/.next/static .next/standalone/public
+          cp -r .next/static/. .next/standalone/.next/static/
+          [ -d public ] && cp -r public/. .next/standalone/public/ || true
+
+          # La caché de Next va fuera de la versión: es la única carpeta con
+          # escritura para el servicio, y así no se pierde al publicar.
+          rm -rf .next/standalone/.next/cache
+          ln -s /srv/portal/data/next-cache .next/standalone/.next/cache
+
+          test -f .next/standalone/server.js
+          test -d .next/standalone/.next/static
+
+      - name: Preparar la llave SSH
+        if: steps.cfg.outputs.listo == 'si'
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+          install -m 700 -d ~/.ssh
+          # tr -d '\r': una llave copiada desde Windows trae CRLF y ssh no la lee.
+          printf '%s\n' "$DEPLOY_SSH_KEY" | tr -d '\r' > ~/.ssh/deploy
+          chmod 600 ~/.ssh/deploy
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" | tr -d '\r' > ~/.ssh/known_hosts
+          if ! ssh-keygen -y -P "" -f ~/.ssh/deploy > /dev/null; then
+            echo "::error::DEPLOY_SSH_KEY no es una llave privada válida sin frase de paso"
+            exit 1
+          fi
+
+      - name: Subir la versión
+        if: steps.cfg.outputs.listo == 'si'
+        id: subir
+        env:
+          HOST: ${{ secrets.DEPLOY_HOST }}
+        run: |
+          set -euo pipefail
+          REL="$(date -u +%Y%m%d%H%M%S)-${GITHUB_SHA::7}"
+          echo "rel=$REL" >> "$GITHUB_OUTPUT"
+          SSH="ssh -i $HOME/.ssh/deploy -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes"
+          rsync -az --delete -e "$SSH" .next/standalone/ "deploy@${HOST}:/srv/portal/releases/${REL}/"
+
+      - name: Activar y comprobar
+        if: steps.cfg.outputs.listo == 'si'
+        env:
+          HOST: ${{ secrets.DEPLOY_HOST }}
+          REL: ${{ steps.subir.outputs.rel }}
+          # El puerto en que escucha app@portal. Tiene que calzar con PORT de
+          # /etc/apps/portal.env. Se puede cambiar en Settings → Variables del
+          # repo sin tocar este archivo.
+          PUERTO: ${{ vars.PORTAL_PORT || '3011' }}
+        run: |
+          set -euo pipefail
+          SSH="ssh -i $HOME/.ssh/deploy -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes"
+          $SSH "deploy@${HOST}" REL="$REL" PUERTO="$PUERTO" 'bash -s' <<'REMOTO'
+          set -euo pipefail
+          cd /srv/portal
+
+          ANTES="$(readlink current || true)"
+          ln -sfn "releases/${REL}" current.tmp && mv -Tf current.tmp current
+          sudo -n systemctl restart app@portal
+
+          for i in $(seq 1 30); do
+            if curl -fsS -o /dev/null "http://127.0.0.1:${PUERTO}/login"; then
+              echo "Portal ${REL} respondiendo en el puerto ${PUERTO}"
+              ls -1dt releases/* | tail -n +6 | xargs -r rm -rf
+              exit 0
+            fi
+            sleep 2
+          done
+
+          echo "::error::El portal no respondió en 60 s; se vuelve a ${ANTES:-(nada)}"
+          if [ -n "$ANTES" ]; then
+            ln -sfn "$ANTES" current.tmp && mv -Tf current.tmp current
+            sudo -n systemctl restart app@portal
+          fi
+          exit 1
+          REMOTO
+
+      - name: Borrar las llaves
+        if: always()
+        working-directory: .
+        run: rm -f ~/.ssh/deploy ~/.ssh/known_hosts
