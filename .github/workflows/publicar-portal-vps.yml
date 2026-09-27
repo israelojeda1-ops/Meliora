@@ -6,7 +6,7 @@
 # entrando directo, y cada pantalla son varios pedidos.
 #
 # El DNS de portal.melioraadvisory.cl ya apunta al VPS a través de Cloudflare,
-# el mismo camino que app.msnchile.cl. Falta que el VPS lo sirva, y eso es lo
+# igual que los demás sitios de la máquina. Falta que el VPS lo sirva, y eso es lo
 # que hace este workflow: compila acá —el servidor tiene la fuerza de un solo
 # núcleo y compilar ahí pone lento todo lo demás—, sube el paquete, reinicia y
 # comprueba. Si no responde, vuelve solo a la versión anterior.
@@ -84,7 +84,7 @@ jobs:
 
           # Copiar el CONTENIDO (/.), no la carpeta: el paquete standalone ya
           # trae su propio public/, y «cp -r public …/public» lo anida en
-          # public/public. Es lo que dejó al panel MSN sin logo.
+          # public/public: el sitio queda en pie pero sin ninguna imagen.
           mkdir -p .next/standalone/.next/static .next/standalone/public
           cp -r .next/static/. .next/standalone/.next/static/
           [ -d public ] && cp -r public/. .next/standalone/public/ || true
