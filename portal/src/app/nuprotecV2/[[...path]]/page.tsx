@@ -19,21 +19,20 @@ import type { Metadata } from "next";
  * portal nuevo, en vez de un 404.
  */
 
-const NUEVO = "/Nuprotecv3";
+// URL absoluta al hostname propio de la app y no la ruta relativa del portal:
+// el portal es un proxy que puede estar caído sin que Nuprotec lo esté —pasó el
+// 27-09—, y así el botón funciona igual.
+const NUEVO = "https://nuprotec.melioraadvisory.cl/Nuprotecv3";
 
 export const metadata: Metadata = {
   title: "Nos mudamos · Portal NÜPROTEC",
   robots: { index: false, follow: false },
 };
 
+// Acá estaba «Más rápido». Se sacó: todavía no es cierto, y una promesa que el
+// usuario puede desmentir abriendo una pantalla le quita credibilidad a las dos
+// que sí se sostienen.
 const RAZONES = [
-  {
-    titulo: "Más rápido",
-    texto:
-      "Corre en un servidor en Chile dedicado a nuestros clientes: las pantallas y los informes cargan antes.",
-    color: "from-amber-400 to-orange-500",
-    icono: <path d="M13 2 4 14h7l-1 8 9-12h-7l1-8Z" />,
-  },
   {
     titulo: "Más seguro",
     texto:
