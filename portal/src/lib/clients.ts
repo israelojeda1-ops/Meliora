@@ -37,6 +37,14 @@ export const CLIENTS: Record<string, ClientConfig> = {
     passwordEnv: "NUPROTEC_PASSWORD",
     proxyTarget: "https://nuprotec-v2.vercel.app",
   },
+  // Nuprotec v3 en el servidor propio (VPS de Meliora). Convive con /nuprotecV2 (Vercel)
+  // hasta el corte. Mismo patrón: app con login propio, montada con basePath /Nuprotecv3.
+  Nuprotecv3: {
+    slug: "Nuprotecv3",
+    name: "Nuprotec",
+    passwordEnv: "NUPROTEC_PASSWORD",
+    proxyTarget: "https://nuprotec.melioraadvisory.cl",
+  },
   condores: {
     slug: "condores",
     name: "PreU Cóndores",
