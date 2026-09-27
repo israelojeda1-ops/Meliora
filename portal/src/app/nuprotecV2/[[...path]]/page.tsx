@@ -29,10 +29,14 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-// Acá estaba «Más rápido». Se sacó: todavía no es cierto, y una promesa que el
-// usuario puede desmentir abriendo una pantalla le quita credibilidad a las dos
-// que sí se sostienen.
 const RAZONES = [
+  {
+    titulo: "Más rápido",
+    texto:
+      "Corre en un servidor en Chile dedicado a nuestros clientes: las pantallas y los informes cargan antes.",
+    color: "from-amber-400 to-orange-500",
+    icono: <path d="M13 2 4 14h7l-1 8 9-12h-7l1-8Z" />,
+  },
   {
     titulo: "Más seguro",
     texto:
