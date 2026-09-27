@@ -6,7 +6,7 @@ import { decrypt, SESSION_COOKIE } from "@/lib/session";
 // un doble acceso, así que pasan sin la puerta del portal.
 // /Privado tampoco pasa por aquí: tiene su propia clave y su propia cookie, y no
 // es un cliente del portal, así que la puerta por slug de cliente no le aplica.
-const PUBLIC_PREFIXES = ["/login", "/logout", "/demo", "/condores", "/nuprotecV2", "/Privado"];
+const PUBLIC_PREFIXES = ["/login", "/logout", "/demo", "/condores", "/nuprotecV2", "/Nuprotecv3", "/Privado"];
 
 export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
