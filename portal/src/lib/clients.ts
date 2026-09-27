@@ -29,13 +29,14 @@ export const CLIENTS: Record<string, ClientConfig> = {
       bancoLogPath: "generador/banco_movimientos_log.csv",
     },
   },
-  // Réplica de Nuprotec sobre Vercel + Neon: app propia, se proxea completa.
-  // Convive con /nuprotec (el HTML del repo) hasta el corte.
+  // La copia de Vercel quedó congelada con el paso al servidor propio. Ya no se
+  // proxea: /nuprotecV2 muestra el cartel de mudanza y manda a /Nuprotecv3.
+  // Sin proxyTarget a propósito —si volviera, la app vieja quedaría otra vez en
+  // pie invitando a escribir en una base que nadie mira—.
   nuprotecV2: {
     slug: "nuprotecV2",
-    name: "Nuprotec (nueva versión)",
+    name: "Nuprotec (versión anterior)",
     passwordEnv: "NUPROTEC_PASSWORD",
-    proxyTarget: "https://nuprotec-v2.vercel.app",
   },
   // Nuprotec v3 en el servidor propio (VPS de Meliora). Convive con /nuprotecV2 (Vercel)
   // hasta el corte. Mismo patrón: app con login propio, montada con basePath /Nuprotecv3.
