@@ -4,33 +4,206 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
-<title>Nüprotec se mudó</title>
+<title>Nos mudamos · Portal NÜPROTEC</title>
 <style>
-  :root { color-scheme: light dark; --tinta:#0f172a; --suave:#475569; --fondo:#f8fafc; --papel:#fff; --borde:#e2e8f0; --azul:#1e3a8a; }
-  @media (prefers-color-scheme: dark) {
-    :root { --tinta:#e8eef7; --suave:#94a3b8; --fondo:#0b1220; --papel:#131c2e; --borde:#253048; --azul:#93b4f7; }
-  }
+  /* El mismo cartel que sirve la app del portal
+     (portal/src/app/nuprotecV2/[[...path]]/page.tsx), escrito en CSS plano:
+     acá lo sirve Caddy como archivo suelto, sin Next y sin Tailwind. Si se
+     cambia uno, cambiar el otro — hasta que la app esté publicada en el VPS y
+     este archivo se pueda borrar. */
   * { box-sizing: border-box; }
-  body { margin:0; min-height:100dvh; display:grid; place-items:center; padding:24px;
-         background:var(--fondo); color:var(--tinta);
-         font:16px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; }
-  main { width:100%; max-width:34rem; background:var(--papel); border:1px solid var(--borde);
-         border-radius:16px; padding:32px 28px; }
-  h1 { margin:0 0 4px; font-size:1.5rem; letter-spacing:-.02em; }
-  p { margin:.6rem 0 0; color:var(--suave); }
-  a.boton { display:inline-block; margin-top:22px; padding:12px 20px; border-radius:10px;
-            background:var(--azul); color:#fff; font-weight:600; text-decoration:none; }
-  @media (prefers-color-scheme: dark) { a.boton { color:#0b1220; } }
-  code { font-size:.85em; color:var(--suave); word-break:break-all; }
+  html { min-height: 100%; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    min-height: 100dvh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    background: linear-gradient(to bottom right, #0f172a, #042f2e 55%, #1e1b4b);
+    background-attachment: fixed;
+    font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    color: #0f172a;
+  }
+  .tarjeta {
+    width: 100%;
+    max-width: 32rem;
+    overflow: hidden;
+    border-radius: 24px;
+    background: #fff;
+    box-shadow: 0 25px 50px -12px rgb(0 0 0 / .45);
+    outline: 1px solid rgb(255 255 255 / .2);
+  }
+
+  /* Encabezado: el escudo sobre el degradado */
+  .cabecera {
+    position: relative;
+    overflow: hidden;
+    padding: 32px 28px 28px;
+    color: #fff;
+    background: linear-gradient(to bottom right, #10b981, #0d9488 45%, #4338ca);
+  }
+  .burbuja {
+    position: absolute;
+    top: -40px;
+    right: -40px;
+    width: 192px;
+    height: 192px;
+    border-radius: 50%;
+    background: rgb(255 255 255 / .1);
+  }
+  .fila-titulo { position: relative; display: flex; align-items: center; gap: 16px; }
+  .escudo {
+    flex: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 64px;
+    height: 64px;
+    border-radius: 16px;
+    background: rgb(255 255 255 / .15);
+    outline: 1px solid rgb(255 255 255 / .3);
+  }
+  .escudo svg { width: 36px; height: 36px; }
+  .antetitulo {
+    margin: 0;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: rgb(255 255 255 / .8);
+  }
+  h1 { margin: 2px 0 0; font-size: 30px; line-height: 1.15; font-weight: 700; }
+  .bajada {
+    position: relative;
+    margin: 16px 0 0;
+    font-size: 14px;
+    line-height: 1.6;
+    color: rgb(255 255 255 / .9);
+  }
+
+  /* Las tres razones */
+  .cuerpo { padding: 24px 28px 28px; }
+  ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 16px; }
+  li { display: flex; gap: 16px; }
+  .icono {
+    flex: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    color: #fff;
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / .1);
+  }
+  .icono svg { width: 20px; height: 20px; }
+  .rapido    { background: linear-gradient(to bottom right, #fbbf24, #f97316); }
+  .seguro    { background: linear-gradient(to bottom right, #34d399, #0d9488); }
+  .confiable { background: linear-gradient(to bottom right, #38bdf8, #4f46e5); }
+  .texto { font-size: 14px; line-height: 1.5; color: #475569; }
+  .texto strong { display: block; font-weight: 600; color: #0f172a; }
+
+  /* El botón */
+  .boton {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 28px;
+    padding: 14px 20px;
+    border-radius: 12px;
+    background: linear-gradient(to right, #059669, #4f46e5);
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    box-shadow: 0 10px 15px -3px rgb(0 0 0 / .18);
+    transition: filter .15s;
+  }
+  .boton:hover { filter: brightness(1.1); }
+  .boton:focus-visible { outline: 2px solid #4f46e5; outline-offset: 2px; }
+  .boton svg { width: 16px; height: 16px; }
+  .pie { margin: 12px 0 0; text-align: center; font-size: 12px; color: #64748b; }
+
+  @media (max-width: 420px) {
+    .cabecera { padding: 24px 20px 22px; }
+    .cuerpo { padding: 20px 20px 22px; }
+    h1 { font-size: 26px; }
+    .escudo { width: 56px; height: 56px; }
+    .escudo svg { width: 30px; height: 30px; }
+  }
 </style>
 </head>
 <body>
-<main>
-  <h1>Nüprotec se mudó</h1>
-  <p>Esta dirección quedó atrás. El dashboard vive ahora en un servidor propio en Chile:
-     más rápido, y con los datos en una sola base.</p>
-  <a class="boton" href="https://nuprotec.melioraadvisory.cl/Nuprotecv3">Ir al dashboard</a>
-  <p style="margin-top:20px"><code>nuprotec.melioraadvisory.cl/Nuprotecv3</code></p>
+<main class="tarjeta">
+  <div class="cabecera">
+    <span class="burbuja" aria-hidden="true"></span>
+    <div class="fila-titulo">
+      <span class="escudo">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 3 4.5 6v5.5c0 4.6 3.1 8.2 7.5 9.5 4.4-1.3 7.5-4.9 7.5-9.5V6L12 3Z"/>
+          <path d="m8.8 12.2 2.2 2.2 4.3-4.6"/>
+        </svg>
+      </span>
+      <div>
+        <p class="antetitulo">Portal NÜPROTEC</p>
+        <h1>Nos mudamos</h1>
+      </div>
+    </div>
+    <p class="bajada">
+      El portal ahora funciona en el servidor propio de Meliora Advisory. Tus datos, tu usuario y tu
+      clave son los mismos.
+    </p>
+  </div>
+
+  <div class="cuerpo">
+    <ul>
+      <li>
+        <span class="icono rapido">
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M13 2 4 14h7l-1 8 9-12h-7l1-8Z"/>
+          </svg>
+        </span>
+        <span class="texto">
+          <strong>Más rápido</strong>
+          Corre en un servidor en Chile dedicado a nuestros clientes: las pantallas y los informes cargan antes.
+        </span>
+      </li>
+      <li>
+        <span class="icono seguro">
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="5" y="11" width="14" height="10" rx="2"/>
+            <path d="M8 11V8a4 4 0 0 1 8 0v3"/>
+          </svg>
+        </span>
+        <span class="texto">
+          <strong>Más seguro</strong>
+          Tus datos en infraestructura propia, con acceso protegido y respaldos cifrados cada noche.
+        </span>
+      </li>
+      <li>
+        <span class="icono confiable">
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 12h4l2-5 4 10 2-5h6"/>
+          </svg>
+        </span>
+        <span class="texto">
+          <strong>Más confiable</strong>
+          Vigilancia las 24 horas, con avisos automáticos ante cualquier falla.
+        </span>
+      </li>
+    </ul>
+
+    <a class="boton" href="https://nuprotec.melioraadvisory.cl/Nuprotecv3">
+      Ir al nuevo portal
+      <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M5 12h14M13 6l6 6-6 6"/>
+      </svg>
+    </a>
+    <p class="pie">Esta versión ya no se actualiza.</p>
+  </div>
 </main>
 </body>
 </html>

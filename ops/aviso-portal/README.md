@@ -33,6 +33,17 @@ Y el bloque de sitio en el Caddyfile:
 
 Después `caddy validate --config /etc/caddy/Caddyfile` y `systemctl reload caddy`.
 
+## Si solo cambia el HTML
+
+Una vez que el bloque de Caddy está puesto, cambiar el cartel es reemplazar el
+archivo: **no hace falta recargar Caddy**, `file_server` lo lee de disco en cada
+pedido.
+
+    sudo tee /srv/aviso-portal/index.html > /dev/null <<'HTML'
+    …el contenido de ops/aviso-portal/index.html…
+    HTML
+    sudo chmod 644 /srv/aviso-portal/index.html
+
 ## Para comprobarlo
 
     curl -s -o /dev/null -w '%{http_code}\n' https://portal.melioraadvisory.cl/nuprotecV2
