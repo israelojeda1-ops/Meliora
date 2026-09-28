@@ -1,52 +1,55 @@
 import { NextRequest, NextResponse } from "next/server";
-import { parseCSV, toCSV } from "@/lib/csv";
+import { Pool } from "pg";
+import nodemailer from "nodemailer";
 
-const DEMO_LOG_OWNER = "israelojeda1-ops";
-const DEMO_LOG_REPO = "Meliora";
-const DEMO_LOG_PATH = "data/demo_access_log.csv";
-const DEMO_LOG_HEADER = ["Fecha", "Nombre", "Correo", "Empresa", "IP"];
+// Quién accedió a la demo: se guarda en la base del servidor (tabla demo_accesos de la
+// base `portal`) y se avisa por el correo propio. Ya no se escribe en el repo: Meliora es
+// público y el CSV dejaba a la vista nombre, correo e IP. Las dos cosas son best-effort:
+// si fallan (o no están configuradas), igual se muestra la demo.
+//
+// Variables (/etc/apps/portal.env): DATABASE_URL; SMTP_HOST, SMTP_PORT, SMTP_USUARIO,
+// SMTP_PASSWORD, SMTP_REMITENTE y AVISO_DEMO_A (a quién llega el aviso).
 
-// Deja un registro permanente de quién accedió a la demo (además del aviso
-// por correo, que puede perderse si formsubmit falla o si el correo se
-// traspapela). Best-effort: si falla, igual dejamos ver la demo.
-async function logDemoAccess(row: { fecha: string; nombre: string; correo: string; empresa: string; ip: string }) {
-  const token = process.env.GITHUB_TOKEN;
-  if (!token) return;
+let pool: Pool | undefined;
+function db() {
+  if (!process.env.DATABASE_URL) return undefined;
+  pool ??= new Pool({ connectionString: process.env.DATABASE_URL, max: 2 });
+  return pool;
+}
 
-  const apiUrl = `https://api.github.com/repos/${DEMO_LOG_OWNER}/${DEMO_LOG_REPO}/contents/${DEMO_LOG_PATH}`;
-  const ghHeaders = { Authorization: `Bearer ${token}`, Accept: "application/vnd.github+json" };
+type Acceso = { fecha: string; nombre: string; correo: string; empresa: string; ip: string };
 
-  let rows: string[][] = [];
-  let sha: string | undefined;
-  const getResp = await fetch(`${apiUrl}?ref=main`, { headers: ghHeaders, cache: "no-store" });
-  if (getResp.ok) {
-    const getJson = (await getResp.json()) as { content: string; sha: string };
-    const currentText = Buffer.from(getJson.content, "base64").toString("utf-8");
-    const all = parseCSV(currentText);
-    all.shift(); // descarta el header existente, usamos siempre DEMO_LOG_HEADER
-    rows = all;
-    sha = getJson.sha;
-  } else if (getResp.status !== 404) {
-    throw new Error(`No se pudo leer el log de accesos (${getResp.status})`);
-  }
+async function registrar(a: Acceso) {
+  const p = db();
+  if (!p) return;
+  await p.query(
+    "INSERT INTO demo_accesos (fecha, nombre, correo, empresa, ip) VALUES ($1, $2, $3, NULLIF($4, ''), NULLIF($5, ''))",
+    [a.fecha, a.nombre, a.correo, a.empresa, a.ip],
+  );
+}
 
-  rows.push([row.fecha, row.nombre, row.correo, row.empresa, row.ip]);
-  const newCsv = toCSV(DEMO_LOG_HEADER, rows);
+const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
 
-  const putResp = await fetch(apiUrl, {
-    method: "PUT",
-    headers: { ...ghHeaders, "Content-Type": "application/json" },
-    body: JSON.stringify({
-      message: `Registra acceso a la demo — ${row.nombre}`,
-      content: Buffer.from(newCsv, "utf-8").toString("base64"),
-      sha,
-      branch: "main",
-    }),
+async function avisar(a: Acceso) {
+  const { SMTP_HOST, SMTP_USUARIO, SMTP_PASSWORD, AVISO_DEMO_A } = process.env;
+  if (!SMTP_HOST || !SMTP_USUARIO || !SMTP_PASSWORD || !AVISO_DEMO_A) return;
+  const port = Number(process.env.SMTP_PORT ?? 465);
+  const transporte = nodemailer.createTransport({
+    host: SMTP_HOST, port, secure: port === 465,
+    auth: { user: SMTP_USUARIO, pass: SMTP_PASSWORD },
   });
-  if (!putResp.ok) {
-    const text = await putResp.text();
-    throw new Error(`No se pudo guardar el log de accesos (${putResp.status}): ${text}`);
-  }
+  const cuando = new Date(a.fecha).toLocaleString("es-CL", { timeZone: "America/Santiago" });
+  const filas: [string, string][] = [["Nombre", a.nombre], ["Correo", a.correo], ["Empresa", a.empresa || "(no informado)"], ["Fecha", cuando]];
+  await transporte.sendMail({
+    from: `"Meliora · Demo" <${process.env.SMTP_REMITENTE || SMTP_USUARIO}>`,
+    to: AVISO_DEMO_A,
+    replyTo: a.correo,
+    subject: `Nuevo acceso a la demo: ${a.nombre}${a.empresa ? ` (${a.empresa})` : ""}`,
+    text: filas.map(([k, v]) => `${k}: ${v}`).join("\n"),
+    html: `<table style="font-family:Arial,sans-serif;font-size:14px">${filas
+      .map(([k, v]) => `<tr><td style="color:#64748b;padding:3px 12px 3px 0">${k}</td><td><b>${esc(v)}</b></td></tr>`)
+      .join("")}</table>`,
+  });
 }
 
 export async function POST(req: NextRequest) {
@@ -57,39 +60,22 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: "Cuerpo inválido" }, { status: 400 });
   }
 
-  const name = String(body.name ?? "").trim();
-  const email = String(body.email ?? "").trim();
-  const company = String(body.company ?? "").trim();
-  if (!name || !email) {
+  const nombre = String(body.name ?? "").trim().slice(0, 200);
+  const correo = String(body.email ?? "").trim().slice(0, 200);
+  const empresa = String(body.company ?? "").trim().slice(0, 200);
+  if (!nombre || !correo) {
     return NextResponse.json({ ok: false, error: "Falta nombre o correo" }, { status: 400 });
   }
 
-  const fecha = new Date().toISOString();
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "";
+  const acceso: Acceso = {
+    fecha: new Date().toISOString(),
+    nombre, correo, empresa,
+    ip: req.headers.get("cf-connecting-ip") || req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "",
+  };
 
-  // Aviso por correo — best-effort: si falla, igual dejamos ver la demo.
-  try {
-    await fetch("https://formsubmit.co/ajax/israelojeda1@gmail.com", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Accept: "application/json" },
-      body: JSON.stringify({
-        _subject: "Nuevo acceso a la demo — Meliora Advisory",
-        Nombre: name,
-        Correo: email,
-        Empresa: company || "(no informado)",
-        Fecha: fecha,
-      }),
-    });
-  } catch {
-    // ignorar errores de red al notificar
-  }
-
-  // Registro permanente en el repo — también best-effort.
-  try {
-    await logDemoAccess({ fecha, nombre: name, correo: email, empresa: company, ip });
-  } catch (err) {
-    console.error("No se pudo registrar el acceso a la demo:", err);
-  }
+  const [guardado, aviso] = await Promise.allSettled([registrar(acceso), avisar(acceso)]);
+  if (guardado.status === "rejected") console.error("No se pudo registrar el acceso a la demo:", guardado.reason);
+  if (aviso.status === "rejected") console.error("No se pudo enviar el aviso de la demo:", aviso.reason);
 
   return NextResponse.json({ ok: true });
 }
