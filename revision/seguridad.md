@@ -1,6 +1,6 @@
 # Auditoría de seguridad — Sitio público melioraadvisory.cl
 
-Fecha: 2026-08-26. Alcance: sitio principal (Next.js estático en GitHub Pages),
+Fecha: 2026-08-26. Alcance: sitio principal (Next.js estático servido por Caddy en el VPS),
 calculadoras y captura de leads. La auditoría del portal del 2026-08-08 sigue
 vigente y queda en el historial git de este archivo.
 
@@ -37,9 +37,16 @@ Los formularios apuntaban a `formsubmit.co/israelojeda1@gmail.com`, con el
 correo personal a la vista en el HTML y con el envío dependiendo de un tercero
 que además se cayó (respondía 500). Ahora los seis formularios (contacto,
 diagnóstico y las cuatro calculadoras) envían a `/api/formularios`, una ruta del
-portal que Caddy publica bajo el mismo dominio del sitio. El correo sale de
-`contacto@melioraadvisory.cl` por SMTP propio y cada envío queda registrado en
-la tabla `formularios` de la base del portal.
+portal. El correo sale de `contacto@melioraadvisory.cl` por SMTP propio y cada
+envío queda registrado en la tabla `formularios` de la base del portal.
+
+Los formularios apuntan a la URL absoluta del portal
+(`portal.melioraadvisory.cl/api/formularios`) y no a una ruta relativa del sitio:
+el sitio es un export estático y no tiene backend que responda `/api`, así que
+la ruta relativa devolvía 404 y ningún envío llegaba. Si algún día se agrega al
+bloque de Caddy de `melioraadvisory.cl` un `handle /api/formularios*` que lo
+reenvíe al portal (127.0.0.1:3011), se puede volver a la ruta relativa cambiando
+solo `src/lib/formularios.ts`.
 
 De paso se corrigió algo que el sitio prometía y no cumplía: las calculadoras
 dicen «recibe este desglose en tu correo», pero FormSubmit solo avisaba a
@@ -64,9 +71,9 @@ fallback al valor del período; la página de indicadores muestra error honesto.
 Riesgo aceptado y documentado; no requiere acción.
 
 ### B3 — Sin cabeceras de seguridad
-GitHub Pages no permite configurar CSP, X-Frame-Options ni HSTS preload. Para
-un sitio estático informativo el riesgo es bajo. Si algún día se migra de
-hosting, agregarlas.
+El sitio se sirve sin CSP, X-Frame-Options ni HSTS preload. Para un sitio
+estático informativo el riesgo es bajo, pero ahora que lo publica Caddy en el
+VPS sí se pueden configurar: conviene agregarlas en el bloque del dominio.
 
 ## Lo que está bien
 
