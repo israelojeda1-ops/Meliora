@@ -2,8 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-
-const FORM_ENDPOINT = "/api/formularios";
+import { FORM_ENDPOINT } from "../lib/formularios.ts";
 
 type Area = "visibilidad" | "proyeccion" | "orden" | "procesos";
 

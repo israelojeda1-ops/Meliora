@@ -5,8 +5,7 @@ import Link from "next/link";
 import { boletaDesdeBruto, boletaDesdeLiquido } from "../lib/remuneraciones/honorarios.ts";
 import { periodoActual } from "../lib/remuneraciones/parametros/index.ts";
 import { descargarPDF, bloquesATexto, type Bloque, type FilaPDF } from "../lib/pdf.ts";
-
-const FORM_ENDPOINT = "/api/formularios";
+import { FORM_ENDPOINT } from "../lib/formularios.ts";
 
 const fmt = (n: number) => `$${Math.round(n).toLocaleString("es-CL")}`;
 
