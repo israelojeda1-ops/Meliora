@@ -6,6 +6,7 @@ import {
   calcularEmpleador,
   calcularTrabajador,
   impuestoUnico,
+  resolverDesdeLiquido,
 } from "./motor.ts";
 import { boletaDesdeBruto, boletaDesdeLiquido } from "./honorarios.ts";
 import { parametros202607 as julio } from "./parametros/2026-07.ts";
@@ -21,6 +22,15 @@ function eq(nombre: string, actual: number, esperado: number) {
     console.error(
       `  ✗ ${nombre}: se obtuvo ${actual.toLocaleString("es-CL")}, se esperaba ${esperado.toLocaleString("es-CL")}`
     );
+  }
+}
+
+function ok(nombre: string, cond: boolean) {
+  if (cond) {
+    console.log(`  ✓ ${nombre}`);
+  } else {
+    fallas++;
+    console.error(`  ✗ ${nombre}`);
   }
 }
 
@@ -205,6 +215,69 @@ console.log("\nBoleta de honorarios — ejemplo oficial SII y cálculo inverso")
 
   const inv2 = boletaDesdeLiquido(847500, agosto);
   eq("Bruto para recibir $847.500", inv2.bruto, 1000000);
+}
+
+// ── Camino inverso: líquido objetivo → variable despejada ──
+console.log("\nDesde el líquido — despejar sueldo base, bono o no imponible");
+{
+  const basePyme = {
+    sueldoBase: 0,
+    modoGratificacion: "legal" as const,
+    afpKey: "modelo",
+    salud: "fonasa" as const,
+    contrato: "indefinido" as const,
+  };
+
+  // 1) Despejando el sueldo base para un líquido de $1.000.000
+  const porSueldo = resolverDesdeLiquido(basePyme, agosto, 1000000, "sueldoBase");
+  ok("Sueldo base despejado alcanza el objetivo", porSueldo.liquidoObtenido >= 1000000);
+  ok(
+    "Y es el mínimo: con un peso menos ya no alcanza",
+    calcularTrabajador({ ...basePyme, sueldoBase: porSueldo.valor - 1 }, agosto).liquido <
+      1000000
+  );
+
+  // 2) El caso de Israel: sueldo base fijo en $700.000, ¿cuánto bono para $1.200.000?
+  const conBase700 = {
+    ...basePyme,
+    sueldoBase: 700000,
+    otrosImponibles: 0,
+  };
+  const porBono = resolverDesdeLiquido(conBase700, agosto, 1200000, "otrosImponibles");
+  ok("Bono despejado alcanza el objetivo", porBono.liquidoObtenido >= 1200000);
+  ok(
+    "Y es el mínimo: con un peso menos ya no alcanza",
+    calcularTrabajador(
+      { ...conBase700, otrosImponibles: porBono.valor - 1 },
+      agosto
+    ).liquido < 1200000
+  );
+
+  // 3) Al subir el sueldo base, el bono necesario baja
+  const porBonoConBaseMayor = resolverDesdeLiquido(
+    { ...conBase700, sueldoBase: 900000 },
+    agosto,
+    1200000,
+    "otrosImponibles"
+  );
+  ok(
+    "Más sueldo base exige menos bono para el mismo líquido",
+    porBonoConBaseMayor.valor < porBono.valor
+  );
+
+  // 4) El no imponible entra peso a peso: no paga cotizaciones ni impuesto
+  const sinColacion = calcularTrabajador(conBase700, agosto).liquido;
+  const porNoImponible = resolverDesdeLiquido(
+    conBase700,
+    agosto,
+    sinColacion + 50000,
+    "noImponible"
+  );
+  eq("Colación necesaria para $50.000 más de líquido", porNoImponible.valor, 50000);
+
+  // 5) Si el objetivo ya se supera sin la variable, devuelve cero
+  const yaSuperado = resolverDesdeLiquido(conBase700, agosto, 100000, "otrosImponibles");
+  eq("Objetivo ya superado: no hace falta bono", yaSuperado.valor, 0);
 }
 
 // Los tests del motor de finiquito viven en finiquito.test.ts (npm run test:finiquito).

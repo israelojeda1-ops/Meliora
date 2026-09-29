@@ -12,6 +12,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     "/planes",
     "/diagnostico",
     "/calculadora",
+    "/calculadora-liquido",
     "/calculadora-honorarios",
     "/calculadora-finiquito",
     "/indicadores",

@@ -122,6 +122,79 @@ export function calcularTrabajador(
   };
 }
 
+/**
+ * Variable que se despeja para alcanzar un líquido objetivo.
+ * Todas hacen crecer el líquido de forma monótona, así que la búsqueda
+ * binaria siempre converge.
+ */
+export type VariableAjustable = "sueldoBase" | "otrosImponibles" | "noImponible";
+
+export interface ResultadoDesdeLiquido {
+  /** Monto que debe tomar la variable ajustada para llegar al objetivo */
+  valor: number;
+  /** false si ni con un monto enorme se alcanza (no debería ocurrir) */
+  alcanzado: boolean;
+  /** Líquido efectivo: puede superar el objetivo por pesos, nunca quedarse corto */
+  liquidoObtenido: number;
+  costo: CostoEmpleador;
+}
+
+/**
+ * Camino inverso líquido → bruto: encuentra el menor monto de la variable
+ * elegida con el que el trabajador alcanza el líquido objetivo, dejando fijo
+ * todo lo demás.
+ *
+ * El líquido no es una función lineal del sueldo (topes imponibles, tope de
+ * la gratificación legal y tramos de impuesto la quiebran en tramos), así que
+ * se resuelve por búsqueda binaria sobre enteros en vez de despejar.
+ */
+export function resolverDesdeLiquido(
+  e: EntradaEmpleador,
+  p: ParametrosPeriodo,
+  liquidoObjetivo: number,
+  variable: VariableAjustable
+): ResultadoDesdeLiquido {
+  const meta = Math.max(0, r(liquidoObjetivo || 0));
+
+  const conValor = (x: number): EntradaEmpleador => {
+    if (variable === "sueldoBase") return { ...e, sueldoBase: x };
+    if (variable === "otrosImponibles") return { ...e, otrosImponibles: x };
+    // El no imponible se reparte en colación; movilización queda como la fijó
+    // el usuario para no pisarla.
+    return { ...e, colacion: x };
+  };
+  const liquidoCon = (x: number) =>
+    calcularTrabajador(conValor(x), p).liquido;
+
+  const salida = (valor: number, alcanzado: boolean): ResultadoDesdeLiquido => {
+    const costo = calcularEmpleador(conValor(valor), p);
+    return {
+      valor,
+      alcanzado,
+      liquidoObtenido: costo.liquidacion.liquido,
+      costo,
+    };
+  };
+
+  // Con la variable en cero ya se supera el objetivo: no hace falta agregar nada.
+  if (liquidoCon(0) >= meta) return salida(0, true);
+
+  // Cota superior: se duplica hasta pasar el objetivo, así no hay que adivinarla.
+  let hi = 1;
+  const TECHO = 1e11;
+  while (hi < TECHO && liquidoCon(hi) < meta) hi *= 2;
+  if (liquidoCon(hi) < meta) return salida(hi, false);
+
+  // Menor entero que alcanza el objetivo.
+  let lo = 0;
+  while (lo < hi) {
+    const mid = Math.floor((lo + hi) / 2);
+    if (liquidoCon(mid) >= meta) hi = mid;
+    else lo = mid + 1;
+  }
+  return salida(lo, true);
+}
+
 /** Costo total de contratación para el empleador, sobre las bases topeadas. */
 export function calcularEmpleador(
   e: EntradaEmpleador,

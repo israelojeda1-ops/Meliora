@@ -106,6 +106,12 @@ export default function CalculadoraPage() {
               Calculadora Salarial
             </span>
             <Link
+              href="/calculadora-liquido"
+              className="rounded-full border border-slate-300 px-5 py-2 text-sm font-semibold text-slate-600 hover:border-emerald hover:text-emerald transition-colors"
+            >
+              Desde el Líquido
+            </Link>
+            <Link
               href="/calculadora-honorarios"
               className="rounded-full border border-slate-300 px-5 py-2 text-sm font-semibold text-slate-600 hover:border-emerald hover:text-emerald transition-colors"
             >

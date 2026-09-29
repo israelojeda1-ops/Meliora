@@ -30,6 +30,7 @@ export function Footer() {
                 { href: "/recursos", label: "Recursos" },
                 { href: "/diagnostico", label: "Diagnóstico Financiero" },
                 { href: "/calculadora", label: "Calculadora Salarial" },
+                { href: "/calculadora-liquido", label: "Desde el Líquido" },
                 { href: "/calculadora-honorarios", label: "Calculadora de Honorarios" },
                 { href: "/calculadora-finiquito", label: "Calculadora de Finiquito" },
                 { href: "/indicadores", label: "Indicadores de hoy" },
