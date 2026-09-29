@@ -11,6 +11,7 @@ import {
 import { boletaDesdeBruto, boletaDesdeLiquido } from "./honorarios.ts";
 import { parametros202607 as julio } from "./parametros/2026-07.ts";
 import { parametros202608 as agosto } from "./parametros/2026-08.ts";
+import { parametros202609 as septiembre } from "./parametros/2026-09.ts";
 
 let fallas = 0;
 
@@ -127,6 +128,79 @@ console.log("\nAporte patronal agosto 2026 — planilla real, imponible 2.218.37
   // SIS + expectativa de vida deben sumar 2,5%
   const sisMasExp = agosto.aportesPension[0].tasa + agosto.aportesPension[1].tasa;
   eq("SIS + Expectativa de vida (×100)", Math.round(sisMasExp * 100), 250);
+}
+
+// ── Caso obligatorio: liquidación real de septiembre 2026 ──
+//
+// Es el complemento del caso de julio. Allá la remuneración está sobre las
+// 90 UF y el adicional de isapre NO rebaja la base del impuesto; acá está bajo
+// el tope y el plan completo sí la rebaja. Los dos salen de liquidaciones que
+// la empresa pagó, así que entre ambos dejan fijada la regla del art. 42 N°1.
+console.log("\nCaso obligatorio — liquidación real septiembre 2026 (isapre bajo el tope)");
+{
+  const liq = calcularTrabajador(
+    {
+      sueldoBase: 1668310,
+      modoGratificacion: "legal",
+      afpKey: "capital", // 11,44%
+      salud: "isapre",
+      planIsapreUF: 3.321,
+      contrato: "indefinido",
+      colacion: 150000,
+      movilizacion: 100000,
+      otrosDescuentos: 74509,
+    },
+    septiembre
+  );
+  eq("Total imponible", liq.totalImponible, 1887425);
+  eq("AFP Capital (11,44%)", liq.afp, 215921);
+  eq("Salud 7%", liq.salud7, 132120);
+  eq("Plan isapre (3,321 UF)", liq.planIsapre, 136351);
+  eq("Adicional isapre", liq.adicionalIsapre, 4231);
+  eq("Seguro de cesantía", liq.cesantiaTrabajador, 11325);
+  eq("Salud que rebaja la base", liq.saludRebajable, 136351);
+  eq("Base afecta a impuesto", liq.baseTributable, 1523828);
+  eq("Impuesto único", liq.impuesto, 22224);
+  eq("Total descuentos", liq.totalDescuentos, 460330);
+  eq("Líquido", liq.liquido, 1677095);
+}
+
+// ── El tope de la rebaja de salud: 7% del límite imponible ──
+console.log("\nRebaja de salud topeada en 6,3 UF");
+{
+  // Sobre las 90 UF el plan completo ya no cabe en la rebaja: el caso real de
+  // julio rebaja 257.322 (7% de 90 UF) y no los 284.198 que pagó a la isapre.
+  const sobreTope = calcularTrabajador(
+    {
+      sueldoBase: 5161047,
+      modoGratificacion: "manual",
+      gratificacionManual: 219115,
+      afpKey: "provida",
+      salud: "isapre",
+      planIsapreUF: 6.958,
+      contrato: "indefinido",
+    },
+    julio
+  );
+  eq("Plan pagado a la isapre", sobreTope.planIsapre, 284198);
+  eq("Rebaja topeada (7% de 90 UF)", sobreTope.saludRebajable, 257322);
+  ok(
+    "Sobre el tope, el adicional no rebaja la base",
+    sobreTope.saludRebajable === sobreTope.salud7
+  );
+
+  // En Fonasa el 7% sale de una base ya topeada, así que nunca supera el tope.
+  const fonasa = calcularTrabajador(
+    {
+      sueldoBase: 1000000,
+      modoGratificacion: "legal",
+      afpKey: "modelo",
+      salud: "fonasa",
+      contrato: "indefinido",
+    },
+    julio
+  );
+  ok("En Fonasa la rebaja es el 7% legal", fonasa.saludRebajable === fonasa.salud7);
 }
 
 // ── Sueldo bajo el tope imponible, gratificación legal topeada, Fonasa ──

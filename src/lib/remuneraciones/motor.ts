@@ -77,7 +77,6 @@ export function calcularTrabajador(
   );
 
   // 5. Adicional isapre: la parte del plan (UF) sobre el 7% legal.
-  // No reduce la base tributable.
   let planIsapre = 0;
   let adicionalIsapre = 0;
   if (e.salud === "isapre" && e.planIsapreUF && e.planIsapreUF > 0) {
@@ -85,8 +84,19 @@ export function calcularTrabajador(
     adicionalIsapre = Math.max(0, planIsapre - salud7);
   }
 
-  // 6–7. Base tributable (resta el 7% legal, no el adicional) e impuesto
-  const baseTributable = totalImponible - afp - salud7 - cesantiaTrabajador;
+  // 6–7. Base tributable e impuesto.
+  //
+  // De la base se rebaja la cotización de salud efectivamente pagada, o sea el
+  // 7% legal más el adicional pactado con la isapre, con tope de 7% del límite
+  // imponible: 7% de 90 UF = 6,3 UF (art. 42 N°1 de la Ley de la Renta).
+  //
+  // El tope es sobre el límite imponible, no sobre la remuneración: quien gana
+  // bajo las 90 UF rebaja su plan completo, y quien está sobre el tope rebaja
+  // solo hasta 6,3 UF. Las dos liquidaciones reales de motor.test.ts, una a
+  // cada lado del tope, dan el mismo número que la empresa pagó.
+  const topeSaludRebajable = r(0.07 * p.topeImponibleUF * p.uf);
+  const saludRebajable = Math.min(salud7 + adicionalIsapre, topeSaludRebajable);
+  const baseTributable = totalImponible - afp - saludRebajable - cesantiaTrabajador;
   const impuesto = impuestoUnico(baseTributable, p);
 
   // 8. Líquido: los no imponibles se suman al final, fuera de toda base
@@ -113,6 +123,7 @@ export function calcularTrabajador(
     salud7,
     planIsapre,
     adicionalIsapre,
+    saludRebajable,
     cesantiaTrabajador,
     baseTributable,
     impuesto,
