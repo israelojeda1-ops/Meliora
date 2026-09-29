@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { calcularEmpleador } from "../lib/remuneraciones/motor.ts";
 import { periodos } from "../lib/remuneraciones/parametros/index.ts";
+import { descargarPDF } from "../lib/pdf.ts";
 import type {
   ModoGratificacion,
   SistemaSalud,
@@ -160,11 +161,15 @@ export function CalculadoraRemuneraciones() {
     return lineas.filter(Boolean).join("\n");
   }, [resultado, liq, modo, periodo]);
 
-  const imprimir = () => {
-    if (typeof window !== "undefined") {
-      window.gtag?.("event", "calculadora_pdf", { modo });
-      window.print();
-    }
+  const descargar = async () => {
+    window.gtag?.("event", "calculadora_pdf", { modo });
+    await descargarPDF({
+      titulo: modo === "trabajador" ? "Tu liquidación de sueldo" : "Costo de contratación",
+      periodo: periodo.etiqueta,
+      resumen: resumenTexto,
+      archivo: modo === "trabajador" ? "liquidacion-meliora" : "costo-contratacion-meliora",
+      nota: "Valores referenciales. No reemplazan una liquidación de sueldo oficial.",
+    });
   };
 
   return (
@@ -616,7 +621,7 @@ export function CalculadoraRemuneraciones() {
               <div className="no-print mt-6 flex flex-col sm:flex-row gap-3">
                 <button
                   type="button"
-                  onClick={imprimir}
+                  onClick={descargar}
                   className="flex-1 inline-flex items-center justify-center gap-2 rounded-lg border border-navy px-5 py-2.5 text-sm font-semibold text-navy hover:bg-navy hover:text-white transition-colors"
                 >
                   <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>

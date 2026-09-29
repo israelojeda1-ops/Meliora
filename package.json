@@ -11,6 +11,7 @@
     "test:finiquito": "node --experimental-strip-types src/lib/remuneraciones/finiquito.test.ts"
   },
   "dependencies": {
+    "jspdf": "^4.2.1",
     "next": "16.2.10",
     "react": "19.2.4",
     "react-dom": "19.2.4"

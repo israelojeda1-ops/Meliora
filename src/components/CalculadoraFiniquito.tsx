@@ -8,6 +8,7 @@ import {
   type CausalTermino,
 } from "../lib/remuneraciones/finiquito.ts";
 import { periodoActual } from "../lib/remuneraciones/parametros/index.ts";
+import { descargarPDF } from "../lib/pdf.ts";
 import type { ModoGratificacion } from "../lib/remuneraciones/tipos.ts";
 
 const FORM_ENDPOINT = "/api/formularios";
@@ -143,11 +144,15 @@ export function CalculadoraFiniquito() {
       ].join("\n")
     : "";
 
-  const imprimir = () => {
-    if (typeof window !== "undefined") {
-      window.gtag?.("event", "finiquito_pdf", {});
-      window.print();
-    }
+  const descargar = async () => {
+    window.gtag?.("event", "finiquito_pdf", {});
+    await descargarPDF({
+      titulo: "Calculadora de finiquito",
+      periodo: periodoActual.etiqueta,
+      resumen: resumenTexto,
+      archivo: "finiquito-meliora",
+      nota: "Cálculo referencial según el Código del Trabajo. No reemplaza el finiquito ratificado ante ministro de fe.",
+    });
   };
 
   return (
@@ -503,7 +508,7 @@ export function CalculadoraFiniquito() {
             <div className="no-print mt-6">
               <button
                 type="button"
-                onClick={imprimir}
+                onClick={descargar}
                 className="w-full inline-flex items-center justify-center gap-2 rounded-lg border border-navy px-5 py-2.5 text-sm font-semibold text-navy hover:bg-navy hover:text-white transition-colors"
               >
                 Descargar PDF
