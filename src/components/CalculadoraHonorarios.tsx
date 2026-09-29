@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { boletaDesdeBruto, boletaDesdeLiquido } from "../lib/remuneraciones/honorarios.ts";
 import { periodoActual } from "../lib/remuneraciones/parametros/index.ts";
-import { descargarPDF, bloquesATexto, type Bloque } from "../lib/pdf.ts";
+import { descargarPDF, bloquesATexto, type Bloque, type FilaPDF } from "../lib/pdf.ts";
 
 const FORM_ENDPOINT = "/api/formularios";
 
@@ -89,57 +89,97 @@ export function CalculadoraHonorarios() {
       ? `${montoUF} UF × $${ufValor.toLocaleString("es-CL", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (UF al ${fechaUF.split("-").reverse().join("-")})`
       : "";
 
-  // Mismo orden que la pantalla: el destacado es el número que la persona busca.
+  // Mismo orden que la pantalla: arriba las tres cifras de la boleta.
   const bloques: Bloque[] = [];
   if (boleta) {
-    bloques.push({ tipo: "seccion", texto: "Desglose de tu boleta" });
+    bloques.push({
+      tipo: "kpis",
+      items:
+        direccion === "liquido"
+          ? [
+              {
+                etiqueta: "Debes boletear por",
+                valor: fmt(boleta.bruto),
+                estilo: "emerald" as const,
+              },
+              {
+                etiqueta: "Retención SII",
+                valor: fmt(boleta.retencion),
+                nota: `${tasa.toLocaleString("es-CL")}% del bruto`,
+                estilo: "navy" as const,
+              },
+              {
+                etiqueta: "Líquido a recibir",
+                valor: fmt(boleta.liquido),
+                nota: "lo que llega a tu cuenta",
+                estilo: "suave" as const,
+              },
+            ]
+          : [
+              {
+                etiqueta: "Líquido a recibir",
+                valor: fmt(boleta.liquido),
+                estilo: "emerald" as const,
+              },
+              {
+                etiqueta: "Retención SII",
+                valor: fmt(boleta.retencion),
+                nota: `${tasa.toLocaleString("es-CL")}% del bruto`,
+                estilo: "navy" as const,
+              },
+              {
+                etiqueta: "Monto bruto",
+                valor: fmt(boleta.bruto),
+                nota: "lo que dice la boleta",
+                estilo: "suave" as const,
+              },
+            ],
+    });
+
+    const filas: FilaPDF[] = [];
     if (notaUF)
-      bloques.push({
-        tipo: "fila",
+      filas.push({
         etiqueta: direccion === "liquido" ? "Líquido deseado" : "Monto ingresado",
         valor: fmt(montoPesos),
         nota: notaUF,
       });
-    if (direccion === "liquido") {
-      bloques.push({
-        tipo: "destacado",
-        etiqueta: "Debes boletear por (bruto)",
-        valor: fmt(boleta.bruto),
-      });
-      bloques.push({
-        tipo: "fila",
-        etiqueta: `Retención SII (${tasa.toLocaleString("es-CL")}%)`,
-        valor: fmt(boleta.retencion),
-        negativo: true,
-      });
-      bloques.push({
-        tipo: "fila",
-        etiqueta: "Líquido a recibir",
-        valor: fmt(boleta.liquido),
-        fuerte: true,
-      });
-    } else {
-      bloques.push({
-        tipo: "fila",
-        etiqueta: "Monto bruto de la boleta",
-        valor: fmt(boleta.bruto),
-        fuerte: true,
-      });
-      bloques.push({
-        tipo: "fila",
-        etiqueta: `Retención SII (${tasa.toLocaleString("es-CL")}%)`,
-        valor: fmt(boleta.retencion),
-        negativo: true,
-      });
-      bloques.push({
-        tipo: "destacado",
-        etiqueta: "Líquido a recibir",
-        valor: fmt(boleta.liquido),
-      });
-    }
+    filas.push({ etiqueta: "Monto bruto de la boleta", valor: fmt(boleta.bruto) });
+    filas.push({
+      etiqueta: "Retención del SII",
+      valor: fmt(boleta.retencion),
+      nota: `${tasa.toLocaleString("es-CL")}% retenido por quien paga`,
+      negativo: true,
+    });
+    bloques.push({
+      tipo: "panel",
+      titulo: "Desglose de tu boleta",
+      filas,
+      total: { etiqueta: "Líquido a recibir", valor: fmt(boleta.liquido) },
+    });
+
+    const variables: { etiqueta: string; valor: string }[] = [
+      { etiqueta: "Retención vigente 2026", valor: `${tasa.toLocaleString("es-CL")}%` },
+      { etiqueta: "Retención 2027 (Ley 21.133)", valor: "16%" },
+      { etiqueta: "Retención 2028 (Ley 21.133)", valor: "17%" },
+      {
+        etiqueta: "Cálculo pedido",
+        valor: direccion === "liquido" ? "desde el líquido" : "desde el bruto",
+      },
+    ];
+    if (moneda === "uf" && ufListo)
+      variables.push(
+        {
+          etiqueta: `UF al ${fechaUF.split("-").reverse().join("-")}`,
+          valor: `$${ufListo.valor.toLocaleString("es-CL", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+        },
+        { etiqueta: "Monto pactado en UF", valor: `${montoUF} UF` }
+      );
+    bloques.push({ tipo: "parametros", titulo: "Variables del cálculo", items: variables });
+
     bloques.push({
       tipo: "nota",
-      texto: `Retención vigente año 2026: ${tasa.toLocaleString("es-CL")}% (Ley 21.133: sube a 16% en 2027 y 17% en 2028). Esta retención es un anticipo del impuesto anual, no un impuesto final.`,
+      texto:
+        "La retención es un anticipo del impuesto anual, no un impuesto final: en la operación renta se descuenta de lo que debas, y si retuvieron de más te lo devuelven. Considera además que la cotización previsional obligatoria de honorarios se paga en esa misma declaración.",
     });
   }
 

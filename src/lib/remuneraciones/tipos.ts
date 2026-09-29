@@ -94,6 +94,8 @@ export interface LiquidacionTrabajador {
   salud7: number;
   planIsapre: number;
   adicionalIsapre: number;
+  /** Cotización de salud que rebaja la base del impuesto (tope 7% del límite imponible) */
+  saludRebajable: number;
   cesantiaTrabajador: number;
   baseTributable: number;
   impuesto: number;
