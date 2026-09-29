@@ -10,8 +10,7 @@ import {
 import { periodoActual } from "../lib/remuneraciones/parametros/index.ts";
 import { descargarPDF, bloquesATexto, type Bloque, type FilaPDF } from "../lib/pdf.ts";
 import type { ModoGratificacion } from "../lib/remuneraciones/tipos.ts";
-
-const FORM_ENDPOINT = "/api/formularios";
+import { FORM_ENDPOINT } from "../lib/formularios.ts";
 
 const fmt = (n: number) => `$${Math.round(n).toLocaleString("es-CL")}`;
 

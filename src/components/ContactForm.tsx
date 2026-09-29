@@ -1,4 +1,4 @@
-const FORM_ENDPOINT = "/api/formularios";
+import { FORM_ENDPOINT } from "../lib/formularios.ts";
 
 export function ContactForm() {
   return (

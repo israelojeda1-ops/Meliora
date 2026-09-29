@@ -5,6 +5,7 @@ import Link from "next/link";
 import { resolverDesdeLiquido, type VariableAjustable } from "../lib/remuneraciones/motor.ts";
 import { periodos } from "../lib/remuneraciones/parametros/index.ts";
 import { descargarPDF, bloquesATexto, type Bloque } from "../lib/pdf.ts";
+import { FORM_ENDPOINT } from "../lib/formularios.ts";
 import {
   panelesCostoEmpresa,
   panelesLiquidacion,
@@ -15,8 +16,6 @@ import type {
   SistemaSalud,
   TipoContrato,
 } from "../lib/remuneraciones/tipos.ts";
-
-const FORM_ENDPOINT = "/api/formularios";
 
 const fmt = (n: number) => `$${Math.round(n).toLocaleString("es-CL")}`;
 
