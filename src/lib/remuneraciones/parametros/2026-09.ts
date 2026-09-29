@@ -1,0 +1,53 @@
+import type { ParametrosPeriodo } from "../tipos.ts";
+
+/**
+ * Indicadores previsionales y tributarios — remuneraciones de SEPTIEMBRE 2026.
+ *
+ * Respecto de agosto solo cambian la UF y la UTM: los topes imponibles, las
+ * tasas de AFP, el ingreso mínimo y las tasas de la reforma previsional se
+ * mantienen (el SIS de 1,78% rige el trimestre agosto-septiembre-octubre).
+ */
+export const parametros202609: ParametrosPeriodo = {
+  clave: "2026-09",
+  etiqueta: "Septiembre 2026",
+  uf: 41057.2, // UF al 30-09-2026
+  utm: 71721,
+  ingresoMinimo: 553553,
+  topeImponibleUF: 90, // $3.695.148
+  topeCesantiaUF: 135.2, // $5.550.933
+  jornadaSemanal: 42,
+  afps: {
+    capital: { nombre: "Capital", tasa: 11.44 },
+    cuprum: { nombre: "Cuprum", tasa: 11.44 },
+    habitat: { nombre: "Habitat", tasa: 11.27 },
+    modelo: { nombre: "Modelo", tasa: 10.58 },
+    planvital: { nombre: "PlanVital", tasa: 11.16 },
+    provida: { nombre: "Provida", tasa: 11.45 },
+    uno: { nombre: "Uno", tasa: 10.46 },
+  },
+  cesantia: {
+    indefinido: { trabajador: 0.6, empleador: 2.4 },
+    plazo_fijo: { trabajador: 0, empleador: 3.0 },
+  },
+  mutualBase: 0.93, // 0,90% básica ley 16.744 + 0,03% ley SANNA (ISL/mutual)
+  aportesPension: [
+    // Previred, septiembre 2026: el SIS se mantiene en 1,78% (rige el
+    // trimestre agosto-octubre). SIS + expectativa de vida suman 2,5%.
+    // Total reforma: 3,5%.
+    { nombre: "SIS (Seguro Social)", tasa: 1.78 },
+    { nombre: "Expectativa de vida", tasa: 0.72 },
+    { nombre: "Capitalización individual", tasa: 0.1 },
+    { nombre: "Rentabilidad protegida", tasa: 0.9 },
+  ],
+  retencionHonorarios: 15.25, // año 2026 (Ley 21.133; 16% en 2027, 17% en 2028)
+  tramosImpuesto: [
+    { hastaUTM: 13.5, factor: 0, rebajaUTM: 0 },
+    { hastaUTM: 30, factor: 0.04, rebajaUTM: 0.54 },
+    { hastaUTM: 50, factor: 0.08, rebajaUTM: 1.74 },
+    { hastaUTM: 70, factor: 0.135, rebajaUTM: 4.49 },
+    { hastaUTM: 90, factor: 0.23, rebajaUTM: 11.14 },
+    { hastaUTM: 120, factor: 0.304, rebajaUTM: 17.8 },
+    { hastaUTM: 310, factor: 0.35, rebajaUTM: 23.32 },
+    { hastaUTM: Infinity, factor: 0.4, rebajaUTM: 38.82 },
+  ],
+};
