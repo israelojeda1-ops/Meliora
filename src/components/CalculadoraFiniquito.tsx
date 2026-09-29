@@ -8,7 +8,7 @@ import {
   type CausalTermino,
 } from "../lib/remuneraciones/finiquito.ts";
 import { periodoActual } from "../lib/remuneraciones/parametros/index.ts";
-import { descargarPDF } from "../lib/pdf.ts";
+import { descargarPDF, bloquesATexto, type Bloque } from "../lib/pdf.ts";
 import type { ModoGratificacion } from "../lib/remuneraciones/tipos.ts";
 
 const FORM_ENDPOINT = "/api/formularios";
@@ -130,26 +130,94 @@ export function CalculadoraFiniquito() {
       )
     : null;
 
-  const resumenTexto = resultado
-    ? [
-        `Causal: ${causalInfo?.label}`,
-        `Sueldo proporcional: ${fmt(resultado.sueldoProporcional)}`,
-        `Horas extra proporcional: ${fmt(resultado.horasExtraProporcional)}`,
-        `Gratificación proporcional: ${fmt(resultado.gratificacionProporcional)}`,
-        `Años computables: ${resultado.aniosComputables}`,
-        `Indemnización años de servicio: ${fmt(resultado.indemnizacionAnios)}`,
-        `Indemnización sustitutiva de aviso previo: ${fmt(resultado.indemnizacionAviso)}`,
-        `Feriado proporcional (${resultado.feriadoDiasHabiles} días hábiles / ${resultado.feriadoDiasCorridos} corridos): ${fmt(resultado.feriadoMonto)}`,
-        `TOTAL FINIQUITO: ${fmt(resultado.total)}`,
-      ].join("\n")
-    : "";
+  // Mismo desglose que la pantalla, para el PDF y para el correo.
+  const bloques: Bloque[] = [];
+  if (resultado) {
+    bloques.push({ tipo: "fila", etiqueta: "Causal de término", valor: causalInfo?.label ?? "" });
+    bloques.push({ tipo: "seccion", texto: "Remuneraciones pendientes" });
+    bloques.push({
+      tipo: "fila",
+      etiqueta: "Sueldo proporcional",
+      valor: fmt(resultado.sueldoProporcional),
+      nota: `${resultado.diasPendientesMes} días`,
+    });
+    if (tieneHorasExtra)
+      bloques.push({
+        tipo: "fila",
+        etiqueta: "Horas extra proporcional",
+        valor: fmt(resultado.horasExtraProporcional),
+      });
+    if (modoGratificacion !== "ninguna")
+      bloques.push({
+        tipo: "fila",
+        etiqueta: "Gratificación proporcional",
+        valor: fmt(resultado.gratificacionProporcional),
+      });
+
+    bloques.push({ tipo: "seccion", texto: "Feriado proporcional" });
+    bloques.push({
+      tipo: "fila",
+      etiqueta: `${resultado.feriadoDiasHabiles.toLocaleString("es-CL")} días hábiles`,
+      valor: fmt(resultado.feriadoMonto),
+      nota: `${resultado.feriadoDiasCorridos.toLocaleString("es-CL")} corridos`,
+    });
+
+    if (resultado.aplicaIndemnizacion) {
+      bloques.push({ tipo: "seccion", texto: "Indemnizaciones" });
+      bloques.push({
+        tipo: "fila",
+        etiqueta: "Años de servicio computables",
+        valor: String(resultado.aniosComputables),
+        nota:
+          resultado.aniosServicio > resultado.aniosComputables
+            ? `${resultado.aniosServicio} reales, tope 11`
+            : undefined,
+      });
+      if (resultado.baseIndemnizacion < resultado.remuneracionBaseIndemnizacion)
+        bloques.push({
+          tipo: "fila",
+          etiqueta: "Base de indemnización",
+          valor: fmt(resultado.baseIndemnizacion),
+          nota: "tope 90 UF",
+        });
+      bloques.push({
+        tipo: "fila",
+        etiqueta: "Indemnización por años de servicio",
+        valor: fmt(resultado.indemnizacionAnios),
+      });
+      bloques.push({
+        tipo: "fila",
+        etiqueta: "Indemnización sustitutiva de aviso previo",
+        valor: fmt(resultado.indemnizacionAviso),
+      });
+    }
+
+    bloques.push({ tipo: "destacado", etiqueta: "Total finiquito", valor: fmt(resultado.total) });
+    if (resultado.totalExento > 0)
+      bloques.push({
+        tipo: "nota",
+        texto: `${fmt(resultado.totalTributable)} tributa como renta normal, ${fmt(resultado.totalExento)} está exento de impuesto único hasta el tope legal (art. 178 Ley de Impuesto a la Renta).`,
+      });
+    if (recargo)
+      bloques.push({
+        tipo: "nota",
+        texto: `Solo si la causal se declara injustificada en juicio: el art. 168 del Código del Trabajo agrega un recargo de ${Math.round(recargo.porcentaje * 100)}% sobre la indemnización por años de servicio que habría correspondido, ${fmt(recargo.monto)}. Ese monto no forma parte del finiquito que se paga al término del contrato.`,
+      });
+    bloques.push({
+      tipo: "nota",
+      texto:
+        "Cálculo referencial según Código del Trabajo (arts. 63, 73, 161, 161 bis, 162, 163 y 172): fracción superior a 6 meses cuenta como año completo, tope de 11 años y base topeada en 90 UF. El feriado proporcional considera 1,25 días hábiles por mes y su conversión a días corridos excluyendo sábados, domingos y festivos legales. Las horas extra habituales se promedian en la base de las indemnizaciones junto con la remuneración variable (Corte Suprema, Cuarta Sala, 28-04-2026).",
+    });
+  }
+
+  const resumenTexto = bloquesATexto(bloques);
 
   const descargar = async () => {
     window.gtag?.("event", "finiquito_pdf", {});
     await descargarPDF({
       titulo: "Calculadora de finiquito",
       periodo: periodoActual.etiqueta,
-      resumen: resumenTexto,
+      bloques,
       archivo: "finiquito-meliora",
       nota: "Cálculo referencial según el Código del Trabajo. No reemplaza el finiquito ratificado ante ministro de fe.",
     });

@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { resolverDesdeLiquido, type VariableAjustable } from "../lib/remuneraciones/motor.ts";
 import { periodos } from "../lib/remuneraciones/parametros/index.ts";
-import { descargarPDF } from "../lib/pdf.ts";
+import { descargarPDF, bloquesATexto, type Bloque } from "../lib/pdf.ts";
 import type {
   ModoGratificacion,
   SistemaSalud,
@@ -135,30 +135,152 @@ export function CalculadoraLiquido() {
   const liq = resultado?.costo.liquidacion;
   const etiquetaAjuste = ajustes.find((a) => a.key === ajuste)!.label;
 
-  const resumenTexto = useMemo(() => {
-    if (!resultado || !liq) return "";
-    return [
-      `Período: ${periodo.etiqueta}`,
-      `Líquido objetivo: ${fmt(parseCLP(objetivo))}`,
-      `Variable despejada: ${etiquetaAjuste} → ${fmt(resultado.valor)}`,
-      `Total imponible necesario: ${fmt(liq.totalImponible)}`,
-      `Sueldo base: ${fmt(liq.sueldoBase)}`,
-      `Gratificación: ${fmt(liq.gratificacion)}`,
-      liq.otrosImponibles > 0 ? `Bono imponible: ${fmt(liq.otrosImponibles)}` : "",
-      liq.totalNoImponible > 0 ? `No imponibles: ${fmt(liq.totalNoImponible)}` : "",
-      `Líquido resultante: ${fmt(liq.liquido)}`,
-      `Costo total para la empresa: ${fmt(resultado.costo.costoTotal)}`,
-    ]
-      .filter(Boolean)
-      .join("\n");
-  }, [resultado, liq, periodo, objetivo, etiquetaAjuste]);
+  // Mismos datos para el PDF y para el correo, en el mismo orden de la pantalla.
+  const bloques = useMemo<Bloque[]>(() => {
+    if (!resultado || !liq) return [];
+    const b: Bloque[] = [
+      {
+        tipo: "destacado",
+        etiqueta: `${etiquetaAjuste} debe ser`,
+        valor: fmt(resultado.valor),
+      },
+      {
+        tipo: "nota",
+        texto: `Para un líquido de ${fmt(liq.liquido)}${
+          liq.liquido !== parseCLP(objetivo) ? " (el más cercano por sobre el objetivo)" : ""
+        }.`,
+      },
+      { tipo: "seccion", texto: "Haberes" },
+      { tipo: "fila", etiqueta: "Sueldo base", valor: fmt(liq.sueldoBase) },
+    ];
+    if (liq.horasExtra > 0)
+      b.push({ tipo: "fila", etiqueta: "Horas extra (50%)", valor: fmt(liq.horasExtra) });
+    if (liq.gratificacion > 0)
+      b.push({ tipo: "fila", etiqueta: "Gratificación", valor: fmt(liq.gratificacion) });
+    if (liq.otrosImponibles > 0)
+      b.push({ tipo: "fila", etiqueta: "Bono imponible", valor: fmt(liq.otrosImponibles) });
+    b.push({
+      tipo: "fila",
+      etiqueta: "Total imponible",
+      valor: fmt(liq.totalImponible),
+      fuerte: true,
+    });
+    if (liq.totalNoImponible > 0)
+      b.push({
+        tipo: "fila",
+        etiqueta: "No imponibles",
+        valor: fmt(liq.totalNoImponible),
+        nota: "colación + movilización",
+      });
+
+    b.push({ tipo: "seccion", texto: "Descuentos del trabajador" });
+    if (liq.baseCotizacion < liq.totalImponible)
+      b.push({
+        tipo: "fila",
+        etiqueta: `Base topeada (${periodo.topeImponibleUF} UF)`,
+        valor: fmt(liq.baseCotizacion),
+        nota: "para AFP y salud",
+      });
+    b.push({
+      tipo: "fila",
+      etiqueta: `AFP ${liq.afpNombre} (${liq.afpTasa.toLocaleString("es-CL")}%)`,
+      valor: fmt(liq.afp),
+      negativo: true,
+    });
+    b.push({ tipo: "fila", etiqueta: "Salud legal (7%)", valor: fmt(liq.salud7), negativo: true });
+    if (liq.adicionalIsapre > 0)
+      b.push({
+        tipo: "fila",
+        etiqueta: "Adicional isapre",
+        valor: fmt(liq.adicionalIsapre),
+        negativo: true,
+        nota: `plan ${fmt(liq.planIsapre)}`,
+      });
+    if (liq.cesantiaTrabajador > 0)
+      b.push({
+        tipo: "fila",
+        etiqueta: `Seguro de cesantía (${periodo.cesantia[contrato].trabajador.toLocaleString("es-CL")}%)`,
+        valor: fmt(liq.cesantiaTrabajador),
+        negativo: true,
+      });
+    b.push({
+      tipo: "fila",
+      etiqueta: "Impuesto único",
+      valor: fmt(liq.impuesto),
+      negativo: true,
+      nota: `base ${fmt(liq.baseTributable)}`,
+    });
+    if (liq.otrosDescuentos > 0)
+      b.push({
+        tipo: "fila",
+        etiqueta: "Otros descuentos",
+        valor: fmt(liq.otrosDescuentos),
+        negativo: true,
+      });
+
+    b.push({ tipo: "destacado", etiqueta: "Sueldo líquido", valor: fmt(liq.liquido) });
+
+    b.push({ tipo: "seccion", texto: "Aportes del empleador" });
+    b.push({
+      tipo: "fila",
+      etiqueta: `Seguro de cesantía (${periodo.cesantia[contrato].empleador.toLocaleString("es-CL")}%)`,
+      valor: fmt(resultado.costo.cesantiaEmpleador),
+    });
+    b.push({
+      tipo: "fila",
+      etiqueta: `ISL / Mutual (${resultado.costo.mutualTasa.toLocaleString("es-CL", { maximumFractionDigits: 2 })}%)`,
+      valor: fmt(resultado.costo.mutual),
+      nota: "ley 16.744",
+    });
+    for (const a of resultado.costo.aportesPension)
+      b.push({
+        tipo: "fila",
+        etiqueta: `${a.nombre} (${a.tasa.toLocaleString("es-CL")}%)`,
+        valor: fmt(a.monto),
+      });
+    const tasaPatronal =
+      periodo.cesantia[contrato].empleador +
+      resultado.costo.mutualTasa +
+      resultado.costo.aportesPension.reduce((s, a) => s + a.tasa, 0);
+    b.push({
+      tipo: "fila",
+      etiqueta: `Total aporte patronal (${tasaPatronal.toLocaleString("es-CL", { maximumFractionDigits: 2 })}%)`,
+      valor: fmt(resultado.costo.totalAportes),
+      fuerte: true,
+    });
+    b.push({
+      tipo: "destacado",
+      etiqueta: "Costo total de contratación",
+      valor: fmt(resultado.costo.costoTotal),
+      estilo: "navy",
+    });
+    b.push({
+      tipo: "barra",
+      proporcion: resultado.costo.proporcionLiquido,
+      texto: `De cada ${fmt(resultado.costo.costoTotal)} que pagas, al bolsillo del trabajador llegan ${fmt(liq.liquido)}: ${Math.round(resultado.costo.proporcionLiquido * 100)}%.`,
+      izquierda: "Líquido del trabajador",
+      derecha: "Cotizaciones e impuestos",
+    });
+    b.push({
+      tipo: "nota",
+      texto:
+        "Lo que fija el líquido es el total imponible, no cómo lo repartas: mover plata entre sueldo base y bono no cambia ni el líquido ni el costo, salvo que haya horas extra (su valor se calcula sobre el sueldo base).",
+    });
+    b.push({
+      tipo: "nota",
+      texto: `Cálculo referencial con los indicadores de ${periodo.etiqueta} (UF ${periodo.uf.toLocaleString("es-CL")}, UTM ${periodo.utm.toLocaleString("es-CL")}).`,
+    });
+    return b;
+  }, [resultado, liq, periodo, objetivo, etiquetaAjuste, contrato]);
+
+  const resumenTexto = useMemo(() => bloquesATexto(bloques), [bloques]);
 
   const descargar = async () => {
     window.gtag?.("event", "calculadora_liquido_pdf", { ajuste });
     await descargarPDF({
       titulo: "Desde el líquido: " + etiquetaAjuste.toLowerCase(),
       periodo: periodo.etiqueta,
-      resumen: resumenTexto,
+      bloques,
       archivo: "desde-el-liquido-meliora",
       nota: "Valores referenciales. No reemplazan una liquidación de sueldo oficial.",
     });
