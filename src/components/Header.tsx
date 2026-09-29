@@ -15,6 +15,7 @@ const navLinks = [
 const herramientas = [
   { href: "/diagnostico", label: "Diagnóstico Financiero" },
   { href: "/calculadora", label: "Calculadora Salarial" },
+  { href: "/calculadora-liquido", label: "Desde el Líquido" },
   { href: "/calculadora-honorarios", label: "Boleta de Honorarios" },
   { href: "/calculadora-finiquito", label: "Calculadora de Finiquito" },
   { href: "/indicadores", label: "Indicadores de hoy" },
