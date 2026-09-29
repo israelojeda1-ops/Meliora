@@ -8,7 +8,7 @@ import {
   type CausalTermino,
 } from "../lib/remuneraciones/finiquito.ts";
 import { periodoActual } from "../lib/remuneraciones/parametros/index.ts";
-import { descargarPDF, bloquesATexto, type Bloque } from "../lib/pdf.ts";
+import { descargarPDF, bloquesATexto, type Bloque, type FilaPDF } from "../lib/pdf.ts";
 import type { ModoGratificacion } from "../lib/remuneraciones/tipos.ts";
 
 const FORM_ENDPOINT = "/api/formularios";
@@ -133,71 +133,160 @@ export function CalculadoraFiniquito() {
   // Mismo desglose que la pantalla, para el PDF y para el correo.
   const bloques: Bloque[] = [];
   if (resultado) {
-    bloques.push({ tipo: "fila", etiqueta: "Causal de término", valor: causalInfo?.label ?? "" });
-    bloques.push({ tipo: "seccion", texto: "Remuneraciones pendientes" });
     bloques.push({
-      tipo: "fila",
-      etiqueta: "Sueldo proporcional",
-      valor: fmt(resultado.sueldoProporcional),
-      nota: `${resultado.diasPendientesMes} días`,
+      tipo: "kpis",
+      items: [
+        { etiqueta: "Total finiquito", valor: fmt(resultado.total), estilo: "emerald" },
+        resultado.aplicaIndemnizacion
+          ? {
+              etiqueta: "Indemnización años de servicio",
+              valor: fmt(resultado.indemnizacionAnios),
+              nota: `${resultado.aniosComputables} años computables`,
+              estilo: "navy" as const,
+            }
+          : {
+              etiqueta: "Indemnizaciones",
+              valor: "No aplican",
+              nota: "según la causal invocada",
+              estilo: "navy" as const,
+            },
+        {
+          etiqueta: "Exento de impuesto",
+          valor: fmt(resultado.totalExento),
+          nota: `${fmt(resultado.totalTributable)} tributa como renta`,
+          estilo: "suave",
+        },
+      ],
     });
+
+    const pendientes: FilaPDF[] = [
+      {
+        etiqueta: "Sueldo proporcional",
+        valor: fmt(resultado.sueldoProporcional),
+        nota: `${resultado.diasPendientesMes} días trabajados`,
+      },
+    ];
     if (tieneHorasExtra)
-      bloques.push({
-        tipo: "fila",
+      pendientes.push({
         etiqueta: "Horas extra proporcional",
         valor: fmt(resultado.horasExtraProporcional),
       });
     if (modoGratificacion !== "ninguna")
-      bloques.push({
-        tipo: "fila",
+      pendientes.push({
         etiqueta: "Gratificación proporcional",
         valor: fmt(resultado.gratificacionProporcional),
       });
-
-    bloques.push({ tipo: "seccion", texto: "Feriado proporcional" });
     bloques.push({
-      tipo: "fila",
-      etiqueta: `${resultado.feriadoDiasHabiles.toLocaleString("es-CL")} días hábiles`,
-      valor: fmt(resultado.feriadoMonto),
-      nota: `${resultado.feriadoDiasCorridos.toLocaleString("es-CL")} corridos`,
+      tipo: "panel",
+      titulo: "Remuneraciones pendientes (art. 63)",
+      filas: pendientes,
+      total: {
+        etiqueta: "Total remuneraciones pendientes",
+        valor: fmt(resultado.totalRemuneracionesPendientes),
+      },
+    });
+
+    bloques.push({
+      tipo: "panel",
+      titulo: "Feriado proporcional (art. 73)",
+      filas: [
+        {
+          etiqueta: "Días hábiles devengados",
+          valor: resultado.feriadoDiasHabiles.toLocaleString("es-CL"),
+          nota: "1,25 por mes trabajado",
+        },
+        {
+          etiqueta: "Días corridos a pagar",
+          valor: resultado.feriadoDiasCorridos.toLocaleString("es-CL"),
+          nota: "sin sábados, domingos ni festivos",
+        },
+      ],
+      total: { etiqueta: "Feriado proporcional", valor: fmt(resultado.feriadoMonto) },
     });
 
     if (resultado.aplicaIndemnizacion) {
-      bloques.push({ tipo: "seccion", texto: "Indemnizaciones" });
-      bloques.push({
-        tipo: "fila",
-        etiqueta: "Años de servicio computables",
-        valor: String(resultado.aniosComputables),
-        nota:
-          resultado.aniosServicio > resultado.aniosComputables
-            ? `${resultado.aniosServicio} reales, tope 11`
-            : undefined,
-      });
-      if (resultado.baseIndemnizacion < resultado.remuneracionBaseIndemnizacion)
-        bloques.push({
-          tipo: "fila",
-          etiqueta: "Base de indemnización",
+      const indem: FilaPDF[] = [
+        {
+          etiqueta: "Base de cálculo mensual",
           valor: fmt(resultado.baseIndemnizacion),
-          nota: "tope 90 UF",
-        });
+          nota:
+            resultado.baseIndemnizacion < resultado.remuneracionBaseIndemnizacion
+              ? `topeada en 90 UF, ${fmt(resultado.remuneracionBaseIndemnizacion)} sin tope`
+              : "art. 172",
+        },
+        {
+          etiqueta: "Años de servicio computables",
+          valor: resultado.aniosComputables.toLocaleString("es-CL"),
+          nota:
+            resultado.aniosServicio > resultado.aniosComputables
+              ? `${resultado.aniosServicio} reales, tope legal de 11`
+              : "fracción sobre 6 meses cuenta como año",
+        },
+        {
+          etiqueta: "Indemnización por años de servicio",
+          valor: fmt(resultado.indemnizacionAnios),
+        },
+        {
+          etiqueta: "Indemnización sustitutiva de aviso previo",
+          valor: fmt(resultado.indemnizacionAviso),
+        },
+      ];
       bloques.push({
-        tipo: "fila",
-        etiqueta: "Indemnización por años de servicio",
-        valor: fmt(resultado.indemnizacionAnios),
-      });
-      bloques.push({
-        tipo: "fila",
-        etiqueta: "Indemnización sustitutiva de aviso previo",
-        valor: fmt(resultado.indemnizacionAviso),
+        tipo: "panel",
+        titulo: "Indemnizaciones (arts. 161 a 163)",
+        filas: indem,
+        total: {
+          etiqueta: "Total indemnizaciones",
+          valor: fmt(resultado.indemnizacionAnios + resultado.indemnizacionAviso),
+        },
       });
     }
 
     bloques.push({ tipo: "destacado", etiqueta: "Total finiquito", valor: fmt(resultado.total) });
-    if (resultado.totalExento > 0)
-      bloques.push({
-        tipo: "nota",
-        texto: `${fmt(resultado.totalTributable)} tributa como renta normal, ${fmt(resultado.totalExento)} está exento de impuesto único hasta el tope legal (art. 178 Ley de Impuesto a la Renta).`,
+
+    const variables: { etiqueta: string; valor: string }[] = [
+      { etiqueta: "Causal de término", valor: causalInfo?.label ?? "" },
+      { etiqueta: "Fecha de ingreso", valor: fechaInicio.split("-").reverse().join("-") },
+      { etiqueta: "Fecha de término", valor: fechaTermino.split("-").reverse().join("-") },
+      { etiqueta: "Años de servicio reales", valor: resultado.aniosServicio.toLocaleString("es-CL") },
+      { etiqueta: "Sueldo base mensual", valor: fmt(parseCLP(sueldoBase)) },
+      {
+        etiqueta: "Gratificación",
+        valor:
+          modoGratificacion === "legal"
+            ? "legal, 25%"
+            : modoGratificacion === "manual"
+              ? "pactada"
+              : "no recibe",
+      },
+    ];
+    if (tieneHorasExtra)
+      variables.push({
+        etiqueta: "Promedio horas extra (3 meses)",
+        valor: fmt(parseCLP(horasExtraPromedio)),
       });
+    if (tieneVariable)
+      variables.push({
+        etiqueta: "Promedio remuneración variable",
+        valor: fmt(parseCLP(remuneracionVariable)),
+      });
+    variables.push(
+      {
+        etiqueta: "Base de indemnización sin tope",
+        valor: fmt(resultado.remuneracionBaseIndemnizacion),
+      },
+      { etiqueta: "Tope legal de la base (90 UF)", valor: fmt(resultado.topeRemuneracion) },
+      { etiqueta: "Valor UF del período", valor: `$${periodoActual.uf.toLocaleString("es-CL", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` },
+      { etiqueta: "Aviso previo de 30 días", valor: avisoPrevio ? "Sí se dio" : "No se dio" },
+      {
+        etiqueta: "Vacaciones pendientes de años anteriores",
+        valor: `${parseCLP(vacacionesPendientes)} días hábiles`,
+      },
+      { etiqueta: "Parte tributable del finiquito", valor: fmt(resultado.totalTributable) },
+      { etiqueta: "Parte exenta (art. 178 LIR)", valor: fmt(resultado.totalExento) }
+    );
+    bloques.push({ tipo: "parametros", titulo: "Variables del cálculo", items: variables });
+
     if (recargo)
       bloques.push({
         tipo: "nota",
@@ -206,7 +295,7 @@ export function CalculadoraFiniquito() {
     bloques.push({
       tipo: "nota",
       texto:
-        "Cálculo referencial según Código del Trabajo (arts. 63, 73, 161, 161 bis, 162, 163 y 172): fracción superior a 6 meses cuenta como año completo, tope de 11 años y base topeada en 90 UF. El feriado proporcional considera 1,25 días hábiles por mes y su conversión a días corridos excluyendo sábados, domingos y festivos legales. Las horas extra habituales se promedian en la base de las indemnizaciones junto con la remuneración variable (Corte Suprema, Cuarta Sala, 28-04-2026).",
+        "Cálculo referencial según Código del Trabajo (arts. 63, 73, 161, 161 bis, 162, 163 y 172). Las horas extra habituales se promedian en la base de las indemnizaciones junto con la remuneración variable (Corte Suprema, Cuarta Sala, 28-04-2026).",
     });
   }
 
