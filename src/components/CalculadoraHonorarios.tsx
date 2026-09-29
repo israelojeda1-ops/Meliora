@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { boletaDesdeBruto, boletaDesdeLiquido } from "../lib/remuneraciones/honorarios.ts";
 import { periodoActual } from "../lib/remuneraciones/parametros/index.ts";
+import { descargarPDF } from "../lib/pdf.ts";
 
 const FORM_ENDPOINT = "/api/formularios";
 
@@ -104,11 +105,15 @@ export function CalculadoraHonorarios() {
         .join("\n")
     : "";
 
-  const imprimir = () => {
-    if (typeof window !== "undefined") {
-      window.gtag?.("event", "honorarios_pdf", {});
-      window.print();
-    }
+  const descargar = async () => {
+    window.gtag?.("event", "honorarios_pdf", {});
+    await descargarPDF({
+      titulo: "Boleta de honorarios",
+      periodo: periodoActual.etiqueta,
+      resumen: resumenTexto,
+      archivo: "honorarios-meliora",
+      nota: "Valores referenciales según la retención vigente. No reemplazan la boleta emitida en el SII.",
+    });
   };
 
   return (
@@ -347,7 +352,7 @@ export function CalculadoraHonorarios() {
             <div className="no-print mt-6">
               <button
                 type="button"
-                onClick={imprimir}
+                onClick={descargar}
                 className="w-full inline-flex items-center justify-center gap-2 rounded-lg border border-navy px-5 py-2.5 text-sm font-semibold text-navy hover:bg-navy hover:text-white transition-colors"
               >
                 Descargar PDF

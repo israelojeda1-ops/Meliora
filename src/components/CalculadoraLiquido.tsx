@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { resolverDesdeLiquido, type VariableAjustable } from "../lib/remuneraciones/motor.ts";
 import { periodos } from "../lib/remuneraciones/parametros/index.ts";
+import { descargarPDF } from "../lib/pdf.ts";
 import type {
   ModoGratificacion,
   SistemaSalud,
@@ -152,11 +153,15 @@ export function CalculadoraLiquido() {
       .join("\n");
   }, [resultado, liq, periodo, objetivo, etiquetaAjuste]);
 
-  const imprimir = () => {
-    if (typeof window !== "undefined") {
-      window.gtag?.("event", "calculadora_liquido_pdf", { ajuste });
-      window.print();
-    }
+  const descargar = async () => {
+    window.gtag?.("event", "calculadora_liquido_pdf", { ajuste });
+    await descargarPDF({
+      titulo: "Desde el líquido: " + etiquetaAjuste.toLowerCase(),
+      periodo: periodo.etiqueta,
+      resumen: resumenTexto,
+      archivo: "desde-el-liquido-meliora",
+      nota: "Valores referenciales. No reemplazan una liquidación de sueldo oficial.",
+    });
   };
 
   return (
@@ -640,7 +645,7 @@ export function CalculadoraLiquido() {
             <div className="no-print mt-6">
               <button
                 type="button"
-                onClick={imprimir}
+                onClick={descargar}
                 className="w-full inline-flex items-center justify-center gap-2 rounded-lg border border-navy px-5 py-2.5 text-sm font-semibold text-navy hover:bg-navy hover:text-white transition-colors"
               >
                 Descargar PDF
