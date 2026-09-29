@@ -3,9 +3,9 @@
 // jsPDF se carga solo al pulsar el botón (import dinámico), así la librería no
 // pesa en la visita normal a la página.
 //
-// Las calculadoras arman una lista de bloques y de ahí salen las dos cosas: el
-// PDF (`descargarPDF`) y el texto que va por correo (`bloquesATexto`). Una sola
-// fuente, para que no se desincronicen.
+// Las calculadoras arman una lista de bloques y de ahí sale el documento, tanto
+// el que baja el botón de descarga (`descargarPDF`) como el que viaja adjunto en
+// el correo (`pdfBase64`). Es el mismo archivo, no dos versiones.
 
 type RGB = [number, number, number];
 
@@ -92,34 +92,11 @@ function winAnsi(texto: string) {
   return s.replace(/[^\u0000-ÿ€‚ƒ†‡ˆ‰Š‹ŒŽ•–—˜™š›œžŸ]/g, "");
 }
 
-function filaATexto(f: FilaPDF) {
-  return `${f.etiqueta}${f.nota ? ` (${f.nota})` : ""}: ${f.negativo ? "-" : ""}${f.valor}`;
-}
-
-/** El mismo contenido en texto plano, para el cuerpo del correo. */
-export function bloquesATexto(bloques: Bloque[]): string {
-  const lineas: string[] = [];
-  for (const b of bloques) {
-    if (b.tipo === "kpis")
-      for (const k of b.items) lineas.push(`${k.etiqueta.toUpperCase()}: ${k.valor}`);
-    else if (b.tipo === "panel") {
-      lineas.push("", b.titulo.toUpperCase());
-      for (const f of b.filas) lineas.push(filaATexto(f));
-      if (b.total) lineas.push(filaATexto(b.total));
-      for (const f of b.pie ?? []) lineas.push(filaATexto(f));
-    } else if (b.tipo === "parametros") {
-      lineas.push("", b.titulo.toUpperCase());
-      for (const i of b.items) lineas.push(`${i.etiqueta}: ${i.valor}`);
-    } else if (b.tipo === "seccion") lineas.push("", b.texto.toUpperCase());
-    else if (b.tipo === "fila") lineas.push(filaATexto(b));
-    else if (b.tipo === "destacado") lineas.push(`${b.etiqueta.toUpperCase()}: ${b.valor}`);
-    else if (b.tipo === "barra") lineas.push(b.texto);
-    else if (b.tipo === "nota") lineas.push(b.texto);
-  }
-  return lineas.join("\n").replace(/^\n/, "");
-}
-
-export async function descargarPDF({ titulo, periodo, bloques, archivo, nota }: OpcionesPDF) {
+/**
+ * Arma el documento. Se usa para dos cosas: bajarlo al disco de quien lo pide
+ * y adjuntarlo al correo, que es el mismo archivo y no una segunda versión.
+ */
+async function construirPDF({ titulo, periodo, bloques, nota }: Omit<OpcionesPDF, "archivo">) {
   const { jsPDF } = await import("jspdf");
   const doc = new jsPDF({ unit: "pt", format: "a4" });
 
@@ -452,5 +429,20 @@ export async function descargarPDF({ titulo, periodo, bloques, archivo, nota }: 
     doc.text(`${p} / ${paginas}`, DERECHA, ALTO - 40, { align: "right" });
   }
 
-  doc.save(`${archivo}.pdf`);
+  return doc;
+}
+
+export async function descargarPDF(o: OpcionesPDF) {
+  const doc = await construirPDF(o);
+  doc.save(`${o.archivo}.pdf`);
+}
+
+/**
+ * El mismo PDF en base64, sin el prefijo `data:`, para viajar en un campo del
+ * formulario y salir adjunto en el correo. Pesa unos 20 KB, o sea ~27 KB ya
+ * codificado: cabe de sobra en un POST normal.
+ */
+export async function pdfBase64(o: Omit<OpcionesPDF, "archivo">) {
+  const doc = await construirPDF(o);
+  return (doc.output("datauristring") as string).split(",")[1] ?? "";
 }

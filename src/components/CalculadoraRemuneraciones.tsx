@@ -4,8 +4,8 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { calcularEmpleador } from "../lib/remuneraciones/motor.ts";
 import { periodos } from "../lib/remuneraciones/parametros/index.ts";
-import { descargarPDF, bloquesATexto, type Bloque } from "../lib/pdf.ts";
-import { FORM_ENDPOINT } from "../lib/formularios.ts";
+import { descargarPDF, type Bloque, type OpcionesPDF } from "../lib/pdf.ts";
+import { FormularioDesglose } from "./FormularioDesglose.tsx";
 import {
   panelesCostoEmpresa,
   panelesLiquidacion,
@@ -157,17 +157,20 @@ export function CalculadoraRemuneraciones() {
     ];
   }, [resultado, liq, periodo, contrato, salud, gratMode, horasExtra, mutualRecargo]);
 
-  const resumenTexto = useMemo(() => bloquesATexto(bloques), [bloques]);
+
+  // Las mismas opciones para el botón de descarga y para el PDF que sale
+  // adjunto en el correo: un solo archivo, no dos versiones.
+  const opcionesPDF: OpcionesPDF = {
+    titulo: modo === "trabajador" ? "Tu liquidación de sueldo" : "Costo de contratación",
+    periodo: periodo.etiqueta,
+    bloques,
+    archivo: modo === "trabajador" ? "liquidacion-meliora" : "costo-contratacion-meliora",
+    nota: "Valores referenciales. No reemplazan una liquidación de sueldo oficial.",
+  };
 
   const descargar = async () => {
     window.gtag?.("event", "calculadora_pdf", { modo });
-    await descargarPDF({
-      titulo: modo === "trabajador" ? "Tu liquidación de sueldo" : "Costo de contratación",
-      periodo: periodo.etiqueta,
-      bloques,
-      archivo: modo === "trabajador" ? "liquidacion-meliora" : "costo-contratacion-meliora",
-      nota: "Valores referenciales. No reemplazan una liquidación de sueldo oficial.",
-    });
+    await descargarPDF(opcionesPDF);
   };
 
   return (
@@ -641,30 +644,7 @@ export function CalculadoraRemuneraciones() {
                 <p className="text-xs text-slate-500 mb-4">
                   Te lo enviamos junto a una breve revisión de tu caso. Sin spam.
                 </p>
-                <form action={FORM_ENDPOINT} method="POST" className="flex flex-col sm:flex-row gap-3">
-                  <input
-                    type="hidden"
-                    name="_next"
-                    value="https://melioraadvisory.cl/contacto/gracias/"
-                  />
-                  <input type="hidden" name="formulario" value="remuneraciones" />
-                  <input type="text" name="_honey" className="hidden" tabIndex={-1} autoComplete="off" />
-                  <input type="hidden" name="desglose" value={resumenTexto} />
-                  <input
-                    name="email"
-                    type="email"
-                    required
-                    className={`${inputClass} flex-1`}
-                    placeholder="tucorreo@empresa.cl"
-                    aria-label="Email"
-                  />
-                  <button
-                    type="submit"
-                    className="rounded-lg bg-emerald px-6 py-2.5 text-sm font-semibold text-white hover:bg-emerald-dark transition-colors"
-                  >
-                    Enviarme el desglose
-                  </button>
-                </form>
+                <FormularioDesglose formulario="remuneraciones" opciones={opcionesPDF} />
               </div>
 
               {modo === "empleador" ? (

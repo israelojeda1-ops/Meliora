@@ -8,9 +8,9 @@ import {
   type CausalTermino,
 } from "../lib/remuneraciones/finiquito.ts";
 import { periodoActual } from "../lib/remuneraciones/parametros/index.ts";
-import { descargarPDF, bloquesATexto, type Bloque, type FilaPDF } from "../lib/pdf.ts";
+import { descargarPDF, type Bloque, type FilaPDF, type OpcionesPDF } from "../lib/pdf.ts";
 import type { ModoGratificacion } from "../lib/remuneraciones/tipos.ts";
-import { FORM_ENDPOINT } from "../lib/formularios.ts";
+import { FormularioDesglose } from "./FormularioDesglose.tsx";
 
 const fmt = (n: number) => `$${Math.round(n).toLocaleString("es-CL")}`;
 
@@ -298,17 +298,20 @@ export function CalculadoraFiniquito() {
     });
   }
 
-  const resumenTexto = bloquesATexto(bloques);
+
+  // Las mismas opciones para el botón de descarga y para el PDF que sale
+  // adjunto en el correo: un solo archivo, no dos versiones.
+  const opcionesPDF: OpcionesPDF = {
+    titulo: "Calculadora de finiquito",
+    periodo: periodoActual.etiqueta,
+    bloques,
+    archivo: "finiquito-meliora",
+    nota: "Cálculo referencial según el Código del Trabajo. No reemplaza el finiquito ratificado ante ministro de fe.",
+  };
 
   const descargar = async () => {
     window.gtag?.("event", "finiquito_pdf", {});
-    await descargarPDF({
-      titulo: "Calculadora de finiquito",
-      periodo: periodoActual.etiqueta,
-      bloques,
-      archivo: "finiquito-meliora",
-      nota: "Cálculo referencial según el Código del Trabajo. No reemplaza el finiquito ratificado ante ministro de fe.",
-    });
+    await descargarPDF(opcionesPDF);
   };
 
   return (
@@ -682,30 +685,7 @@ export function CalculadoraFiniquito() {
               <p className="text-xs text-slate-500 mb-4">
                 Te lo enviamos junto a una breve revisión de tu caso. Sin spam.
               </p>
-              <form action={FORM_ENDPOINT} method="POST" className="flex flex-col sm:flex-row gap-3">
-                <input
-                  type="hidden"
-                  name="_next"
-                  value="https://melioraadvisory.cl/contacto/gracias/"
-                />
-                <input type="hidden" name="formulario" value="finiquito" />
-                <input type="text" name="_honey" className="hidden" tabIndex={-1} autoComplete="off" />
-                <input type="hidden" name="desglose" value={resumenTexto} />
-                <input
-                  name="email"
-                  type="email"
-                  required
-                  className={`${inputClass} flex-1`}
-                  placeholder="tucorreo@empresa.cl"
-                  aria-label="Email"
-                />
-                <button
-                  type="submit"
-                  className="rounded-lg bg-emerald px-6 py-2.5 text-sm font-semibold text-white hover:bg-emerald-dark transition-colors"
-                >
-                  Enviarme el desglose
-                </button>
-              </form>
+              <FormularioDesglose formulario="finiquito" opciones={opcionesPDF} />
             </div>
 
             <div className="rounded-2xl bg-navy p-6 sm:p-8">
