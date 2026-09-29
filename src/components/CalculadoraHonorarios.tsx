@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { boletaDesdeBruto, boletaDesdeLiquido } from "../lib/remuneraciones/honorarios.ts";
 import { periodoActual } from "../lib/remuneraciones/parametros/index.ts";
-import { descargarPDF } from "../lib/pdf.ts";
+import { descargarPDF, bloquesATexto, type Bloque } from "../lib/pdf.ts";
 
 const FORM_ENDPOINT = "/api/formularios";
 
@@ -89,28 +89,68 @@ export function CalculadoraHonorarios() {
       ? `${montoUF} UF × $${ufValor.toLocaleString("es-CL", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (UF al ${fechaUF.split("-").reverse().join("-")})`
       : "";
 
-  const resumenTexto = boleta
-    ? [
-        `Retención año 2026: ${tasa.toLocaleString("es-CL")}%`,
-        notaUF
-          ? `${direccion === "liquido" ? "Líquido deseado" : "Monto ingresado"}: ${notaUF} = ${fmt(montoPesos)}`
-          : "",
-        direccion === "liquido"
-          ? `Debes boletear por (bruto): ${fmt(boleta.bruto)}`
-          : `Monto bruto de la boleta: ${fmt(boleta.bruto)}`,
-        `Retención SII: −${fmt(boleta.retencion)}`,
-        `Líquido a recibir: ${fmt(boleta.liquido)}`,
-      ]
-        .filter(Boolean)
-        .join("\n")
-    : "";
+  // Mismo orden que la pantalla: el destacado es el número que la persona busca.
+  const bloques: Bloque[] = [];
+  if (boleta) {
+    bloques.push({ tipo: "seccion", texto: "Desglose de tu boleta" });
+    if (notaUF)
+      bloques.push({
+        tipo: "fila",
+        etiqueta: direccion === "liquido" ? "Líquido deseado" : "Monto ingresado",
+        valor: fmt(montoPesos),
+        nota: notaUF,
+      });
+    if (direccion === "liquido") {
+      bloques.push({
+        tipo: "destacado",
+        etiqueta: "Debes boletear por (bruto)",
+        valor: fmt(boleta.bruto),
+      });
+      bloques.push({
+        tipo: "fila",
+        etiqueta: `Retención SII (${tasa.toLocaleString("es-CL")}%)`,
+        valor: fmt(boleta.retencion),
+        negativo: true,
+      });
+      bloques.push({
+        tipo: "fila",
+        etiqueta: "Líquido a recibir",
+        valor: fmt(boleta.liquido),
+        fuerte: true,
+      });
+    } else {
+      bloques.push({
+        tipo: "fila",
+        etiqueta: "Monto bruto de la boleta",
+        valor: fmt(boleta.bruto),
+        fuerte: true,
+      });
+      bloques.push({
+        tipo: "fila",
+        etiqueta: `Retención SII (${tasa.toLocaleString("es-CL")}%)`,
+        valor: fmt(boleta.retencion),
+        negativo: true,
+      });
+      bloques.push({
+        tipo: "destacado",
+        etiqueta: "Líquido a recibir",
+        valor: fmt(boleta.liquido),
+      });
+    }
+    bloques.push({
+      tipo: "nota",
+      texto: `Retención vigente año 2026: ${tasa.toLocaleString("es-CL")}% (Ley 21.133: sube a 16% en 2027 y 17% en 2028). Esta retención es un anticipo del impuesto anual, no un impuesto final.`,
+    });
+  }
+
+  const resumenTexto = bloquesATexto(bloques);
 
   const descargar = async () => {
     window.gtag?.("event", "honorarios_pdf", {});
     await descargarPDF({
       titulo: "Boleta de honorarios",
       periodo: periodoActual.etiqueta,
-      resumen: resumenTexto,
+      bloques,
       archivo: "honorarios-meliora",
       nota: "Valores referenciales según la retención vigente. No reemplazan la boleta emitida en el SII.",
     });

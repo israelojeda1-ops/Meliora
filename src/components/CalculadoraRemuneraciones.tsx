@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { calcularEmpleador } from "../lib/remuneraciones/motor.ts";
 import { periodos } from "../lib/remuneraciones/parametros/index.ts";
-import { descargarPDF } from "../lib/pdf.ts";
+import { descargarPDF, bloquesATexto, type Bloque } from "../lib/pdf.ts";
 import type {
   ModoGratificacion,
   SistemaSalud,
@@ -127,46 +127,138 @@ export function CalculadoraRemuneraciones() {
 
   const liq = resultado?.liquidacion;
 
-  const resumenTexto = useMemo(() => {
-    if (!resultado || !liq) return "";
-    const lineas = [
-      `Período: ${periodo.etiqueta} (UF ${periodo.uf.toLocaleString("es-CL")}, UTM ${periodo.utm.toLocaleString("es-CL")})`,
-      `Modo: ${modo === "trabajador" ? "Trabajador" : "Empleador"}`,
-      `Sueldo base: ${fmt(liq.sueldoBase)}`,
-      `Gratificación: ${fmt(liq.gratificacion)}`,
-      liq.horasExtra > 0 ? `Horas extra: ${fmt(liq.horasExtra)}` : "",
-      liq.otrosImponibles > 0 ? `Otros imponibles: ${fmt(liq.otrosImponibles)}` : "",
-      `Total imponible: ${fmt(liq.totalImponible)}`,
-      `Base de cotización (tope ${periodo.topeImponibleUF} UF): ${fmt(liq.baseCotizacion)}`,
-      `AFP ${liq.afpNombre} (${liq.afpTasa}%): −${fmt(liq.afp)}`,
-      `Salud 7%: −${fmt(liq.salud7)}`,
-      liq.adicionalIsapre > 0 ? `Adicional isapre: −${fmt(liq.adicionalIsapre)}` : "",
-      liq.cesantiaTrabajador > 0 ? `Cesantía trabajador: −${fmt(liq.cesantiaTrabajador)}` : "",
-      `Impuesto único: −${fmt(liq.impuesto)}`,
-      liq.otrosDescuentos > 0 ? `Otros descuentos: −${fmt(liq.otrosDescuentos)}` : "",
-      liq.totalNoImponible > 0 ? `No imponibles (colación/movilización): +${fmt(liq.totalNoImponible)}` : "",
-      `LÍQUIDO: ${fmt(liq.liquido)}`,
-    ];
+  // Un solo armado de datos: de aquí salen el PDF (con el mismo diseño de la
+  // pantalla) y el texto que viaja por correo. Así no se desincronizan.
+  const bloques = useMemo<Bloque[]>(() => {
+    if (!resultado || !liq) return [];
+    const b: Bloque[] = [{ tipo: "seccion", texto: "Haberes" }];
+    b.push({ tipo: "fila", etiqueta: "Sueldo base", valor: fmt(liq.sueldoBase) });
+    if (liq.horasExtra > 0)
+      b.push({ tipo: "fila", etiqueta: "Horas extra (50%)", valor: fmt(liq.horasExtra) });
+    if (liq.gratificacion > 0)
+      b.push({ tipo: "fila", etiqueta: "Gratificación", valor: fmt(liq.gratificacion) });
+    if (liq.otrosImponibles > 0)
+      b.push({ tipo: "fila", etiqueta: "Otros imponibles", valor: fmt(liq.otrosImponibles) });
+    b.push({
+      tipo: "fila",
+      etiqueta: "Total imponible",
+      valor: fmt(liq.totalImponible),
+      fuerte: true,
+    });
+    if (liq.totalNoImponible > 0)
+      b.push({
+        tipo: "fila",
+        etiqueta: "No imponibles",
+        valor: fmt(liq.totalNoImponible),
+        nota: "colación + movilización",
+      });
+
+    b.push({ tipo: "seccion", texto: "Descuentos del trabajador" });
+    if (liq.baseCotizacion < liq.totalImponible)
+      b.push({
+        tipo: "fila",
+        etiqueta: `Base topeada (${periodo.topeImponibleUF} UF)`,
+        valor: fmt(liq.baseCotizacion),
+        nota: "para AFP y salud",
+      });
+    b.push({
+      tipo: "fila",
+      etiqueta: `AFP ${liq.afpNombre} (${liq.afpTasa.toLocaleString("es-CL")}%)`,
+      valor: fmt(liq.afp),
+      negativo: true,
+    });
+    b.push({ tipo: "fila", etiqueta: "Salud legal (7%)", valor: fmt(liq.salud7), negativo: true });
+    if (liq.adicionalIsapre > 0)
+      b.push({
+        tipo: "fila",
+        etiqueta: "Adicional isapre",
+        valor: fmt(liq.adicionalIsapre),
+        negativo: true,
+        nota: `plan ${fmt(liq.planIsapre)}`,
+      });
+    if (liq.cesantiaTrabajador > 0)
+      b.push({
+        tipo: "fila",
+        etiqueta: "Seguro de cesantía (0,6%)",
+        valor: fmt(liq.cesantiaTrabajador),
+        negativo: true,
+      });
+    b.push({
+      tipo: "fila",
+      etiqueta: "Impuesto único",
+      valor: fmt(liq.impuesto),
+      negativo: true,
+      nota: `base ${fmt(liq.baseTributable)}`,
+    });
+    if (liq.otrosDescuentos > 0)
+      b.push({
+        tipo: "fila",
+        etiqueta: "Otros descuentos",
+        valor: fmt(liq.otrosDescuentos),
+        negativo: true,
+      });
+
+    b.push({ tipo: "destacado", etiqueta: "Sueldo líquido", valor: fmt(liq.liquido) });
+
     if (modo === "empleador") {
-      lineas.push(
-        `Cesantía empleador: +${fmt(resultado.cesantiaEmpleador)}`,
-        `ISL/Mutual (${resultado.mutualTasa.toLocaleString("es-CL")}%): +${fmt(resultado.mutual)}`,
-        ...resultado.aportesPension.map(
-          (a) => `${a.nombre} (${a.tasa.toLocaleString("es-CL")}%): +${fmt(a.monto)}`
-        ),
-        `Total aporte patronal: +${fmt(resultado.totalAportes)}`,
-        `COSTO TOTAL DE CONTRATACIÓN: ${fmt(resultado.costoTotal)}`
-      );
+      b.push({ tipo: "seccion", texto: "Aportes del empleador" });
+      b.push({
+        tipo: "fila",
+        etiqueta: `Seguro de cesantía (${periodo.cesantia[contrato].empleador.toLocaleString("es-CL")}%)`,
+        valor: fmt(resultado.cesantiaEmpleador),
+      });
+      b.push({
+        tipo: "fila",
+        etiqueta: `ISL / Mutual (${resultado.mutualTasa.toLocaleString("es-CL", { maximumFractionDigits: 2 })}%)`,
+        valor: fmt(resultado.mutual),
+        nota: "ley 16.744",
+      });
+      for (const a of resultado.aportesPension)
+        b.push({
+          tipo: "fila",
+          etiqueta: `${a.nombre} (${a.tasa.toLocaleString("es-CL")}%)`,
+          valor: fmt(a.monto),
+        });
+      const tasaPatronal =
+        periodo.cesantia[contrato].empleador +
+        resultado.mutualTasa +
+        resultado.aportesPension.reduce((s, a) => s + a.tasa, 0);
+      b.push({
+        tipo: "fila",
+        etiqueta: `Total aporte patronal (${tasaPatronal.toLocaleString("es-CL", { maximumFractionDigits: 2 })}%)`,
+        valor: fmt(resultado.totalAportes),
+        fuerte: true,
+      });
+      b.push({
+        tipo: "destacado",
+        etiqueta: "Costo total de contratación",
+        valor: fmt(resultado.costoTotal),
+        estilo: "navy",
+      });
+      b.push({
+        tipo: "barra",
+        proporcion: resultado.proporcionLiquido,
+        texto: `De cada ${fmt(resultado.costoTotal)} que pagas, al bolsillo del trabajador llegan ${fmt(liq.liquido)}: ${Math.round(resultado.proporcionLiquido * 100)}%.`,
+        izquierda: "Líquido del trabajador",
+        derecha: "Cotizaciones e impuestos",
+      });
     }
-    return lineas.filter(Boolean).join("\n");
-  }, [resultado, liq, modo, periodo]);
+
+    b.push({
+      tipo: "nota",
+      texto: `Cálculo referencial con indicadores de ${periodo.etiqueta} (UF ${periodo.uf.toLocaleString("es-CL")}, UTM ${periodo.utm.toLocaleString("es-CL")}). No reemplaza una liquidación de sueldo oficial.`,
+    });
+    return b;
+  }, [resultado, liq, modo, periodo, contrato]);
+
+  const resumenTexto = useMemo(() => bloquesATexto(bloques), [bloques]);
 
   const descargar = async () => {
     window.gtag?.("event", "calculadora_pdf", { modo });
     await descargarPDF({
       titulo: modo === "trabajador" ? "Tu liquidación de sueldo" : "Costo de contratación",
       periodo: periodo.etiqueta,
-      resumen: resumenTexto,
+      bloques,
       archivo: modo === "trabajador" ? "liquidacion-meliora" : "costo-contratacion-meliora",
       nota: "Valores referenciales. No reemplazan una liquidación de sueldo oficial.",
     });
