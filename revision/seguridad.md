@@ -32,12 +32,29 @@ asesoría, es una brecha de cumplimiento y de imagen profesional.
 **Acción:** publicar `/privacidad` (qué se recolecta, para qué, cómo pedir
 eliminación) y enlazarla desde el footer y los formularios.
 
-### B1 — Correo personal expuesto como endpoint de formularios
-Los cuatro formularios apuntan a `formsubmit.co/israelojeda1@gmail.com`, con el
-correo personal visible en el HTML. FormSubmit permite usar un alias aleatorio
-(se genera tras la primera confirmación) que oculta la dirección real y reduce
-spam. Ideal: migrar a `contacto@melioraadvisory.cl` cuando exista (Email
-Routing de Cloudflare pendiente) y usar el alias.
+### B1 — Correo personal expuesto como endpoint de formularios — RESUELTO
+Los formularios apuntaban a `formsubmit.co/israelojeda1@gmail.com`, con el
+correo personal a la vista en el HTML y con el envío dependiendo de un tercero
+que además se cayó (respondía 500). Ahora los seis formularios (contacto,
+diagnóstico y las cuatro calculadoras) envían a `/api/formularios`, una ruta del
+portal que Caddy publica bajo el mismo dominio del sitio. El correo sale de
+`contacto@melioraadvisory.cl` por SMTP propio y cada envío queda registrado en
+la tabla `formularios` de la base del portal.
+
+De paso se corrigió algo que el sitio prometía y no cumplía: las calculadoras
+dicen «recibe este desglose en tu correo», pero FormSubmit solo avisaba a
+Israel y la persona nunca recibía nada. Ahora recibe su copia.
+
+**Riesgo nuevo que esto introduce:** el servidor envía correo a una dirección
+que escribe cualquiera, así que podría usarse para mandar texto arbitrario a
+terceros desde el dominio. Mitigaciones en la ruta: campo trampa `_honey`,
+límite de 5 envíos cada 10 minutos por IP (contados en la tabla, con respaldo en
+memoria si la base no responde), validación del formato del correo, recorte de
+los campos (300 caracteres, 5.000 para el desglose) y redirección solo a URLs de
+`melioraadvisory.cl`. El cuerpo del correo a la persona es una plantilla fija:
+lo que viene del formulario va escapado y dentro de un bloque, no arma el
+mensaje. Queda como riesgo residual aceptado y conviene revisar la tabla
+`formularios` si aparece tráfico raro.
 
 ### B2 — Dependencia de terceros en el navegador
 Las calculadoras e indicadores consultan `mindicador.cl` desde el cliente. Si

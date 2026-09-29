@@ -1,4 +1,4 @@
-const FORM_ENDPOINT = "https://formsubmit.co/israelojeda1@gmail.com";
+const FORM_ENDPOINT = "/api/formularios";
 
 export function ContactForm() {
   return (
@@ -7,9 +7,8 @@ export function ContactForm() {
       method="POST"
       className="space-y-5"
     >
-      <input type="hidden" name="_subject" value="Nueva consulta desde melioraadvisory.cl" />
-      <input type="hidden" name="_template" value="table" />
       <input type="hidden" name="_next" value="https://melioraadvisory.cl/contacto/gracias/" />
+      <input type="hidden" name="formulario" value="contacto" />
       <input type="text" name="_honey" className="hidden" tabIndex={-1} autoComplete="off" />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">

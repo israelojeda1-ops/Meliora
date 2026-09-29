@@ -5,7 +5,7 @@ import Link from "next/link";
 import { boletaDesdeBruto, boletaDesdeLiquido } from "../lib/remuneraciones/honorarios.ts";
 import { periodoActual } from "../lib/remuneraciones/parametros/index.ts";
 
-const FORM_ENDPOINT = "https://formsubmit.co/israelojeda1@gmail.com";
+const FORM_ENDPOINT = "/api/formularios";
 
 const fmt = (n: number) => `$${Math.round(n).toLocaleString("es-CL")}`;
 
@@ -366,15 +366,10 @@ export function CalculadoraHonorarios() {
               <form action={FORM_ENDPOINT} method="POST" className="flex flex-col sm:flex-row gap-3">
                 <input
                   type="hidden"
-                  name="_subject"
-                  value="Calculadora honorarios — melioraadvisory.cl"
-                />
-                <input type="hidden" name="_template" value="table" />
-                <input
-                  type="hidden"
                   name="_next"
                   value="https://melioraadvisory.cl/contacto/gracias/"
                 />
+                <input type="hidden" name="formulario" value="honorarios" />
                 <input type="text" name="_honey" className="hidden" tabIndex={-1} autoComplete="off" />
                 <input type="hidden" name="desglose" value={resumenTexto} />
                 <input

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 
-const FORM_ENDPOINT = "https://formsubmit.co/israelojeda1@gmail.com";
+const FORM_ENDPOINT = "/api/formularios";
 
 type Area = "visibilidad" | "proyeccion" | "orden" | "procesos";
 
@@ -409,15 +409,10 @@ export function DiagnosticoTool() {
         <form action={FORM_ENDPOINT} method="POST" className="space-y-5">
           <input
             type="hidden"
-            name="_subject"
-            value="Diagnóstico financiero completado en melioraadvisory.cl"
-          />
-          <input type="hidden" name="_template" value="table" />
-          <input
-            type="hidden"
             name="_next"
             value="https://melioraadvisory.cl/contacto/gracias/"
           />
+          <input type="hidden" name="formulario" value="diagnostico" />
           <input
             type="text"
             name="_honey"
