@@ -4,8 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { boletaDesdeBruto, boletaDesdeLiquido } from "../lib/remuneraciones/honorarios.ts";
 import { periodoActual } from "../lib/remuneraciones/parametros/index.ts";
-import { descargarPDF, bloquesATexto, type Bloque, type FilaPDF } from "../lib/pdf.ts";
-import { FORM_ENDPOINT } from "../lib/formularios.ts";
+import { descargarPDF, type Bloque, type FilaPDF, type OpcionesPDF } from "../lib/pdf.ts";
+import { FormularioDesglose } from "./FormularioDesglose.tsx";
 
 const fmt = (n: number) => `$${Math.round(n).toLocaleString("es-CL")}`;
 
@@ -182,17 +182,20 @@ export function CalculadoraHonorarios() {
     });
   }
 
-  const resumenTexto = bloquesATexto(bloques);
+
+  // Las mismas opciones para el botón de descarga y para el PDF que sale
+  // adjunto en el correo: un solo archivo, no dos versiones.
+  const opcionesPDF: OpcionesPDF = {
+    titulo: "Boleta de honorarios",
+    periodo: periodoActual.etiqueta,
+    bloques,
+    archivo: "honorarios-meliora",
+    nota: "Valores referenciales según la retención vigente. No reemplazan la boleta emitida en el SII.",
+  };
 
   const descargar = async () => {
     window.gtag?.("event", "honorarios_pdf", {});
-    await descargarPDF({
-      titulo: "Boleta de honorarios",
-      periodo: periodoActual.etiqueta,
-      bloques,
-      archivo: "honorarios-meliora",
-      nota: "Valores referenciales según la retención vigente. No reemplazan la boleta emitida en el SII.",
-    });
+    await descargarPDF(opcionesPDF);
   };
 
   return (
@@ -447,30 +450,7 @@ export function CalculadoraHonorarios() {
               <p className="text-xs text-slate-500 mb-4">
                 Te lo enviamos junto a una breve revisión de tu caso. Sin spam.
               </p>
-              <form action={FORM_ENDPOINT} method="POST" className="flex flex-col sm:flex-row gap-3">
-                <input
-                  type="hidden"
-                  name="_next"
-                  value="https://melioraadvisory.cl/contacto/gracias/"
-                />
-                <input type="hidden" name="formulario" value="honorarios" />
-                <input type="text" name="_honey" className="hidden" tabIndex={-1} autoComplete="off" />
-                <input type="hidden" name="desglose" value={resumenTexto} />
-                <input
-                  name="email"
-                  type="email"
-                  required
-                  className={`${inputClass} flex-1`}
-                  placeholder="tucorreo@empresa.cl"
-                  aria-label="Email"
-                />
-                <button
-                  type="submit"
-                  className="rounded-lg bg-emerald px-6 py-2.5 text-sm font-semibold text-white hover:bg-emerald-dark transition-colors"
-                >
-                  Enviarme el desglose
-                </button>
-              </form>
+              <FormularioDesglose formulario="honorarios" opciones={opcionesPDF} />
             </div>
 
             <div className="rounded-2xl bg-navy p-6 sm:p-8">
