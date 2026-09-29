@@ -534,27 +534,40 @@ export function CalculadoraLiquido() {
               />
             )}
             {liq.cesantiaTrabajador > 0 && (
-              <Fila label="Seguro de cesantía" value={liq.cesantiaTrabajador} negative />
+              <Fila
+                label={`Seguro de cesantía (${periodo.cesantia[contrato].trabajador.toLocaleString("es-CL")}%)`}
+                value={liq.cesantiaTrabajador}
+                negative
+              />
             )}
-            <Fila label="Impuesto único" value={liq.impuesto} negative />
+            <Fila
+              label="Impuesto único"
+              value={liq.impuesto}
+              negative
+              note={`base ${fmt(liq.baseTributable)}`}
+            />
             {liq.otrosDescuentos > 0 && (
               <Fila label="Otros descuentos" value={liq.otrosDescuentos} negative />
             )}
 
-            <div className="mt-4 rounded-xl bg-navy px-4 py-3 flex items-baseline justify-between">
-              <span className="text-sm font-bold text-white">Líquido</span>
-              <span className="text-xl font-bold text-white tabular-nums">
+            <div className="mt-4 rounded-xl bg-emerald/5 border border-emerald/20 px-4 py-3 flex items-baseline justify-between">
+              <span className="text-sm font-bold text-navy">Sueldo líquido</span>
+              <span className="text-xl font-bold text-emerald tabular-nums">
                 {fmt(liq.liquido)}
               </span>
             </div>
 
-            <p className="text-xs font-semibold text-emerald uppercase tracking-wider mt-5 mb-1">
-              Costo para la empresa
+            <p className="text-xs font-semibold text-emerald uppercase tracking-wider mt-6 mb-1">
+              Aportes del empleador
             </p>
-            <Fila label="Cesantía empleador" value={resultado.costo.cesantiaEmpleador} />
             <Fila
-              label={`ISL/Mutual (${resultado.costo.mutualTasa.toLocaleString("es-CL")}%)`}
+              label={`Seguro de cesantía (${periodo.cesantia[contrato].empleador.toLocaleString("es-CL")}%)`}
+              value={resultado.costo.cesantiaEmpleador}
+            />
+            <Fila
+              label={`ISL / Mutual (${resultado.costo.mutualTasa.toLocaleString("es-CL", { maximumFractionDigits: 2 })}%)`}
               value={resultado.costo.mutual}
+              note="ley 16.744"
             />
             {resultado.costo.aportesPension.map((a) => (
               <Fila
@@ -564,7 +577,47 @@ export function CalculadoraLiquido() {
               />
             ))}
             <div className="border-t border-slate-100 mt-1 pt-1">
-              <Fila label="Costo total de contratación" value={resultado.costo.costoTotal} bold />
+              <Fila
+                label={`Total aporte patronal (${(
+                  periodo.cesantia[contrato].empleador +
+                  resultado.costo.mutualTasa +
+                  resultado.costo.aportesPension.reduce((s, a) => s + a.tasa, 0)
+                ).toLocaleString("es-CL", { maximumFractionDigits: 2 })}%)`}
+                value={resultado.costo.totalAportes}
+                bold
+              />
+            </div>
+
+            <div className="mt-4 rounded-xl bg-navy px-4 py-3 flex items-baseline justify-between">
+              <span className="text-sm font-bold text-white">
+                Costo total de contratación
+              </span>
+              <span className="text-xl font-bold text-white tabular-nums">
+                {fmt(resultado.costo.costoTotal)}
+              </span>
+            </div>
+
+            <div className="mt-5">
+              <p className="text-xs text-slate-500 mb-2">
+                De cada {fmt(resultado.costo.costoTotal)} que pagas, al bolsillo del
+                trabajador llegan {fmt(liq.liquido)} —{" "}
+                <span className="font-semibold text-navy">
+                  {Math.round(resultado.costo.proporcionLiquido * 100)}%
+                </span>
+                .
+              </p>
+              <div className="h-3 w-full rounded-full bg-slate-200 overflow-hidden">
+                <div
+                  className="h-3 bg-emerald"
+                  style={{
+                    width: `${Math.min(100, Math.round(resultado.costo.proporcionLiquido * 100))}%`,
+                  }}
+                />
+              </div>
+              <div className="flex justify-between mt-1">
+                <span className="text-[11px] text-slate-400">Líquido del trabajador</span>
+                <span className="text-[11px] text-slate-400">Cotizaciones e impuestos</span>
+              </div>
             </div>
 
             <div className="mt-4 rounded-xl bg-slate-50 border border-slate-200 px-4 py-3">
