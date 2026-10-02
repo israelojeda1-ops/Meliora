@@ -106,6 +106,14 @@ export default function RootLayout({
             gtag('config', '${GA_MEASUREMENT_ID}');
           `}
         </Script>
+        {/* Visitas: Umami en el propio servidor (/u.js y /u/api/send por este dominio), sin cookies. */}
+        <Script
+          src="/u.js"
+          strategy="afterInteractive"
+          data-website-id="6bd399ae-9a79-442d-ae48-db6638ee6c4a"
+          data-host-url="/u"
+          data-domains="melioraadvisory.cl"
+        />
         <Header />
         <main className="flex-1">{children}</main>
         <Footer />
