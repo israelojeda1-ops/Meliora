@@ -42,7 +42,7 @@ jobs:
 
       - name: Comprobar el sitio exportado
         run: |
-          for f in index.html 404.html servicios/index.html nosotros/index.html planes/index.html contacto/index.html sitemap.xml robots.txt; do
+          for f in index.html 404.html servicios/index.html planes/index.html contacto/index.html calculadora/index.html sitemap.xml robots.txt; do
             test -f "out/$f" || { echo "Falta out/$f"; exit 1; }
           done
 
@@ -78,7 +78,7 @@ jobs:
         run: |
           SSH="ssh -i $HOME/.ssh/deploy -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes"
           $SSH "deploy@${HOST}" 'set -e
-            for p in / /servicios/ /nosotros/ /planes/ /contacto/ /calculadora/; do
+            for p in / /servicios/ /planes/ /contacto/ /calculadora/; do
               code=$(curl -sk -o /dev/null -w "%{http_code}" --resolve melioraadvisory.cl:443:127.0.0.1 "https://melioraadvisory.cl$p")
               echo "$p → $code"; test "$code" = "200"
             done'
