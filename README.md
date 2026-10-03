@@ -24,7 +24,9 @@ Abre [http://localhost:3000](http://localhost:3000).
 
 - `/` — Inicio (hero, pilares, problema/solución, servicios, resultados, CTA)
 - `/servicios` — Detalle de las tres líneas de servicio
-- `/nosotros` — Historia y trayectoria de la firma
+- `/nosotros` — despublicada: el contenido vive en `src/app/_nosotros/`, que el
+  App Router ignora por el guion bajo. Para volver a publicarla, renombra la
+  carpeta sin el guion y reponla en `sitemap.ts`, el Header y el Footer.
 - `/planes` — Planes y precios de referencia
 - `/contacto` — Formulario de contacto y agendamiento
 
