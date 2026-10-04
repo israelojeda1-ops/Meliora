@@ -42,4 +42,5 @@ npm run start
 
 ## Deploy
 
-Pensado para desplegarse en Vercel bajo el dominio `melioraadvisory.cl`.
+Se publica en el servidor propio (Creattiva, detrás de Cloudflare) con
+`.github/workflows/publicar-vps.yml` en cada push a `main`.
