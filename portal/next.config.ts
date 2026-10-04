@@ -10,7 +10,7 @@ const nextConfig: NextConfig = {
 
   // El dashboard HTML de Nuprotec que se servía en /nuprotec quedó congelado el
   // 08-09-2026 y ya lo reemplazó el portal propio. Cualquier enlace guardado
-  // (/nuprotec, /nuprotec/banco/…) va directo al portal nuevo. 302 y no 301:
+  // (/nuprotec, /nuprotec/banco/…) va directo al portal nuevo. Temporal (307):
   // el navegador no lo memoriza y se puede deshacer sin limpiar cachés.
   async redirects() {
     return [
