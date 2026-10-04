@@ -2,33 +2,17 @@ export type ClientConfig = {
   slug: string;
   name: string;
   passwordEnv: string;
-  repo?: {
-    owner: string;
-    name: string;
-    path: string;
-    workflowFile?: string;
-    bancoLogPath?: string;
-  };
-  // Para clientes que no son un HTML estático sino una app propia (ej.
-  // Cóndores): en vez de traer un archivo de un repo, se reenvía la
+  // Para clientes que son una app propia (ej. Cóndores): se reenvía la
   // request completa a este origen. La app debe estar montada con el
   // mismo basePath (`/${slug}`) para que sus assets y rutas calcen.
   proxyTarget?: string;
 };
 
 export const CLIENTS: Record<string, ClientConfig> = {
-  nuprotec: {
-    slug: "nuprotec",
-    name: "Nuprotec",
-    passwordEnv: "NUPROTEC_PASSWORD",
-    repo: {
-      owner: "israelojeda1-ops",
-      name: "nuprotec-informes",
-      path: "Dashboard_NUPROTEC_2026.html",
-      workflowFile: "generar-dashboard.yml",
-      bancoLogPath: "generador/banco_movimientos_log.csv",
-    },
-  },
+  // /nuprotec (el dashboard HTML congelado el 08-09-2026) ya no existe: lo
+  // redirige next.config.ts al portal nuevo. Sin entrada acá, ?client=nuprotec
+  // en /login no ofrece una clave para algo que ya no está.
+
   // La copia de Vercel quedó congelada con el paso al servidor propio. Ya no se
   // proxea: /nuprotecV2 muestra el cartel de mudanza y manda a /Nuprotecv3.
   // Sin proxyTarget a propósito —si volviera, la app vieja quedaría otra vez en
